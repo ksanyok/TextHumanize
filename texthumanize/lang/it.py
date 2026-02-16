@@ -1,0 +1,124 @@
+"""Языковой пакет: Итальянский (Italiano)."""
+
+LANG_IT = {
+    "code": "it",
+    "name": "Italiano",
+
+    "trigrams": [
+        "che", "ell", "ion", "ent", "ato", "per", "ment", "azi",
+        "con", "one", "zione", "sta", "ere", "non", "ess", "pre",
+        "att", "ale", "nte", "ria", "ica", "ura", "ire", "gli",
+        "pro", "tra", "ter", "tto", "res", "ost", "ono", "uto",
+        "ita", "eri", "ova", "ali", "dei", "ati", "ori", "com",
+    ],
+
+    "stop_words": {
+        "il", "lo", "la", "i", "gli", "le", "un", "uno", "una",
+        "e", "o", "ma", "né", "che", "se", "non", "in",
+        "di", "del", "della", "dei", "delle", "al", "alla",
+        "con", "per", "da", "su", "tra", "fra",
+        "io", "tu", "lui", "lei", "noi", "voi", "loro",
+        "è", "sono", "ha", "hanno", "era", "essere", "avere",
+        "questo", "questa", "questi", "queste", "quello", "quella",
+        "mio", "mia", "tuo", "tua", "suo", "sua", "nostro",
+        "più", "meno", "molto", "bene", "come", "dove",
+        "tutto", "tutti", "tutta", "tutte", "altro", "altra",
+        "già", "ancora", "anche", "solo", "ogni",
+        "qui", "là", "quando", "mentre",
+        "ci", "si", "mi", "ti", "vi", "ne",
+    },
+
+    "bureaucratic": {
+        "implementare": ["mettere in atto", "realizzare", "applicare"],
+        "ottimizzare": ["migliorare", "perfezionare", "affinare"],
+        "finalizzare": ["concludere", "finire", "completare"],
+        "concretizzare": ["realizzare", "mettere in pratica"],
+        "generare": ["creare", "produrre", "dare"],
+        "determinare": ["stabilire", "decidere", "fissare"],
+        "significativo": ["notevole", "importante", "rilevante"],
+        "fondamentale": ["essenziale", "basilare", "centrale"],
+        "primario": ["principale", "primo", "essenziale"],
+        "inerente": ["proprio", "legato", "connesso"],
+        "esaustivo": ["completo", "dettagliato", "approfondito"],
+        "innovativo": ["nuovo", "creativo", "originale"],
+        "paradigmatico": ["esemplare", "tipico", "modello"],
+        "preponderante": ["principale", "dominante", "maggiore"],
+        "onnicomprensivo": ["completo", "totale", "globale"],
+        "imprescindibile": ["necessario", "essenziale", "irrinunciabile"],
+    },
+
+    "bureaucratic_phrases": {
+        "è doveroso sottolineare": ["va detto", "bisogna dire"],
+        "nell'ambito di": ["in", "dentro", "durante"],
+        "al fine di": ["per", "allo scopo di"],
+        "in relazione a": ["riguardo a", "su", "per"],
+        "in considerazione di": ["dato", "visto", "considerando"],
+        "in maniera significativa": ["molto", "parecchio", "nettamente"],
+        "riveste un ruolo cruciale": ["è molto importante", "conta molto"],
+        "assume un'importanza": ["è importante", "conta"],
+        "risulta necessario": ["bisogna", "serve", "occorre"],
+        "per quanto concerne": ["per quanto riguarda", "riguardo a"],
+    },
+
+    "ai_connectors": {
+        "Inoltre": ["In più", "Anche", "Per di più", "Poi"],
+        "Tuttavia": ["Ma", "Però", "Eppure", "Ciononostante"],
+        "Di conseguenza": ["Quindi", "Perciò", "Così", "Dunque"],
+        "Ciononostante": ["Ma", "Tuttavia", "Eppure"],
+        "Per di più": ["In più", "Inoltre", "Anche"],
+        "In definitiva": ["Alla fine", "In conclusione", "Insomma"],
+        "A tal proposito": ["A questo punto", "In merito"],
+        "È importante sottolineare": ["Va detto", "Bisogna dire"],
+        "Vale la pena notare": ["Da notare", "Interessante è"],
+        "In conclusione": ["Per concludere", "Alla fine"],
+        "Pertanto": ["Quindi", "Perciò", "Dunque"],
+        "Altresì": ["Anche", "Inoltre", "Pure"],
+    },
+
+    "synonyms": {
+        "importante": ["rilevante", "significativo", "essenziale"],
+        "grande": ["ampio", "vasto", "considerevole"],
+        "piccolo": ["ridotto", "modesto", "esiguo"],
+        "veloce": ["rapido", "agile", "pronto"],
+        "problema": ["difficoltà", "sfida", "ostacolo"],
+        "soluzione": ["risposta", "via d'uscita", "rimedio"],
+        "risultato": ["esito", "effetto", "frutto"],
+        "metodo": ["approccio", "tecnica", "sistema"],
+        "processo": ["procedura", "percorso", "iter"],
+        "obiettivo": ["scopo", "traguardo", "meta"],
+        "vantaggio": ["beneficio", "plus", "punto di forza"],
+        "sviluppo": ["evoluzione", "progresso", "crescita"],
+        "analisi": ["studio", "esame", "indagine"],
+        "efficace": ["efficiente", "produttivo", "funzionale"],
+        "complesso": ["complicato", "articolato", "elaborato"],
+        "moderno": ["attuale", "contemporaneo", "odierno"],
+        "qualità": ["livello", "standard", "valore"],
+    },
+
+    "sentence_starters": {},
+
+    "colloquial_markers": [
+        "onestamente", "in realtà", "in fondo",
+        "diciamo", "in pratica", "tra l'altro",
+    ],
+
+    "abbreviations": [
+        "Sig.", "Sig.ra", "Dott.", "Prof.", "ecc.",
+        "es.", "vol.", "pag.", "ed.", "cap.",
+    ],
+
+    "profile_targets": {
+        "chat": {"avg_len": (6, 16), "variance": 0.5},
+        "web": {"avg_len": (8, 22), "variance": 0.4},
+        "seo": {"avg_len": (10, 24), "variance": 0.3},
+        "docs": {"avg_len": (10, 26), "variance": 0.3},
+        "formal": {"avg_len": (12, 30), "variance": 0.25},
+    },
+
+    "conjunctions": ["e", "ma", "o", "né", "che", "poi"],
+
+    "split_conjunctions": [
+        " e ", " ma ", " tuttavia ", " mentre ",
+        " sebbene ", " perché ", " poiché ",
+    ],
+}

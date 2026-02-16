@@ -1,0 +1,314 @@
+"""Анализатор текста — метрики «искусственности»."""
+
+from __future__ import annotations
+
+import re
+from collections import Counter
+
+from texthumanize.lang import get_lang_pack
+from texthumanize.utils import AnalysisReport
+
+
+class TextAnalyzer:
+    """Анализирует текст и вычисляет метрики «искусственности».
+
+    Метрики:
+    - Средняя длина предложения
+    - Дисперсия длины предложений (низкая = ИИ)
+    - Доля канцеляризмов
+    - Частота ИИ-связок
+    - Повторяемость биграмм/триграмм
+    - Типографика (идеальная = ИИ)
+    - Общий балл «искусственности» (0-100)
+    """
+
+    def __init__(self, lang: str = "ru"):
+        self.lang = lang
+        self.lang_pack = get_lang_pack(lang)
+
+    def analyze(self, text: str) -> AnalysisReport:
+        """Анализировать текст.
+
+        Args:
+            text: Текст для анализа.
+
+        Returns:
+            AnalysisReport с метриками.
+        """
+        report = AnalysisReport(lang=self.lang)
+
+        if not text or len(text.strip()) < 10:
+            return report
+
+        report.total_chars = len(text)
+        words = text.split()
+        report.total_words = len(words)
+
+        # Разбиваем на предложения
+        sentences = self._split_sentences(text)
+        report.total_sentences = len(sentences)
+
+        if not sentences:
+            return report
+
+        # 1. Длина предложений
+        sentence_lengths = [len(s.split()) for s in sentences]
+        report.avg_sentence_length = (
+            sum(sentence_lengths) / len(sentence_lengths)
+        )
+
+        if len(sentence_lengths) > 1:
+            mean = report.avg_sentence_length
+            variance = sum((l - mean) ** 2 for l in sentence_lengths) / len(sentence_lengths)
+            report.sentence_length_variance = variance
+        else:
+            report.sentence_length_variance = 0.0
+
+        # 2. Канцеляризмы
+        report.bureaucratic_ratio = self._calc_bureaucratic_ratio(text, words)
+
+        # 3. ИИ-связки
+        report.connector_ratio = self._calc_connector_ratio(text, sentences)
+
+        # 4. Повторяемость
+        report.repetition_score = self._calc_repetition_score(text, words)
+
+        # 5. Типографика
+        report.typography_score = self._calc_typography_score(text)
+
+        # 6. Burstiness (вариативность длины предложений)
+        report.burstiness_score = self._calc_burstiness_score(sentence_lengths)
+
+        # 7. Общий балл искусственности
+        report.artificiality_score = self._calc_artificiality_score(report)
+
+        # Детали
+        report.details = {
+            "sentence_lengths": sentence_lengths,
+            "found_bureaucratic": self._find_bureaucratic_words(text),
+            "found_connectors": self._find_ai_connectors(text),
+            "typography_issues": self._find_typography_issues(text),
+            "burstiness_cv": self._calc_burstiness_cv(sentence_lengths),
+        }
+
+        return report
+
+    def _split_sentences(self, text: str) -> list[str]:
+        """Разбить текст на предложения."""
+        sentences = re.split(r'(?<=[.!?…])\s+', text)
+        return [s.strip() for s in sentences if s.strip() and len(s.split()) > 1]
+
+    def _calc_bureaucratic_ratio(self, text: str, words: list[str]) -> float:
+        """Вычислить долю канцеляризмов."""
+        if not words:
+            return 0.0
+
+        bureaucratic = self.lang_pack.get("bureaucratic", {})
+        phrases = self.lang_pack.get("bureaucratic_phrases", {})
+        text_lower = text.lower()
+
+        hits = 0
+
+        # Фразовые канцеляризмы
+        for phrase in phrases:
+            count = text_lower.count(phrase.lower())
+            hits += count * len(phrase.split())
+
+        # Однословные канцеляризмы
+        for word in bureaucratic:
+            pattern = re.compile(r'\b' + re.escape(word) + r'\b', re.IGNORECASE)
+            matches = pattern.findall(text)
+            hits += len(matches)
+
+        return min(hits / len(words), 1.0) if words else 0.0
+
+    def _calc_connector_ratio(self, text: str, sentences: list[str]) -> float:
+        """Вычислить долю ИИ-связок."""
+        if not sentences:
+            return 0.0
+
+        connectors = self.lang_pack.get("ai_connectors", {})
+        hits = 0
+
+        for connector in connectors:
+            pattern = re.compile(r'\b' + re.escape(connector) + r'\b', re.IGNORECASE)
+            hits += len(pattern.findall(text))
+
+        return min(hits / len(sentences), 1.0)
+
+    def _calc_repetition_score(self, text: str, words: list[str]) -> float:
+        """Вычислить показатель повторяемости."""
+        if len(words) < 10:
+            return 0.0
+
+        stop_words = self.lang_pack.get("stop_words", set())
+
+        # Считаем повторение контентных слов
+        content_words = [
+            w.lower().strip('.,;:!?\"\'()[]{}')
+            for w in words
+            if w.lower().strip('.,;:!?\"\'()[]{}') not in stop_words
+            and len(w) > 2
+        ]
+
+        if not content_words:
+            return 0.0
+
+        word_counts = Counter(content_words)
+        total = len(content_words)
+        unique = len(word_counts)
+
+        # Lexical diversity (обратная метрика)
+        diversity = unique / total if total > 0 else 1.0
+
+        # Биграммы
+        bigrams = []
+        for i in range(len(content_words) - 1):
+            bigrams.append((content_words[i], content_words[i + 1]))
+
+        bigram_counts = Counter(bigrams)
+        repeated_bigrams = sum(1 for c in bigram_counts.values() if c > 1)
+        bigram_ratio = repeated_bigrams / len(bigrams) if bigrams else 0.0
+
+        # Чем ниже diversity и больше повторов — тем выше score
+        score = (1.0 - diversity) * 0.5 + bigram_ratio * 0.5
+        return min(score, 1.0)
+
+    def _calc_typography_score(self, text: str) -> float:
+        """Вычислить «идеальность» типографики (ИИ = идеальная)."""
+        if not text:
+            return 0.0
+
+        score = 0.0
+        total_checks = 6
+
+        # Длинные тире
+        if '—' in text:
+            score += 1.0
+
+        # Типографские кавычки
+        if '«' in text or '»' in text or '"' in text or '"' in text:
+            score += 1.0
+
+        # Типографское многоточие
+        if '…' in text:
+            score += 1.0
+
+        # Неразрывные пробелы
+        if '\u00A0' in text or '\u202F' in text:
+            score += 1.0
+
+        # Избыток точек с запятой
+        semicolons = text.count(';')
+        sentences = len(re.findall(r'[.!?]', text))
+        if sentences > 0 and semicolons / sentences > 0.2:
+            score += 1.0
+
+        # Избыток двоеточий
+        colons = text.count(':')
+        if sentences > 0 and colons / sentences > 0.3:
+            score += 1.0
+
+        return score / total_checks
+
+    def _calc_artificiality_score(self, report: AnalysisReport) -> float:
+        """Вычислить общий балл искусственности (0-100)."""
+        score = 0.0
+
+        # 1. Низкая дисперсия длины предложений (ИИ пишет равномерно)
+        if report.avg_sentence_length > 0:
+            cv = (report.sentence_length_variance ** 0.5) / report.avg_sentence_length
+            if cv < 0.3:
+                score += 20  # Очень равномерные предложения
+            elif cv < 0.5:
+                score += 10
+
+        # 2. Канцеляризмы
+        score += report.bureaucratic_ratio * 25
+
+        # 3. ИИ-связки
+        score += report.connector_ratio * 20
+
+        # 4. Повторяемость
+        score += report.repetition_score * 15
+
+        # 5. Типографика
+        score += report.typography_score * 20
+
+        # 6. Burstiness (низкий burstiness = AI)
+        if report.burstiness_score < 0.3:
+            score += 15  # Низкая вариативность — признак AI
+        elif report.burstiness_score < 0.5:
+            score += 5
+
+        return min(score, 100.0)
+
+    def _calc_burstiness_score(self, sentence_lengths: list[int]) -> float:
+        """Вычислить показатель burstiness (0-1).
+
+        0 = все предложения одинаковой длины (AI).
+        1 = большой разброс длин (человек).
+        """
+        if len(sentence_lengths) < 3:
+            return 0.5
+
+        mean = sum(sentence_lengths) / len(sentence_lengths)
+        if mean == 0:
+            return 0.0
+
+        variance = sum((l - mean) ** 2 for l in sentence_lengths) / len(sentence_lengths)
+        cv = (variance ** 0.5) / mean
+
+        # Нормализуем: cv=0.7+ это хорошо (человечески), cv<0.3 это плохо (AI)
+        return min(cv / 0.7, 1.0)
+
+    def _calc_burstiness_cv(self, sentence_lengths: list[int]) -> float:
+        """Вычислить коэффициент вариации для длины предложений."""
+        if len(sentence_lengths) < 2:
+            return 0.0
+        mean = sum(sentence_lengths) / len(sentence_lengths)
+        if mean == 0:
+            return 0.0
+        variance = sum((l - mean) ** 2 for l in sentence_lengths) / len(sentence_lengths)
+        return (variance ** 0.5) / mean
+
+    def _find_bureaucratic_words(self, text: str) -> list[str]:
+        """Найти все канцеляризмы в тексте."""
+        result = []
+        bureaucratic = self.lang_pack.get("bureaucratic", {})
+        phrases = self.lang_pack.get("bureaucratic_phrases", {})
+
+        for phrase in phrases:
+            if phrase.lower() in text.lower():
+                result.append(phrase)
+
+        for word in bureaucratic:
+            pattern = re.compile(r'\b' + re.escape(word) + r'\b', re.IGNORECASE)
+            if pattern.search(text):
+                result.append(word)
+
+        return result
+
+    def _find_ai_connectors(self, text: str) -> list[str]:
+        """Найти все ИИ-связки в тексте."""
+        result = []
+        connectors = self.lang_pack.get("ai_connectors", {})
+
+        for connector in connectors:
+            if connector.lower() in text.lower():
+                result.append(connector)
+
+        return result
+
+    def _find_typography_issues(self, text: str) -> list[str]:
+        """Найти типографские признаки ИИ."""
+        issues = []
+        if '—' in text:
+            issues.append("Длинные тире (—)")
+        if '«' in text or '»' in text:
+            issues.append("Типографские кавычки (« »)")
+        if '…' in text:
+            issues.append("Типографское многоточие (…)")
+        if '\u00A0' in text:
+            issues.append("Неразрывные пробелы")
+        return issues

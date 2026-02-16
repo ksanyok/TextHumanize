@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "texthumanize"
+version = "0.2.0"
+description = "Алгоритмическая гуманизация текста с антидетекцией — делает AI-тексты необнаружимыми для детекторов"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "TextHumanize Contributors"}
+]
+keywords = [
+    "text", "humanize", "nlp", "typography", "readability",
+    "ai-text", "natural-language", "text-processing",
+    "anti-detection", "ai-detection", "gptzero", "originality",
+    "multilingual", "decancel", "style",
+    "russian", "ukrainian", "german", "french", "spanish",
+    "polish", "portuguese", "italian"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Text Processing",
+    "Topic :: Text Processing :: Linguistic",
+    "Natural Language :: Russian",
+    "Natural Language :: Ukrainian",
+    "Natural Language :: English",
+    "Natural Language :: German",
+    "Natural Language :: French",
+    "Natural Language :: Spanish",
+    "Natural Language :: Polish",
+    "Natural Language :: Portuguese",
+    "Natural Language :: Italian",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+texthumanize = "texthumanize.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ksanyok/TextHumanize"
+Documentation = "https://github.com/ksanyok/TextHumanize#readme"
+Repository = "https://github.com/ksanyok/TextHumanize"
+Issues = "https://github.com/ksanyok/TextHumanize/issues"
+
+[tool.setuptools.packages.find]
+include = ["texthumanize*"]
+
+[tool.setuptools.package-data]
+texthumanize = ["data/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
