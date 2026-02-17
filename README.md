@@ -668,7 +668,7 @@ Contributions are welcome:
 
 If you find TextHumanize useful, consider supporting the development:
 
-[![PayPal](https://img.shields.io/badge/PayPal-Donate-blue.svg?logo=paypal)](https://www.paypal.com/paypalme/ksanyok)
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-blue.svg?logo=paypal)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=ksanyok%40me.com&item_name=TextHumanize&currency_code=USD)
 
 ---
 
