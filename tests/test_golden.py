@@ -68,7 +68,7 @@ class TestGoldenRussian:
     def test_not_too_many_changes(self):
         """Количество изменений в разумных пределах."""
         result = humanize(AI_TEXT_RU, lang="ru", profile="web", intensity=60, seed=42)
-        assert result.change_ratio <= 0.75  # Не более 75% изменений (с антидетекцией)
+        assert result.change_ratio <= 0.75  # Не более 75% изменений
 
     def test_sentences_still_valid(self):
         """Предложения всё ещё корректные (заканчиваются на .!?)."""

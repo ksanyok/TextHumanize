@@ -1,95 +1,76 @@
-# 📝 TextHumanize
+# TextHumanize
 
-**Алгоритмическая гуманизация текста с антидетекцией — делает AI-тексты необнаружимыми для детекторов**
+**Algorithmic text naturalization library — transforms machine-generated text into natural, human-like prose**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![PyPI version](https://img.shields.io/pypi/v/texthumanize.svg)](https://pypi.org/project/texthumanize/)
+[![PHP 8.1+](https://img.shields.io/badge/php-8.1+-purple.svg)](https://www.php.net/)
 [![Tests](https://img.shields.io/badge/tests-158%20passed-green.svg)]()
+[![License](https://img.shields.io/badge/license-Personal%20Use-orange.svg)](LICENSE)
 
 ---
 
-TextHumanize — open-source библиотека для обхода AI-детекторов (GPTZero, Originality.ai, ZeroGPT, Turnitin, Copyleaks). Нормализует типографику, устраняет канцелярский стиль, разнообразит структуру предложений, повышает burstiness и perplexity, заменяет AI-характерные слова и фразы.
+TextHumanize is a text processing library that normalizes typography, simplifies bureaucratic language, diversifies sentence structure, increases burstiness and perplexity, and replaces formulaic phrases with natural alternatives. Available for **Python** and **PHP**.
 
-**Полные словари:** 🇷🇺 Русский · 🇺🇦 Українська · 🇬🇧 English · 🇩🇪 Deutsch · 🇫🇷 Français · 🇪🇸 Español · 🇵🇱 Polski · 🇵🇹 Português · 🇮🇹 Italiano
+**Full language support:** Russian · Ukrainian · English · German · French · Spanish · Polish · Portuguese · Italian
 
-**Универсальный процессор:** любой язык мира (без словарей, статистические методы)
-
-**Используется в проектах:** [AI Content Wizard](https://github.com/ksanyok) · [RankBot AI](https://github.com/ksanyok) · [Promopilot](https://github.com/ksanyok)
+**Universal processor:** works with any language using statistical methods (no dictionaries required).
 
 ---
 
-## 📋 Содержание
+## Table of Contents
 
-- [Почему TextHumanize?](#-почему-texthumanize)
-- [Установка](#-установка)
-- [Быстрый старт](#-быстрый-старт)
-- [API](#-api)
-  - [humanize()](#humanizetext-options)
-  - [analyze()](#analyzetext-lang)
-  - [explain()](#explainresult)
-- [Профили](#-профили)
-- [Параметры](#-параметры)
-- [CLI](#-cli)
-- [Пайплайн обработки](#-пайплайн-обработки)
-- [Антидетекция](#обход-ai-детекторов)
-- [Языковые пакеты](#-языковые-пакеты)
-- [SEO-режим](#-seo-режим)
-- [Примеры](#-примеры)
-- [Конфигурация](#-конфигурация)
-- [Тестирование](#-тестирование)
-- [Архитектура](#-архитектура)
-- [Портирование](#-портирование)
-- [Contributing](#-contributing)
-- [Лицензия](#-лицензия)
-- [Поддержка проекта](#-поддержка-проекта)
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+- [Profiles](#profiles)
+- [Parameters](#parameters)
+- [Plugin System](#plugin-system)
+- [Chunk Processing](#chunk-processing)
+- [CLI](#cli)
+- [Processing Pipeline](#processing-pipeline)
+- [Language Support](#language-support)
+- [SEO Mode](#seo-mode)
+- [Readability Metrics](#readability-metrics)
+- [Examples](#examples)
+- [Testing](#testing)
+- [Architecture](#architecture)
+- [PHP Library](#php-library)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## 🎯 Почему TextHumanize?
+## Features
 
-Тексты, созданные AI (ChatGPT, Claude, Gemini и др.), часто имеют характерные признаки:
+TextHumanize addresses common patterns found in machine-generated text:
 
-| Признак | Пример | Что делает TextHumanize |
-|---------|--------|------------------------|
-| **Длинные тире** | «текст — пример» | Заменяет на `-` или `–` |
-| **Типографские кавычки** | «текст» | Заменяет на `"текст"` |
-| **Канцеляризмы** | «осуществлять», «данный» | «делать», «этот» |
-| **ИИ-связки** | «Однако», «Таким образом» | «Но», «В итоге» |
-| **Равномерные предложения** | Все по 15-20 слов | Разнообразит длину (burstiness) |
-| **Повторы слов** | «важный... важный... важный» | Использует синонимы |
-| **Идеальная пунктуация** | Много `;` и `:` | Упрощает пунктуацию |
-| **AI-слова** | «utilize», «significant», «comprehensive» | Замена на обычные |
-| **Низкая perplexity** | Предсказуемый текст | Вставки, хеджинг, фрагменты |
-| **AI-фразы** | «it is important to note» | «notably», «by the way» |
+| Pattern | Before | After |
+|---------|--------|-------|
+| **Em dashes** | `text — example` | `text - example` |
+| **Typographic quotes** | `«text»` | `"text"` |
+| **Bureaucratic words** | `utilize`, `implement` | `use`, `do` |
+| **Formulaic connectors** | `However`, `Furthermore` | `But`, `Also` |
+| **Uniform sentences** | All 15-20 words | Varied lengths |
+| **Word repetition** | `important... important...` | Synonym substitution |
+| **Overly perfect punctuation** | Frequent `;` and `:` | Simplified punctuation |
+| **Low perplexity** | Predictable word choice | Natural variation |
+| **Boilerplate phrases** | `it is important to note` | `notably`, `by the way` |
 
-TextHumanize решает все эти проблемы **алгоритмически, без внешних API и ML-моделей**.
+### Key Advantages
 
-### Обход AI-детекторов
-
-TextHumanize целенаправленно обходит системы проверки AI-текста:
-
-| Детектор | Метод обхода |
-|----------|-------------|
-| **GPTZero** | Повышение burstiness + perplexity |
-| **Originality.ai** | Замена AI-слов + структурная вариация |
-| **ZeroGPT** | Вставка дискурсивных маркеров + фрагментов |
-| **Turnitin** | Контракции + хеджинг + риторические вопросы |
-| **Copyleaks** | Комплексная обработка всех метрик |
-
-### Преимущества
-
-- ⚡ **Быстро** — чистые алгоритмы, без сетевых запросов
-- 🔒 **Приватно** — данные не покидают вашу систему
-- 🎛️ **Контролируемо** — настройка интенсивности, профили, сохранение ключей
-- 🌍 **9 языков + универсальный** — RU, UK, EN, DE, FR, ES, PL, PT, IT + любой другой
-- 🛡️ **Антидетекция** — обход GPTZero, Originality.ai, ZeroGPT, Turnitin, Copyleaks
-- 📦 **Без зависимостей** — только стандартная библиотека Python
-- 🔧 **Портируемо** — декларативные правила, легко портируется на Node.js/PHP/Go
+- **Fast** — pure algorithmic processing, zero network requests
+- **Private** — all processing happens locally, data never leaves your system
+- **Controllable** — fine-tuned via intensity, profiles, and keyword preservation
+- **9 languages + universal** — RU, UK, EN, DE, FR, ES, PL, PT, IT + any other
+- **Zero dependencies** — Python standard library only
+- **Extensible** — plugin system for custom pipeline stages
+- **Large text support** — chunk processing for texts of any size
+- **Readability metrics** — Flesch-Kincaid, Coleman-Liau built-in
 
 ---
 
-## 📦 Установка
+## Installation
 
 ### pip
 
@@ -97,7 +78,7 @@ TextHumanize целенаправленно обходит системы про
 pip install texthumanize
 ```
 
-### Из исходников
+### From source
 
 ```bash
 git clone https://github.com/ksanyok/TextHumanize.git
@@ -105,512 +86,354 @@ cd TextHumanize
 pip install -e .
 ```
 
-### С зависимостями для разработки
-
-```bash
-pip install -e ".[dev]"
-```
-
 ---
 
-## 🚀 Быстрый старт
-
-### Python
+## Quick Start
 
 ```python
-from texthumanize import humanize
+from texthumanize import humanize, analyze, explain
 
-# Простая гуманизация
-text = """
-Данный текст является примером использования искусственного интеллекта.
-Однако необходимо отметить, что осуществление обработки текста
-представляет собой сложный процесс. Таким образом, данный подход
-является наиболее оптимальным.
-"""
-
-result = humanize(text, lang="ru", profile="web", intensity=70)
+# Basic usage
+result = humanize("This text utilizes a comprehensive methodology for implementation.")
 print(result.text)
-```
+# → "This text uses a complete method for setup."
 
-**Результат:**
-```
-Этот текст - пример использования искусственного интеллекта.
-Но стоит сказать, что обработка текста - сложный процесс.
-В итоге, этот подход - самый оптимальный.
-```
+# With options
+result = humanize(
+    "Furthermore, it is important to note that the implementation facilitates optimization.",
+    lang="en",
+    profile="web",
+    intensity=70,
+)
+print(result.text)
 
-### CLI
+# Analyze text metrics
+report = analyze("Text to analyze for naturalness.", lang="en")
+print(f"Artificiality score: {report.artificiality_score:.1f}/100")
+print(f"Flesch-Kincaid grade: {report.flesch_kincaid_grade:.1f}")
 
-```bash
-texthumanize input.txt -l ru -p web -i 70 -o output.txt
+# Get detailed explanation
+report = explain(result)
+print(report)
 ```
 
 ---
 
-## 📖 API
+## API Reference
 
 ### `humanize(text, **options)`
 
-Основная функция библиотеки — гуманизация текста.
+Main function — transforms text to sound more natural.
 
 ```python
 from texthumanize import humanize
 
 result = humanize(
-    text="Текст для обработки",
-    lang="auto",        # Язык: auto, ru, uk, en
-    profile="web",      # Профиль: chat, web, seo, docs, formal
-    intensity=60,       # Интенсивность: 0-100
-    preserve={          # Защита элементов
+    text="Your text here",
+    lang="auto",        # auto-detect or specify: en, ru, de, fr, es, etc.
+    profile="web",      # chat, web, seo, docs, formal
+    intensity=60,       # 0 (no changes) to 100 (maximum)
+    preserve={          # protect specific elements
         "code_blocks": True,
         "urls": True,
         "emails": True,
-        "hashtags": True,
-        "mentions": True,
-        "markdown": True,
-        "html": True,
-        "numbers": False,
-        "brand_terms": ["RankBot AI", "Promopilot"],
+        "brand_terms": ["MyBrand"],
     },
-    constraints={       # Ограничения
-        "max_change_ratio": 0.4,      # Макс. доля изменений
-        "min_sentence_length": 3,      # Мин. длина предложения
-        "keep_keywords": ["SEO", "AI"], # Сохранить ключевые слова
+    constraints={       # output constraints
+        "max_change_ratio": 0.4,
+        "keep_keywords": ["SEO", "API"],
     },
-    seed=42,            # Для воспроизводимости
+    seed=42,            # reproducible results
 )
+
+print(result.text)           # processed text
+print(result.change_ratio)   # fraction of text changed (0.0-1.0)
+print(result.changes)        # list of individual changes
+print(result.metrics_before) # metrics before processing
+print(result.metrics_after)  # metrics after processing
 ```
 
-**Возвращает `HumanizeResult`:**
+### `humanize_chunked(text, chunk_size=5000, **options)`
 
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `text` | `str` | Обработанный текст |
-| `original` | `str` | Исходный текст |
-| `lang` | `str` | Определённый язык |
-| `profile` | `str` | Использованный профиль |
-| `intensity` | `int` | Интенсивность |
-| `changes` | `list[dict]` | Список изменений |
-| `metrics_before` | `dict` | Метрики до обработки |
-| `metrics_after` | `dict` | Метрики после обработки |
-| `change_ratio` | `float` | Доля изменений (0-1) |
+Process large texts by splitting into chunks at paragraph boundaries.
 
----
+```python
+from texthumanize import humanize_chunked
+
+# Process a 50,000-character document
+with open("large_document.txt") as f:
+    text = f.read()
+
+result = humanize_chunked(
+    text,
+    chunk_size=5000,     # characters per chunk
+    lang="en",
+    profile="docs",
+    intensity=50,
+)
+print(result.text)
+```
 
 ### `analyze(text, lang)`
 
-Анализ текста — метрики «искусственности» без обработки.
+Analyze text and return naturalness metrics.
 
 ```python
 from texthumanize import analyze
 
-report = analyze(
-    "Данный текст является примером. Однако осуществление обработки...",
-    lang="ru"
-)
-
-print(f"Балл искусственности: {report.artificiality_score:.1f}/100")
-print(f"Средняя длина предложения: {report.avg_sentence_length:.1f} слов")
-print(f"Канцеляризмы: {report.bureaucratic_ratio:.1%}")
-print(f"ИИ-связки: {report.connector_ratio:.1%}")
-print(f"Повторяемость: {report.repetition_score:.2f}")
-print(f"Типографика: {report.typography_score:.2f}")
+report = analyze("Text to analyze.", lang="en")
+print(f"Artificiality: {report.artificiality_score:.1f}/100")
+print(f"Avg sentence length: {report.avg_sentence_length:.1f}")
+print(f"Bureaucratic ratio: {report.bureaucratic_ratio:.3f}")
+print(f"Connector ratio: {report.connector_ratio:.3f}")
+print(f"Repetition score: {report.repetition_score:.3f}")
+print(f"Burstiness: {report.burstiness_score:.3f}")
+print(f"Flesch-Kincaid grade: {report.flesch_kincaid_grade:.1f}")
+print(f"Coleman-Liau index: {report.coleman_liau_index:.1f}")
 ```
-
-**Возвращает `AnalysisReport`:**
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `artificiality_score` | `float` | Общий балл (0-100) |
-| `avg_sentence_length` | `float` | Ср. длина предложения (слова) |
-| `sentence_length_variance` | `float` | Дисперсия длин |
-| `bureaucratic_ratio` | `float` | Доля канцеляризмов (0-1) |
-| `connector_ratio` | `float` | Доля ИИ-связок (0-1) |
-| `repetition_score` | `float` | Показатель повторяемости (0-1) |
-| `typography_score` | `float` | «Идеальность» типографики (0-1) |
-| `details` | `dict` | Детали (найденные слова, проблемы) |
-
----
 
 ### `explain(result)`
 
-Человекочитаемый отчёт об изменениях.
+Generate a human-readable report of changes.
 
 ```python
 from texthumanize import humanize, explain
 
-result = humanize("Данный текст является примером.", lang="ru")
+result = humanize("Text to process.")
 print(explain(result))
 ```
 
-**Вывод:**
-```
-=== Отчёт TextHumanize ===
-Язык: ru | Профиль: web | Интенсивность: 60
-Доля изменений: 15.3%
-
---- Метрики ---
-  Искусственность: 35.00 → 12.00 ↓
-  Средн. длина предложения: 5.00 сл. → 4.00 сл. ↓
-  Канцеляризмы: 0.40 → 0.00 ↓
-  ...
-
---- Изменения (3) ---
-  [decancel_word] "Данный" → "Этот"
-  [decancel_phrase] "является" → "—"
-  [typography] Нормализация типографики
-```
-
 ---
 
-## 🎭 Профили
+## Profiles
 
-| Профиль | Описание | Применение |
-|---------|----------|------------|
-| **`chat`** | Живой разговорный стиль | Чат-боты, мессенджеры |
-| **`web`** | Нейтральный веб-контент | Статьи, блоги, лендинги |
-| **`seo`** | SEO-безопасный режим | SEO-тексты, описания |
-| **`docs`** | Техническая документация | README, API-доки |
-| **`formal`** | Формальный стиль | Отчёты, деловая переписка |
+Five built-in profiles control the processing style:
 
-### Различия между профилями
-
-| Параметр | chat | web | seo | docs | formal |
-|----------|------|-----|-----|------|--------|
-| Тире | `-` | `–` | `–` | `—` | `—` |
-| Кавычки | `"` | `"` | `"` | `"` | `«»` |
-| Многоточие | `...` | `...` | `...` | `…` | `…` |
-| Деканцеляризация | 100% | 80% | 40% | 30% | 20% |
-| Структура | 100% | 80% | 50% | 40% | 30% |
-| Повторы | 80% | 70% | 30% | 50% | 40% |
-| «Живость» | 70% | 30% | 0% | 0% | 0% |
-
----
-
-## ⚙️ Параметры
-
-### Интенсивность (`intensity`)
-
-Управляет силой всех трансформаций. От 0 (минимум) до 100 (максимум).
+| Profile | Use Case | Sentence Length | Colloquialisms | Punctuation |
+|---------|----------|-----------------|----------------|-------------|
+| `chat` | Messaging, social media | 8-18 words | High | Simplified |
+| `web` | Blog posts, articles | 10-22 words | Medium | Standard |
+| `seo` | SEO content | 12-25 words | None | Preserved |
+| `docs` | Documentation | 12-28 words | None | Formal |
+| `formal` | Academic, legal | 15-30 words | None | Strict |
 
 ```python
-# Бережная обработка — только типографика и очевидные замены
-result = humanize(text, intensity=20)
+# Conversational style
+result = humanize(text, profile="chat", intensity=80)
 
-# Стандартная обработка
-result = humanize(text, intensity=60)
+# SEO-safe mode (preserves keywords)
+result = humanize(text, profile="seo", intensity=40,
+                  constraints={"keep_keywords": ["API", "cloud"]})
 
-# Агрессивная обработка
-result = humanize(text, intensity=90)
-```
-
-| Значение | Поведение |
-|----------|-----------|
-| 0-20 | Только типографика |
-| 20-40 | + базовая деканцеляризация |
-| 40-60 | + структура + повторы |
-| 60-80 | + активная деканцеляризация + живость |
-| 80-100 | Максимум всех трансформаций |
-
-### Защита элементов (`preserve`)
-
-```python
-result = humanize(text, preserve={
-    "code_blocks": True,   # Блоки ``` и ~~~
-    "urls": True,          # https://...
-    "emails": True,        # user@example.com
-    "hashtags": True,      # #TextHumanize
-    "mentions": True,      # @username
-    "markdown": True,      # [ссылки](url), **жирный**, *курсив*
-    "html": True,          # <div>, <p>, и т.д.
-    "numbers": False,      # 123, 45.67, 100%
-    "brand_terms": [       # Конкретные термины
-        "RankBot AI",
-        "Promopilot",
-        "AI Content Wizard",
-    ],
-})
-```
-
-### Ограничения (`constraints`)
-
-```python
-result = humanize(text, constraints={
-    "max_change_ratio": 0.3,          # Не более 30% изменений
-    "min_sentence_length": 5,          # Мин. 5 слов в предложении
-    "keep_keywords": ["SEO", "оптимизация"],  # Не менять эти слова
-})
+# Formal documentation
+result = humanize(text, profile="formal", intensity=30)
 ```
 
 ---
 
-## 💻 CLI
+## Parameters
 
-### Базовое использование
+### Intensity (0-100)
 
-```bash
-# Обработка файла
-texthumanize input.txt
+Controls how aggressively text is modified:
 
-# С параметрами
-texthumanize input.txt -l ru -p chat -i 80 -o output.txt
+| Range | Effect |
+|-------|--------|
+| 0-20 | Typography only |
+| 20-40 | + light debureaucratization |
+| 40-60 | + structure diversification |
+| 60-80 | + synonym replacement, natural phrasing |
+| 80-100 | + maximum variation, colloquial insertions |
 
-# Из stdin
-echo "Данный текст является примером." | texthumanize -
-
-# Только анализ
-texthumanize --analyze input.txt
-```
-
-### Все флаги
-
-```
-texthumanize [-h] [-o OUTPUT] [-l {auto,ru,uk,en}]
-             [-p {chat,web,seo,docs,formal}] [-i INTENSITY]
-             [--keep KEEP [KEEP ...]] [--brand BRAND [BRAND ...]]
-             [--max-change MAX_CHANGE] [--report REPORT]
-             [--analyze] [--explain] [--seed SEED] [-v]
-             input
-```
-
-| Флаг | Описание | По умолчанию |
-|------|----------|--------------|
-| `input` | Входной файл или `-` для stdin | — |
-| `-o, --output` | Выходной файл | stdout |
-| `-l, --lang` | Язык: auto, ru, uk, en | auto |
-| `-p, --profile` | Профиль обработки | web |
-| `-i, --intensity` | Интенсивность 0-100 | 60 |
-| `--keep` | Ключевые слова для сохранения | — |
-| `--brand` | Брендовые термины | — |
-| `--max-change` | Макс. доля изменений 0-1 | 0.4 |
-| `--report` | Сохранить отчёт (JSON) | — |
-| `--analyze` | Только анализ | — |
-| `--explain` | Подробный отчёт | — |
-| `--seed` | Сид для воспроизводимости | — |
-| `-v, --version` | Версия | — |
-
-### Примеры CLI
-
-```bash
-# Обработка с защитой бренда
-texthumanize article.txt \
-  -l ru -p web -i 70 \
-  --brand "RankBot AI" "Promopilot" \
-  -o article_humanized.txt \
-  --report report.json \
-  --explain
-
-# SEO-режим с ключевыми словами
-texthumanize seo_text.txt \
-  -p seo -i 40 \
-  --keep "купить iPhone" "доставка Москва" \
-  -o seo_output.txt
-
-# Анализ AI-текста
-texthumanize --analyze ai_generated.txt | python -m json.tool
-```
-
----
-
-## 🔧 Пайплайн обработки
-
-TextHumanize обрабатывает текст в 10 последовательных этапов:
-
-```
-Входной текст
-     │
-     ▼
-┌─────────────────┐
-│ 1. Сегментация  │  Защита кода, URL, email, markdown, HTML
-└────────┬────────┘
-         ▼
-┌─────────────────────────┐
-│ 2. Типографика          │  Тире, кавычки, многоточие, пробелы
-└────────┬────────────────┘
-         ▼
-┌─────────────────────────────────────────┐
-│ 3. Деканцеляризация  [глубокие языки]   │  «данный» → «этот»
-└────────┬────────────────────────────────┘
-         ▼
-┌─────────────────────────────────────────┐
-│ 4. Структура         [глубокие языки]   │  Связки, начала, разбивка
-└────────┬────────────────────────────────┘
-         ▼
-┌─────────────────────────────────────────┐
-│ 5. Повторы           [глубокие языки]   │  Синонимы, дедупликация
-└────────┬────────────────────────────────┘
-         ▼
-┌─────────────────────────────────────────┐
-│ 6. «Живость»         [глубокие языки]   │  Маркеры, пунктуация
-└────────┬────────────────────────────────┘
-         ▼
-┌─────────────────────────────────────────┐
-│ 7. Универсальный      [ВСЕ языки]      │  Unicode, burstiness, ритм
-└────────┬────────────────────────────────┘
-         ▼
-┌─────────────────────────────────────────┐
-│ 8. АНТИДЕТЕКЦИЯ ★★★   [ВСЕ языки]      │  AI-слова, perplexity,
-│                                         │  burstiness, контракции
-└────────┬────────────────────────────────┘
-         ▼
-┌─────────────────────────┐
-│ 9. Валидация            │  Проверка качества, откат при ошибках
-└────────┬────────────────┘
-         ▼
-┌─────────────────────────┐
-│ 10. Восстановление      │  Возврат защищённых сегментов
-└────────┬────────────────┘
-         ▼
-   Результат (необнаружимый)
-```
-
-**Этапы 3-6** — словарная обработка, работает только для языков с полными словарями (RU, UK, EN, DE, FR, ES, PL, PT, IT).
-
-**Этапы 7-8** — универсальная обработка + антидетекция, работает для **ЛЮБОГО** языка мира.
-
-### Подробно о каждом этапе
-
-#### 1. Сегментация
-
-Защищает элементы, которые не должны изменяться:
-- Блоки кода (``` и ~~~)
-- Inline-код (\`...\`)
-- URL (http://, https://, www.)
-- Email-адреса
-- HTML-теги
-- Markdown (ссылки, изображения, форматирование)
-- Хэштеги и @упоминания
-- Брендовые термины и ключевые слова
-
-Все защищённые элементы заменяются на уникальные placeholder-ы и восстанавливаются после обработки.
-
-#### 2. Нормализация типографики
-
-Убирает характерные для AI «идеальные» типографские символы:
-
-| Было | Стало (web/chat) | Стало (formal) |
-|------|-------------------|-----------------|
-| `—` (длинное тире) | `–` или `-` | `—` (остаётся) |
-| `«»` (кавычки) | `""` | `«»` (остаётся) |
-| `…` (многоточие) | `...` | `…` (остаётся) |
-| `\u00A0` (неразрывный пробел) | ` ` (обычный) | ` ` |
-| `  ` (двойной пробел) | ` ` | ` ` |
-
-#### 3. Деканцеляризация
-
-Заменяет тяжёлые бюрократические слова и фразы на простые:
-
-**Русский:**
-| Канцеляризм | Замена |
-|-------------|--------|
-| данный | этот |
-| осуществлять | делать |
-| является | — (тире) |
-| представляет собой | это |
-| в настоящее время | сейчас |
-| необходимо отметить | важно |
-| посредством | через, с помощью |
-| в соответствии с | по, согласно |
-
-**Українська:**
-| Канцеляризм | Заміна |
-|-------------|--------|
-| даний | цей |
-| здійснювати | робити |
-| є (лишнє) | — (тире) |
-| являє собою | це |
-| на даний час | зараз |
-| необхідно зазначити | важливо |
-
-#### 4. Разнообразие структуры
-
-- **Замена ИИ-связок:** «Однако» → «Но», «Таким образом» → «В итоге»
-- **Разнообразие начал:** Если 2+ предложений начинаются одинаково, меняем начало
-- **Разбивка длинных предложений:** Предложения > 2x целевой длины разбиваются по союзам
-- **Склейка коротких:** Очень короткие предложения подряд объединяются через союзы
-
-#### 5. Уменьшение повторов
-
-В скользящем окне (2-3 предложения) ищет повторы контентных слов и заменяет синонимами:
-
-```
-"Важный процесс важный..."  →  "Важный процесс существенный..."
-"Большой результат большой..." → "Большой результат значительный..."
-```
-
-#### 6. Инъекция «живости»
-
-Только для профилей `chat` и `web` с ограниченной частотой:
-- Вставка разговорных маркеров: «кстати», «на самом деле», «по сути»
-- Вариативность пунктуации: замена `;` на `.` в некоторых случаях
-
-#### 7. Валидация
-
-Автоматическая проверка результата:
-- Не потеряны ли ключевые слова
-- Не превышен ли `max_change_ratio`
-- Не пропали ли числа
-- Метрики не ухудшились
-- При критических ошибках — откат к оригиналу
-
----
-
-## 🌍 Языковые пакеты
-
-### Поддерживаемые языки
-
-| Язык | Код | Словарь | Антидетект | Автоопределение |
-|------|-----|---------|-----------|----------------|
-| 🇷🇺 Русский | `ru` | ✅ Полный | ✅ | ✅ |
-| 🇺🇦 Українська | `uk` | ✅ Полный | ✅ | ✅ |
-| 🇬🇧 English | `en` | ✅ Полный | ✅ | ✅ |
-| 🇩🇪 Deutsch | `de` | ✅ Полный | ✅ | ✅ |
-| 🇫🇷 Français | `fr` | ✅ Полный | ✅ | ✅ |
-| 🇪🇸 Español | `es` | ✅ Полный | ✅ | ✅ |
-| 🇵🇱 Polski | `pl` | ✅ Полный | ✅ | ✅ |
-| 🇵🇹 Português | `pt` | ✅ Полный | ✅ | ✅ |
-| 🇮🇹 Italiano | `it` | ✅ Полный | ✅ | ✅ |
-| Любой другой | `*` | ❌ | ⚡ Универсальный | По триграммам |
-
-Для языков **без полного словаря** используется **универсальный процессор** — он работает
-на статистических методах (burstiness, Unicode-нормализация, вариация ритма) и не требует словарей.
-
-### Структура языкового пакета
-
-Каждый язык определяется пакетом с данными:
+### Preserve Options
 
 ```python
-{
-    "code": "ru",
-    "name": "Русский",
-    "stop_words": {...},              # Стоп-слова (не заменяемые)
-    "bureaucratic": {...},            # Канцеляризмы → замены
-    "bureaucratic_phrases": {...},    # Фразовые канцеляризмы
-    "ai_connectors": {...},           # ИИ-связки → замены
-    "synonyms": {...},                # Синонимы для дедупликации
-    "sentence_starters": {...},       # Альтернативные начала предложений
-    "colloquial_markers": [...],      # Разговорные маркеры
-    "abbreviations": [...],           # Аббревиатуры для токенизатора
-    "conjunctions": [...],            # Союзы для склейки
-    "split_conjunctions": [...],      # Места разбивки
-    "profile_targets": {...},         # Целевые метрики по профилям
+preserve = {
+    "code_blocks": True,   # protect ```code``` blocks
+    "urls": True,           # protect URLs
+    "emails": True,         # protect email addresses
+    "hashtags": True,       # protect #hashtags
+    "mentions": True,       # protect @mentions
+    "markdown": True,       # protect markdown formatting
+    "html": True,           # protect HTML tags
+    "numbers": False,       # protect numbers
+    "brand_terms": ["TextHumanize", "MyBrand"],  # exact terms to protect
 }
 ```
 
-### Добавление нового языка
+### Constraints
 
-1. Создайте файл `texthumanize/lang/xx.py` (например, `zh.py` для китайского)
-2. Определите словарь `LANG_XX` по образцу других языков
-3. Зарегистрируйте в `texthumanize/lang/__init__.py`
-4. Добавьте маркеры в `lang_detect.py`
-
-**Без полного словаря язык всё равно будет обрабатываться** через универсальный процессор и антидетект.
+```python
+constraints = {
+    "max_change_ratio": 0.4,           # max 40% of text changed
+    "min_sentence_length": 3,          # minimum sentence length (words)
+    "keep_keywords": ["SEO", "API"],   # keywords to preserve
+}
+```
 
 ---
 
-## 🔍 SEO-режим
+## Plugin System
 
-Специальный профиль `seo` для SEO-текстов:
+Register custom processing stages that run before or after any built-in stage:
+
+```python
+from texthumanize import Pipeline, humanize
+
+# Simple hook function
+def add_disclaimer(text: str, lang: str) -> str:
+    return text + "\n\n---\nProcessed by TextHumanize."
+
+Pipeline.register_hook(add_disclaimer, after="naturalization")
+
+# Plugin class with full context
+class BrandEnforcer:
+    def __init__(self, brand: str, canonical: str):
+        self.brand = brand
+        self.canonical = canonical
+
+    def process(self, text: str, lang: str, profile: str, intensity: int) -> str:
+        return text.replace(self.brand.lower(), self.canonical)
+
+Pipeline.register_plugin(
+    BrandEnforcer("texthumanize", "TextHumanize"),
+    after="typography",
+)
+
+# Process text — plugins will be applied automatically
+result = humanize("texthumanize is great.")
+
+# Clean up
+Pipeline.clear_plugins()
+```
+
+Available stage names: `segmentation`, `typography`, `debureaucratization`,
+`structure`, `repetitions`, `liveliness`, `universal`, `naturalization`,
+`validation`, `restore`.
+
+---
+
+## Chunk Processing
+
+For large documents (articles, books, reports), use `humanize_chunked` to process text in manageable pieces:
+
+```python
+from texthumanize import humanize_chunked
+
+# Automatically splits at paragraph boundaries
+result = humanize_chunked(
+    very_long_text,
+    chunk_size=5000,    # characters per chunk
+    lang="en",
+    profile="docs",
+    intensity=50,
+    seed=42,            # consistent results across chunks
+)
+```
+
+Each chunk is processed independently with its own seed for variation, then reassembled into the final text. The chunk boundary detection preserves paragraph integrity.
+
+---
+
+## CLI
+
+```bash
+# Process a file
+texthumanize input.txt -o output.txt
+
+# With options
+texthumanize input.txt --lang en --profile web --intensity 70
+
+# Analyze without processing
+texthumanize input.txt --analyze
+
+# Process from stdin
+echo "Text to process" | texthumanize --lang en
+```
+
+---
+
+## Processing Pipeline
+
+TextHumanize uses a 10-stage pipeline:
+
+```
+Input Text
+  ↓
+1. Segmentation       — protect code blocks, URLs, emails, brands
+  ↓
+2. Typography          — normalize dashes, quotes, ellipses, punctuation
+  ↓
+3. Debureaucratization — replace bureaucratic/formal words (deep languages)
+  ↓
+4. Structure           — diversify sentence openings and structure (deep)
+  ↓
+5. Repetitions         — reduce word/phrase repetitions with synonyms (deep)
+  ↓
+6. Liveliness          — inject natural phrasing, colloquialisms (deep)
+  ↓
+7. Universal           — statistical processing for ALL languages
+  ↓
+8. Naturalization      — style naturalization: burstiness, perplexity (KEY STAGE)
+  ↓
+9. Validation          — quality check, rollback if needed
+  ↓
+10. Restore            — restore protected segments
+  ↓
+Output Text
+```
+
+Stages 3-6 require full dictionary support (9 languages). Stages 7-8 work for any language.
+
+---
+
+## Language Support
+
+### Full Dictionary Support (9 languages)
+
+Each language pack includes:
+- Bureaucratic word → natural replacements
+- Formulaic connector alternatives
+- Synonym dictionaries
+- Sentence starter variations
+- Colloquial markers
+- Abbreviation lists
+- Language-specific trigrams for detection
+- Stop words
+- Profile-specific sentence length targets
+
+| Language | Code | Bureaucratic | Connectors | Synonyms |
+|----------|------|-------------|------------|----------|
+| Russian | `ru` | 70+ | 25+ | 50+ |
+| Ukrainian | `uk` | 50+ | 24 | 48 |
+| English | `en` | 40+ | 25 | 35+ |
+| German | `de` | 22 | 12 | 26 |
+| French | `fr` | 20 | 12 | 20 |
+| Spanish | `es` | 18 | 12 | 18 |
+| Polish | `pl` | 18 | 12 | 18 |
+| Portuguese | `pt` | 16 | 12 | 17 |
+| Italian | `it` | 16 | 12 | 17 |
+
+### Universal Processor
+
+For any language not in the dictionary list, TextHumanize uses statistical methods:
+- Sentence length variation (burstiness)
+- Punctuation normalization
+- Whitespace regularization
+- Perplexity boosting
+- Fragment insertion
+
+```python
+# Works with any language
+result = humanize("日本語のテキスト", lang="ja")
+result = humanize("Текст на казахском", lang="kk")
+```
+
+---
+
+## SEO Mode
+
+The `seo` profile is designed for content that must preserve search ranking:
 
 ```python
 result = humanize(
@@ -618,147 +441,80 @@ result = humanize(
     profile="seo",
     intensity=40,
     constraints={
-        "keep_keywords": [
-            "купить iPhone 15",
-            "доставка по России",
-            "гарантия 2 года",
-        ],
-        "max_change_ratio": 0.2,
+        "max_change_ratio": 0.3,
+        "keep_keywords": ["cloud computing", "API", "microservices"],
     },
 )
 ```
 
-**Гарантии SEO-режима:**
-- Ключевые слова из `keep_keywords` **никогда** не заменяются
-- Минимум структурных изменений
-- Нет инъекции «живости»
-- Допускаются только:
-  - Нормализация типографики
-  - Замена очевидных канцеляризмов
-  - Удаление лишних вводных конструкций
+SEO mode features:
+- Lower intensity defaults
+- Keyword preservation
+- No colloquial insertions
+- Minimal structure changes
+- Sentence length stays within optimal range (12-25 words)
 
 ---
 
-## 📋 Примеры
+## Readability Metrics
 
-### Обработка статьи для блога
-
-```python
-from texthumanize import humanize
-
-article = """
-В настоящее время искусственный интеллект является одной из
-наиболее перспективных технологий. Данная технология осуществляет
-обработку больших объёмов данных. Однако необходимо отметить, что
-внедрение ИИ представляет собой сложную задачу. Более того,
-функционирование систем ИИ обеспечивает значительное повышение
-эффективности. Таким образом, данная технология является
-чрезвычайно важной.
-"""
-
-result = humanize(article, lang="ru", profile="web", intensity=70)
-print(result.text)
-```
-
-### Обработка для чат-бота
-
-```python
-result = humanize(
-    "Необходимо отметить, что данный процесс осуществляется посредством...",
-    profile="chat",
-    intensity=90,
-)
-# → "Стоит сказать, что этот процесс делается через..."
-```
-
-### Батч-обработка
-
-```python
-from texthumanize import humanize
-
-texts = [
-    "Первый текст для обработки.",
-    "Второй текст для обработки.",
-    "Третий текст для обработки.",
-]
-
-results = [humanize(t, lang="ru", seed=42) for t in texts]
-for r in results:
-    print(r.text)
-    print(f"  Изменений: {r.change_ratio:.1%}\n")
-```
-
-### Анализ без обработки
+TextHumanize includes built-in readability scoring:
 
 ```python
 from texthumanize import analyze
 
-report = analyze("""
-Данный текст является примером. Однако необходимо отметить,
-что осуществление обработки представляет собой сложный процесс.
-Таким образом, данный подход является оптимальным.
-""", lang="ru")
+report = analyze("Your text here.", lang="en")
 
-print(f"Искусственность: {report.artificiality_score:.0f}/100")
-print(f"Найдено канцеляризмов: {report.details['found_bureaucratic']}")
-print(f"Найдено ИИ-связок: {report.details['found_connectors']}")
-print(f"Проблемы типографики: {report.details['typography_issues']}")
-```
+# Readability indices
+print(f"Flesch-Kincaid Grade Level: {report.flesch_kincaid_grade:.1f}")
+print(f"Coleman-Liau Index: {report.coleman_liau_index:.1f}")
+print(f"Avg word length: {report.avg_word_length:.1f}")
+print(f"Avg syllables/word: {report.avg_syllables_per_word:.1f}")
 
-### Украинский язык
-
-```python
-from texthumanize import humanize
-
-text = """
-Даний текст є прикладом використання штучного інтелекту.
-Однак необхідно зазначити, що здійснення обробки тексту
-являє собою складний процес. Таким чином, даний підхід
-є найбільш оптимальним.
-"""
-
-result = humanize(text, lang="uk", profile="web", intensity=70)
-print(result.text)
-```
-
-### Английский язык
-
-```python
-from texthumanize import humanize
-
-text = """
-This text utilizes a comprehensive methodology for the
-implementation of text processing. Furthermore, it is
-important to note that the facilitation of this process
-necessitates considerable effort. Consequently, this
-approach is extremely significant.
-"""
-
-result = humanize(text, lang="en", profile="web", intensity=70)
-print(result.text)
+# Naturalness metrics
+print(f"Artificiality: {report.artificiality_score:.1f}/100")
+print(f"Burstiness: {report.burstiness_score:.2f}")
+print(f"Bureaucratic ratio: {report.bureaucratic_ratio:.3f}")
 ```
 
 ---
 
-## ⚙️ Конфигурация
+## Examples
 
-### Воспроизводимость результатов
-
-Используйте параметр `seed` для получения одинаковых результатов:
+### Blog Post Processing
 
 ```python
-result1 = humanize(text, seed=42)
-result2 = humanize(text, seed=42)
-assert result1.text == result2.text  # Всегда True
+from texthumanize import humanize
+
+text = """
+Furthermore, it is important to note that the implementation of cloud computing
+facilitates the optimization of business processes. Additionally, the utilization
+of microservices constitutes a significant advancement. Nevertheless, considerable
+challenges remain in the area of security.
+"""
+
+result = humanize(text, profile="web", intensity=70, lang="en")
+print(result.text)
+print(f"Changed: {result.change_ratio:.0%}")
 ```
 
-### Программный контроль
+### Russian Document
 
 ```python
-from texthumanize.utils import HumanizeOptions
-
-options = HumanizeOptions(
+result = humanize(
+    "Данный документ является примером осуществления обработки текста.",
     lang="ru",
+    profile="docs",
+    intensity=60,
+)
+```
+
+### Full Configuration
+
+```python
+result = humanize(
+    text="Your text here",
+    lang="auto",
     profile="web",
     intensity=70,
     preserve={
@@ -774,187 +530,149 @@ options = HumanizeOptions(
 )
 ```
 
-### Использование отдельных модулей
-
-Можно использовать отдельные этапы пайплайна:
+### Using Individual Modules
 
 ```python
-# Только типографика
+# Typography only
 from texthumanize.normalizer import TypographyNormalizer
 norm = TypographyNormalizer(profile="web")
-result = norm.normalize("Текст — с тире и «кавычками»...")
+result = norm.normalize("Text — with dashes and «quotes»...")
 
-# Только деканцеляризация
+# Debureaucratization only
 from texthumanize.decancel import Debureaucratizer
-db = Debureaucratizer(lang="ru", profile="chat", intensity=80)
-result = db.process("Данный текст осуществляет описание.")
+db = Debureaucratizer(lang="en", profile="chat", intensity=80)
+result = db.process("This text utilizes a comprehensive methodology.")
 
-# Только анализ
+# Analysis only
 from texthumanize.analyzer import TextAnalyzer
-analyzer = TextAnalyzer(lang="ru")
-report = analyzer.analyze("Текст для анализа.")
+analyzer = TextAnalyzer(lang="en")
+report = analyzer.analyze("Text to analyze.")
 ```
 
 ---
 
-## 🧪 Тестирование
+## Testing
 
 ```bash
-# Запуск всех тестов
+# Run all tests
 pytest
 
-# С покрытием
+# With coverage
 pytest --cov=texthumanize
 
-# Конкретные тесты
+# Specific test suites
 pytest tests/test_core.py
 pytest tests/test_golden.py
 pytest tests/test_segmenter.py
 pytest tests/test_normalizer.py
 pytest tests/test_decancel.py
 pytest tests/test_structure.py
+pytest tests/test_multilang.py
+pytest tests/test_naturalizer.py
 ```
-
-### Категории тестов
-
-| Файл | Описание |
-|------|----------|
-| `test_core.py` | Основной API, профили, языки |
-| `test_golden.py` | Golden-тесты + property-тесты |
-| `test_segmenter.py` | Защита URL, кода, email |
-| `test_normalizer.py` | Типографика |
-| `test_decancel.py` | Деканцеляризация |
-| `test_structure.py` | Структура + повторы |
-| `test_multilang.py` | Мультиязычность (DE/FR/ES/PL/PT/IT) |
-| `test_antidetect.py` | Антидетекция + универсальный процессор |
 
 ---
 
-## 🏗 Архитектура
+## Architecture
 
 ```
 texthumanize/
-├── __init__.py          # Публичный API
-├── core.py              # humanize(), analyze(), explain()
-├── pipeline.py          # Оркестрация 10 этапов
-├── analyzer.py          # Метрики «искусственности» + burstiness
-├── tokenizer.py         # Разбивка на абзацы/предложения/слова
-├── segmenter.py         # Защита кода/URL/email
-├── normalizer.py        # Типографика
-├── decancel.py          # Деканцеляризация
-├── structure.py         # Структура предложений
-├── repetitions.py       # Уменьшение повторов
-├── liveliness.py        # Инъекция «живости»
-├── universal.py         # ★ Универсальный процессор (все языки)
-├── antidetect.py        # ★ Антидетекция AI-детекторов (КЛЮЧЕВОЙ)
-├── validator.py         # Валидация качества
-├── lang_detect.py       # Определение языка (9 языков)
-├── utils.py             # Утилиты, опции, профили
-├── cli.py               # CLI-интерфейс
-└── lang/                # Языковые пакеты
-    ├── __init__.py      # Реестр + fallback для неизвестных
-    ├── ru.py            # 🇷🇺 Русский
-    ├── uk.py            # 🇺🇦 Украинский
-    ├── en.py            # 🇬🇧 Английский
-    ├── de.py            # 🇩🇪 Немецкий
-    ├── fr.py            # 🇫🇷 Французский
-    ├── es.py            # 🇪🇸 Испанский
-    ├── pl.py            # 🇵🇱 Польский
-    ├── pt.py            # 🇵🇹 Португальский
-    └── it.py            # 🇮🇹 Итальянский
+├── __init__.py          # Public API exports
+├── core.py              # humanize(), analyze(), explain(), humanize_chunked()
+├── pipeline.py          # 10-stage pipeline + plugin system
+├── analyzer.py          # Artificiality + readability metrics
+├── tokenizer.py         # Paragraph/sentence/word splitting
+├── segmenter.py         # Code/URL/email protection
+├── normalizer.py        # Typography normalization
+├── decancel.py          # Debureaucratization
+├── structure.py         # Sentence structure diversification
+├── repetitions.py       # Repetition reduction
+├── liveliness.py        # Natural phrasing injection
+├── universal.py         # Universal processor (all languages)
+├── naturalizer.py       # Style naturalization (key stage)
+├── validator.py         # Quality validation + rollback
+├── lang_detect.py       # Language detection (9 languages)
+├── utils.py             # Options, profiles, utilities
+├── cli.py               # CLI interface
+└── lang/                # Language packs
+    ├── __init__.py      # Registry + fallback
+    ├── ru.py            # Russian
+    ├── uk.py            # Ukrainian
+    ├── en.py            # English
+    ├── de.py            # German
+    ├── fr.py            # French
+    ├── es.py            # Spanish
+    ├── pl.py            # Polish
+    ├── pt.py            # Portuguese
+    └── it.py            # Italian
 ```
 
-### Принципы
+### Design Principles
 
-- **Модульность** — каждый этап в отдельном модуле
-- **Декларативность** — правила в языковых пакетах, не в коде
-- **Идемпотентность** — повторная обработка не ухудшает результат
-- **Безопасность** — валидатор откатывает плохие изменения
-- **Расширяемость** — легко добавить язык, профиль или этап
+- **Modularity** — each stage in a separate module
+- **Declarative rules** — language packs contain only data, not logic
+- **Idempotent** — repeated processing does not degrade quality
+- **Safe** — validator rolls back changes that exceed thresholds
+- **Extensible** — add languages, profiles, or pipeline stages easily
+- **Portable** — declarative architecture enables easy porting
 
 ---
 
-## 🔄 Портирование
+## PHP Library
 
-Архитектура спроектирована для портирования на другие языки:
+A full PHP port is available in the `php/` directory with identical functionality:
 
-1. **Правила** — декларативные словари в языковых пакетах (легко сериализуются в JSON)
-2. **Алгоритмы** — простые regex-паттерны и строковые замены
-3. **Нет ML-зависимостей** — чистые алгоритмы
+```php
+use TextHumanize\TextHumanize;
 
-### Экспорт правил в JSON
+// Basic usage
+$result = TextHumanize::humanize("Text to process", profile: 'web');
+echo $result->processed;
 
-```python
-import json
-from texthumanize.lang.ru import LANG_RU
+// Chunk processing for large texts
+$result = TextHumanize::humanizeChunked($longText, chunkSize: 5000);
 
-# Экспорт для использования в Node.js/PHP/Go
-with open("rules_ru.json", "w", encoding="utf-8") as f:
-    # Конвертируем set в list для JSON
-    data = dict(LANG_RU)
-    data["stop_words"] = list(data["stop_words"])
-    json.dump(data, f, ensure_ascii=False, indent=2)
+// Analysis
+$report = TextHumanize::analyze("Text to analyze");
+echo $report->artificialityScore;
+
+// Explanation
+$explanation = TextHumanize::explain("Text to explain");
 ```
 
-### Планируемые порты
-
-- **Node.js/TypeScript** — для веб-приложений
-- **PHP** — для WordPress-плагинов и CMS
-- **Go** — для высоконагруженных сервисов
+See [php/README.md](php/README.md) for full PHP documentation.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Мы рады вашему вкладу! Вот как можно помочь:
+Contributions are welcome:
 
-1. **Fork** репозитория
-2. Создайте **feature branch**: `git checkout -b feature/amazing-feature`
-3. Сделайте изменения и **commit**: `git commit -m 'Add amazing feature'`
-4. **Push** в branch: `git push origin feature/amazing-feature`
-5. Откройте **Pull Request**
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit changes: `git commit -m 'Add my feature'`
+4. Push: `git push origin feature/my-feature`
+5. Open a Pull Request
 
-### Что можно улучшить
+### Areas for Improvement
 
-- 📝 **Словари** — расширить словари канцеляризмов и синонимов
-- 🌍 **Языки** — добавить поддержку новых языков (ES, PL, DE, FR...)
-- 🧪 **Тесты** — больше golden-тестов и edge cases
-- 📖 **Документация** — примеры, туториалы
-- 🔧 **Порты** — реализации на Node.js, PHP, Go
-
-### Стиль кода
-
-```bash
-# Линтинг
-ruff check texthumanize/
-
-# Форматирование
-ruff format texthumanize/
-```
+- **Dictionaries** — expand bureaucratic and synonym dictionaries for all languages
+- **Languages** — add support for new languages
+- **Tests** — more edge cases and golden tests
+- **Documentation** — tutorials and examples
+- **Ports** — Node.js, Go implementations
 
 ---
 
-## 📄 Лицензия
+## License
 
-MIT License. Смотрите [LICENSE](LICENSE).
+TextHumanize Personal Use License. See [LICENSE](LICENSE).
 
-Вы можете свободно использовать библиотеку в коммерческих и некоммерческих проектах.
-
----
-
-## 💖 Поддержка проекта
-
-TextHumanize — бесплатная open-source библиотека. Если она вам полезна, вы можете поддержать развитие проекта добровольным донатом:
-
-**PayPal:** [ksanyok@me.com](https://www.paypal.com/paypalme/ksanyok)
-
-Любая сумма мотивирует нас делать библиотеку лучше! 🙏
+This library is licensed for **personal, non-commercial use only**. Commercial use requires a separate license — contact the author for details.
 
 ---
 
 <p align="center">
-  Сделано с ❤️ для сообщества разработчиков
-  <br>
   <a href="https://github.com/ksanyok/TextHumanize">GitHub</a> ·
   <a href="https://github.com/ksanyok/TextHumanize/issues">Issues</a> ·
   <a href="https://github.com/ksanyok/TextHumanize/discussions">Discussions</a>

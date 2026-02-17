@@ -1,30 +1,33 @@
-"""Модуль антидетекции — обход систем проверки AI-текста.
+"""Модуль стилевой натурализации текста.
 
-Системы детекции AI-текста (GPTZero, Originality.ai, ZeroGPT,
-Turnitin, Copyleaks) анализируют:
+Анализирует и корректирует характерные паттерны автоматически
+сгенерированного текста, делая его стилистически ближе к текстам,
+написанным человеком.
+
+Основные направления обработки:
 
 1. **Perplexity (перплексия)** — насколько предсказуем текст.
-   AI-текст имеет низкую перплексию = высокую предсказуемость.
+   Автотекст имеет низкую перплексию = высокую предсказуемость.
    Решение: вставить менее предсказуемые конструкции.
 
-2. **Burstiness (взрывчатость)** — вариация длины предложений.
-   AI пишет равномерно (10-20 слов). Люди — от 2 до 40 слов.
-   Решение: создать рваный ритм.
+2. **Burstiness (вариативность)** — вариация длины предложений.
+   Автотекст равномерен (10-20 слов). Живой текст — от 2 до 40 слов.
+   Решение: создать естественный ритм.
 
 3. **Coherence uniformity** — равномерная связность.
-   AI идеально связывает абзацы. Люди — не всегда.
+   Автотекст идеально связывает абзацы. Живой текст — не всегда.
    Решение: варьировать переходы.
 
-4. **Vocabulary uniformity** — AI использует «безопасные» слова.
+4. **Vocabulary uniformity** — использование «безопасных» слов.
    Решение: использовать менее частотные синонимы.
 
-5. **Sentence structure** — AI предпочитает SVO.
+5. **Sentence structure** — предпочтение SVO.
    Решение: инверсия, вставки, фрагменты.
 
-6. **Perfect grammar** — AI никогда не ошибается.
-   Решение: естественные конструкции (но не ошибки!).
+6. **Perfect grammar** — отсутствие естественных конструкций.
+   Решение: добавить живые обороты (не ошибки!).
 
-Этот модуль — КЛЮЧЕВОЙ для обхода AI-детекторов.
+Этот модуль — ключевой для стилевой натурализации текста.
 """
 
 from __future__ import annotations
@@ -36,7 +39,7 @@ from collections import Counter
 from texthumanize.lang import get_lang_pack, LANGUAGES
 
 
-# ─── Паттерны AI-текста, которые детекторы ищут ───────────────
+# ─── Характерные стилевые паттерны автоматически сгенерированного текста ───
 
 # Слова, которые AI использует значительно чаще людей (все языки)
 _AI_OVERUSED_UNIVERSAL = {
@@ -88,7 +91,7 @@ _AI_OVERUSED_UK = {
     "у сучасному світі", "на сьогоднішній день",
 }
 
-# Замены для AI-характерных слов (язык → {слово → [замены]})
+# Замены для характерных слов автогенерации (язык → {слово → [замены]})
 _AI_WORD_REPLACEMENTS = {
     "en": {
         "utilize": ["use", "apply", "work with"],
@@ -385,8 +388,8 @@ _PERPLEXITY_BOOSTERS = {
 }
 
 
-class AntiDetector:
-    """Модуль антидетекции — обход AI-детекторов.
+class TextNaturalizer:
+    """Модуль стилевой натурализации текста.
 
     Работает на уровне текста целиком (не пословно).
     Применяется ПОСЛЕ основных трансформаций.
@@ -411,13 +414,13 @@ class AntiDetector:
         self._boosters = _PERPLEXITY_BOOSTERS.get(lang, {})
 
     def process(self, text: str) -> str:
-        """Применить антидетекцию к тексту.
+        """Применить натурализацию к тексту.
 
         Args:
             text: Текст (уже прошедший базовую обработку).
 
         Returns:
-            Текст, устойчивый к AI-детекции.
+            Текст со стилистически естественными характеристиками.
         """
         self.changes = []
 
@@ -473,7 +476,7 @@ class AntiDetector:
 
                 text = text[:match.start()] + replacement + text[match.end():]
                 self.changes.append({
-                    "type": "antidetect_phrase",
+                    "type": "naturalize_phrase",
                     "original": original,
                     "replacement": replacement,
                 })
@@ -482,7 +485,7 @@ class AntiDetector:
         return text
 
     def _replace_ai_words(self, text: str, prob: float) -> str:
-        """Заменить слова, характерные для AI."""
+        """Заменить слова, характерные для автогенерации."""
         if not self._replacements:
             return text
 
@@ -516,7 +519,7 @@ class AntiDetector:
             text = text[:match.start()] + replacement + text[match.end():]
             replaced += 1
             self.changes.append({
-                "type": "antidetect_word",
+                "type": "naturalize_word",
                 "original": original,
                 "replacement": replacement,
             })
@@ -526,8 +529,8 @@ class AntiDetector:
     def _inject_burstiness(self, text: str, prob: float) -> str:
         """Внедрить вариативность длины предложений.
 
-        Ключевой метод! AI-детекторы сильно полагаются на
-        однообразие длины предложений как маркер AI.
+        Ключевой метод натурализации: однообразие длины предложений —
+        характерный признак автоматически сгенерированного текста.
         """
         sentences = re.split(r'(?<=[.!?])\s+', text)
         if len(sentences) < 5:
@@ -561,7 +564,7 @@ class AntiDetector:
                     result[i] = split
                     modified = True
                     self.changes.append({
-                        "type": "antidetect_burstiness",
+                        "type": "naturalize_burstiness",
                         "description": f"Разбивка предложения ({wlen} → 2 части)",
                     })
 
@@ -581,7 +584,7 @@ class AntiDetector:
                 result[i + 1] = ''
                 modified = True
                 self.changes.append({
-                    "type": "antidetect_burstiness",
+                    "type": "naturalize_burstiness",
                     "description": "Объединение коротких предложений",
                 })
 
@@ -654,7 +657,7 @@ class AntiDetector:
 
         Вставляет хеджинг, дискурсивные маркеры, риторические вопросы,
         фрагменты, вводные конструкции — элементы, повышающие
-        «непредсказуемость» текста для AI-детекторов.
+        естественную «непредсказуемость» текста.
         """
         if not self._boosters:
             return text
@@ -682,7 +685,7 @@ class AntiDetector:
                     result[idx] = ' '.join(words)
                     insertions += 1
                     self.changes.append({
-                        "type": "antidetect_perplexity",
+                        "type": "naturalize_perplexity",
                         "description": f"Дискурсивный маркер: {marker}",
                     })
 
@@ -703,7 +706,7 @@ class AntiDetector:
                     result[idx] = f"{hedge}, " + ' '.join(words)
                     insertions += 1
                     self.changes.append({
-                        "type": "antidetect_perplexity",
+                        "type": "naturalize_perplexity",
                         "description": f"Хеджинг: {hedge}",
                     })
 
@@ -721,7 +724,7 @@ class AntiDetector:
                 result.insert(idx, insert)
                 insertions += 1
                 self.changes.append({
-                    "type": "antidetect_perplexity",
+                    "type": "naturalize_perplexity",
                     "description": f"Фрагмент/вопрос: {insert}",
                 })
 
@@ -744,7 +747,7 @@ class AntiDetector:
                 result[idx] = sent
                 insertions += 1
                 self.changes.append({
-                    "type": "antidetect_perplexity",
+                    "type": "naturalize_perplexity",
                     "description": f"Вводная конструкция: {paren}",
                 })
 
@@ -875,7 +878,7 @@ class AntiDetector:
                 text = text[:match.start()] + replacement + text[match.end():]
                 modified = True
                 self.changes.append({
-                    "type": "antidetect_contraction",
+                    "type": "naturalize_contraction",
                     "original": original,
                     "replacement": replacement,
                 })

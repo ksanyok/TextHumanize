@@ -1,18 +1,18 @@
 {
   "name": "texthumanize",
-  "version": "0.2.0",
-  "description": "Algorithmic text humanization with AI detection evasion — makes AI-generated text undetectable by GPTZero, Originality.ai, ZeroGPT, Turnitin, Copyleaks",
+  "version": "0.3.0",
+  "description": "Algorithmic text humanization — transforms machine-generated text into natural, human-sounding prose",
   "main": "index.js",
   "keywords": [
-    "text", "humanize", "ai-detection", "gptzero", "originality",
-    "anti-detection", "nlp", "text-processing", "multilingual",
-    "burstiness", "perplexity"
+    "text", "humanize", "nlp", "typography", "readability",
+    "natural-language", "text-processing", "multilingual",
+    "text-naturalization"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/ksanyok/TextHumanize"
   },
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "humanize": "echo 'TextHumanize is a Python library. Install with: pip install texthumanize'"
   },

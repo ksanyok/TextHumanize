@@ -87,6 +87,11 @@ class AnalysisReport:
     typography_score: float = 0.0
     burstiness_score: float = 0.5
     artificiality_score: float = 0.0
+    # Readability metrics
+    flesch_kincaid_grade: float = 0.0
+    coleman_liau_index: float = 0.0
+    avg_word_length: float = 0.0
+    avg_syllables_per_word: float = 0.0
     details: dict[str, Any] = field(default_factory=dict)
 
 

@@ -36,3 +36,13 @@ Thumbs.db
 # Distribution
 *.tar.gz
 *.whl
+
+# PHP
+php/vendor/
+php/composer.lock
+
+# Node
+node_modules/
+
+# Backups
+*.bak

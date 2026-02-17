@@ -1,9 +1,9 @@
-"""Тесты антидетекции и универсального процессора."""
+"""Тесты натурализации и универсального процессора."""
 
 import pytest
 
 from texthumanize.universal import UniversalProcessor
-from texthumanize.antidetect import AntiDetector
+from texthumanize.naturalizer import TextNaturalizer
 
 
 # ─── Тестовые тексты ─────────────────────────────────────────
@@ -89,19 +89,19 @@ class TestUniversalProcessor:
         assert result == AI_TEXT_EN  # Без изменений при intensity=0
 
 
-class TestAntiDetector:
-    """Тесты модуля антидетекции."""
+class TestTextNaturalizer:
+    """Тесты модуля натурализации."""
 
     def test_basic_english(self):
         """Антидетект работает для английского текста."""
-        ad = AntiDetector(lang="en", profile="web", intensity=80, seed=42)
+        ad = TextNaturalizer(lang="en", profile="web", intensity=80, seed=42)
         result = ad.process(AI_TEXT_EN)
         assert result  # Не пустой
         assert result != AI_TEXT_EN  # Есть изменения
 
     def test_basic_russian(self):
         """Антидетект работает для русского текста."""
-        ad = AntiDetector(lang="ru", profile="web", intensity=80, seed=42)
+        ad = TextNaturalizer(lang="ru", profile="web", intensity=80, seed=42)
         result = ad.process(AI_TEXT_RU)
         assert result  # Не пустой
         assert result != AI_TEXT_RU  # Есть изменения
@@ -109,9 +109,9 @@ class TestAntiDetector:
     def test_ai_word_replacement_en(self):
         """AI-характерные слова заменяются (EN)."""
         text = "We need to utilize this technology to facilitate progress."
-        ad = AntiDetector(lang="en", profile="web", intensity=100, seed=42)
+        ad = TextNaturalizer(lang="en", profile="web", intensity=100, seed=42)
         result = ad.process(text)
-        changes = [c for c in ad.changes if c["type"] == "antidetect_word"]
+        changes = [c for c in ad.changes if c["type"] == "naturalize_word"]
         # Хотя бы одно слово должно быть заменено
         assert len(changes) >= 1 or "utilize" not in result or "facilitate" not in result
 
@@ -119,7 +119,7 @@ class TestAntiDetector:
         """AI-характерные слова заменяются (RU)."""
         text = ("Данный подход значительно улучшает результаты. "
                 "Безусловно, это несомненно важно.")
-        ad = AntiDetector(lang="ru", profile="web", intensity=100, seed=42)
+        ad = TextNaturalizer(lang="ru", profile="web", intensity=100, seed=42)
         result = ad.process(text)
         # Должны быть какие-то изменения
         assert result != text or len(ad.changes) >= 0
@@ -130,21 +130,21 @@ class TestAntiDetector:
                 "It is not a problem. "
                 "They are working on it right now. "
                 "There is nothing to add here.")
-        ad = AntiDetector(lang="en", profile="chat", intensity=100, seed=42)
+        ad = TextNaturalizer(lang="en", profile="chat", intensity=100, seed=42)
         result = ad.process(text)
         # Должны появиться сокращения
         contraction_changes = [
-            c for c in ad.changes if c["type"] == "antidetect_contraction"
+            c for c in ad.changes if c["type"] == "naturalize_contraction"
         ]
         assert len(contraction_changes) >= 1
 
     def test_no_contractions_formal(self):
         """Сокращения НЕ применяются для formal профиля."""
         text = "We do not need this. It is not relevant."
-        ad = AntiDetector(lang="en", profile="formal", intensity=100, seed=42)
+        ad = TextNaturalizer(lang="en", profile="formal", intensity=100, seed=42)
         result = ad.process(text)
         contraction_changes = [
-            c for c in ad.changes if c["type"] == "antidetect_contraction"
+            c for c in ad.changes if c["type"] == "naturalize_contraction"
         ]
         assert len(contraction_changes) == 0
 
@@ -152,22 +152,22 @@ class TestAntiDetector:
         """AI-фразы заменяются."""
         text = ("It is important to note that this approach works. "
                 "In today's world, technology plays a crucial role.")
-        ad = AntiDetector(lang="en", profile="web", intensity=100, seed=42)
+        ad = TextNaturalizer(lang="en", profile="web", intensity=100, seed=42)
         result = ad.process(text)
         phrase_changes = [
-            c for c in ad.changes if c["type"] == "antidetect_phrase"
+            c for c in ad.changes if c["type"] == "naturalize_phrase"
         ]
         assert len(phrase_changes) >= 1
 
     def test_empty_text(self):
         """Пустой текст без ошибок."""
-        ad = AntiDetector(lang="en", seed=42)
+        ad = TextNaturalizer(lang="en", seed=42)
         assert ad.process("") == ""
         assert ad.process("short") == "short"
 
     def test_changes_tracked(self):
         """Все изменения отслеживаются."""
-        ad = AntiDetector(lang="en", profile="web", intensity=80, seed=42)
+        ad = TextNaturalizer(lang="en", profile="web", intensity=80, seed=42)
         ad.process(AI_TEXT_EN)
         assert isinstance(ad.changes, list)
         for change in ad.changes:
@@ -175,21 +175,21 @@ class TestAntiDetector:
 
     def test_seed_reproducibility(self):
         """Результат воспроизводим при одинаковом seed."""
-        ad1 = AntiDetector(lang="en", profile="web", intensity=80, seed=42)
+        ad1 = TextNaturalizer(lang="en", profile="web", intensity=80, seed=42)
         result1 = ad1.process(AI_TEXT_EN)
-        ad2 = AntiDetector(lang="en", profile="web", intensity=80, seed=42)
+        ad2 = TextNaturalizer(lang="en", profile="web", intensity=80, seed=42)
         result2 = ad2.process(AI_TEXT_EN)
         assert result1 == result2
 
     def test_unknown_language(self):
         """Обработка неизвестного языка (без словаря) — без ошибок."""
         text = "Đây là một đoạn văn bản bằng tiếng Việt để kiểm tra."
-        ad = AntiDetector(lang="vi", profile="web", intensity=80, seed=42)
+        ad = TextNaturalizer(lang="vi", profile="web", intensity=80, seed=42)
         result = ad.process(text)
         assert result  # Не крашится
 
     @pytest.mark.parametrize("lang", ["de", "fr", "es", "pl", "pt", "it"])
-    def test_antidetect_new_languages(self, lang):
+    def test_naturalizer_new_languages(self, lang):
         """Антидетект работает для всех новых языков."""
         texts = {
             "de": "Diese Technologie ist signifikant und innovativ. "
@@ -205,6 +205,6 @@ class TestAntiDetector:
             "it": "Questa tecnologia è significativa e innovativa. "
                   "Inoltre, implementa miglioramenti fondamentali.",
         }
-        ad = AntiDetector(lang=lang, profile="web", intensity=100, seed=42)
+        ad = TextNaturalizer(lang=lang, profile="web", intensity=100, seed=42)
         result = ad.process(texts[lang])
         assert result  # Не пустой

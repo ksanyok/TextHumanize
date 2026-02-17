@@ -1,13 +1,13 @@
 {
     "name": "ksanyok/texthumanize",
-    "description": "Algorithmic text humanization with AI detection evasion — makes AI-generated text undetectable",
+    "description": "Algorithmic text humanization — transforms machine-generated text into natural, human-sounding prose",
     "type": "library",
     "keywords": [
-        "text", "humanize", "ai-detection", "gptzero", "originality",
-        "anti-detection", "nlp", "multilingual"
+        "text", "humanize", "nlp", "typography", "readability",
+        "natural-language", "text-processing", "multilingual"
     ],
     "homepage": "https://github.com/ksanyok/TextHumanize",
-    "license": "MIT",
+    "license": "proprietary",
     "require": {
         "php": ">=7.4"
     },

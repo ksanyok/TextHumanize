@@ -1,8 +1,7 @@
-"""TextHumanize — алгоритмическая гуманизация текста с антидетекцией.
+"""TextHumanize — алгоритмическая гуманизация текста.
 
-Делает AI-тексты необнаружимыми для детекторов (GPTZero, Originality.ai, ZeroGPT,
-Turnitin, Copyleaks): нормализует типографику, устраняет канцеляризмы,
-разнообразит структуру, повышает burstiness и perplexity.
+Преобразует автоматически сгенерированные тексты в естественные: нормализует типографику,
+устраняет канцеляризмы, разнообразит структуру, повышает burstiness и perplexity.
 
 Полные словари: RU, UK, EN, DE, FR, ES, PL, PT, IT.
 Универсальный процессор: любой язык.
@@ -14,17 +13,20 @@ Turnitin, Copyleaks): нормализует типографику, устра�
     >>> print(result.text)
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __author__ = "TextHumanize Contributors"
-__license__ = "MIT"
+__license__ = "Personal Use Only"
 
-from texthumanize.core import humanize, analyze, explain
+from texthumanize.core import humanize, analyze, explain, humanize_chunked
+from texthumanize.pipeline import Pipeline
 from texthumanize.utils import HumanizeOptions, HumanizeResult, AnalysisReport
 
 __all__ = [
     "humanize",
+    "humanize_chunked",
     "analyze",
     "explain",
+    "Pipeline",
     "HumanizeOptions",
     "HumanizeResult",
     "AnalysisReport",

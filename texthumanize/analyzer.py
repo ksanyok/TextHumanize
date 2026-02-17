@@ -79,7 +79,21 @@ class TextAnalyzer:
         # 6. Burstiness (вариативность длины предложений)
         report.burstiness_score = self._calc_burstiness_score(sentence_lengths)
 
-        # 7. Общий балл искусственности
+        # 7. Readability metrics
+        avg_word_len = (
+            sum(len(w) for w in words) / len(words) if words else 0.0
+        )
+        report.avg_word_length = avg_word_len
+        avg_syllables = self._calc_avg_syllables(words)
+        report.avg_syllables_per_word = avg_syllables
+        report.flesch_kincaid_grade = self._calc_flesch_kincaid(
+            len(sentences), len(words), avg_syllables,
+        )
+        report.coleman_liau_index = self._calc_coleman_liau(
+            text, words, sentences,
+        )
+
+        # 8. Общий балл искусственности
         report.artificiality_score = self._calc_artificiality_score(report)
 
         # Детали
@@ -299,6 +313,63 @@ class TextAnalyzer:
                 result.append(connector)
 
         return result
+
+    # ─── Readability metrics ──────────────────────────────────
+
+    @staticmethod
+    def _count_syllables(word: str) -> int:
+        """Estimate syllable count for a word (English-centric heuristic)."""
+        word = word.lower().strip(".,!?;:\"'()-")
+        if not word:
+            return 1
+        vowels = "aeiouyаеёиоуыэюяіїєґáéíóúàèìòùâêîôûäëïöüãõ"
+        count = 0
+        prev_vowel = False
+        for ch in word:
+            is_vowel = ch in vowels
+            if is_vowel and not prev_vowel:
+                count += 1
+            prev_vowel = is_vowel
+        # Handle silent trailing 'e' for English
+        if word.endswith("e") and count > 1:
+            count -= 1
+        return max(count, 1)
+
+    def _calc_avg_syllables(self, words: list[str]) -> float:
+        """Average syllables per word."""
+        if not words:
+            return 0.0
+        total = sum(self._count_syllables(w) for w in words)
+        return total / len(words)
+
+    @staticmethod
+    def _calc_flesch_kincaid(
+        num_sentences: int, num_words: int, avg_syllables: float,
+    ) -> float:
+        """Flesch-Kincaid Grade Level.
+
+        Lower values mean easier readability.
+        Typical range: 1-18+  (US school grade equivalent).
+        """
+        if num_sentences == 0 or num_words == 0:
+            return 0.0
+        asl = num_words / num_sentences  # avg sentence length
+        return 0.39 * asl + 11.8 * avg_syllables - 15.59
+
+    @staticmethod
+    def _calc_coleman_liau(
+        text: str, words: list[str], sentences: list[str],
+    ) -> float:
+        """Coleman-Liau Index.
+
+        Uses characters per word and sentences per word.
+        """
+        if not words or not sentences:
+            return 0.0
+        num_letters = sum(1 for ch in text if ch.isalpha())
+        l_val = (num_letters / len(words)) * 100  # letters per 100 words
+        s_val = (len(sentences) / len(words)) * 100  # sentences per 100 words
+        return 0.0588 * l_val - 0.296 * s_val - 15.8
 
     def _find_typography_issues(self, text: str) -> list[str]:
         """Найти типографские признаки ИИ."""

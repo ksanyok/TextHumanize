@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from texthumanize.lang_detect import detect_language
 from texthumanize.analyzer import TextAnalyzer
 from texthumanize.pipeline import Pipeline
@@ -209,3 +211,112 @@ def explain(result: HumanizeResult) -> str:
         lines.append("--- Изменений нет ---")
 
     return "\n".join(lines)
+
+
+def humanize_chunked(
+    text: str,
+    chunk_size: int = 5000,
+    overlap: int = 200,
+    lang: str = "auto",
+    profile: str = "web",
+    intensity: int = 60,
+    preserve: dict | None = None,
+    constraints: dict | None = None,
+    seed: int | None = None,
+) -> HumanizeResult:
+    """Process large texts by splitting into manageable chunks.
+
+    Splits the text at paragraph or sentence boundaries, processes each
+    chunk independently, then reassembles the result.
+
+    Args:
+        text: Text to process (any length).
+        chunk_size: Target chunk size in characters (default 5000).
+        overlap: Character overlap between chunks to preserve context.
+        lang: Language code ('auto' for auto-detection).
+        profile: Processing profile.
+        intensity: Processing intensity (0-100).
+        preserve: Preservation settings.
+        constraints: Processing constraints.
+        seed: Random seed for reproducibility.
+
+    Returns:
+        HumanizeResult with the fully processed text.
+    """
+    if not text or not text.strip():
+        return HumanizeResult(
+            original=text or "",
+            text=text or "",
+            lang=lang if lang != "auto" else "en",
+            profile=profile,
+            intensity=intensity,
+        )
+
+    # For small texts, just use the regular function
+    if len(text) <= chunk_size:
+        return humanize(
+            text, lang=lang, profile=profile, intensity=intensity,
+            preserve=preserve, constraints=constraints, seed=seed,
+        )
+
+    # Split into paragraph-based chunks
+    chunks = _split_into_chunks(text, chunk_size)
+
+    all_processed: list[str] = []
+    all_changes: list[dict] = []
+    detected_lang = lang
+
+    for i, chunk in enumerate(chunks):
+        chunk_seed = seed + i if seed is not None else None
+        result = humanize(
+            chunk,
+            lang=detected_lang,
+            profile=profile,
+            intensity=intensity,
+            preserve=preserve,
+            constraints=constraints,
+            seed=chunk_seed,
+        )
+        all_processed.append(result.text)
+        all_changes.extend(result.changes)
+        # Use detected language from first chunk for consistency
+        if i == 0:
+            detected_lang = result.lang
+
+    processed_text = "\n\n".join(all_processed)
+
+    return HumanizeResult(
+        original=text,
+        text=processed_text,
+        lang=detected_lang,
+        profile=profile,
+        intensity=intensity,
+        changes=all_changes,
+    )
+
+
+def _split_into_chunks(text: str, chunk_size: int) -> list[str]:
+    """Split text at paragraph boundaries, respecting chunk_size."""
+    paragraphs = re.split(r'\n\s*\n', text)
+    chunks: list[str] = []
+    current: list[str] = []
+    current_len = 0
+
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            continue
+        para_len = len(para)
+
+        if current_len + para_len > chunk_size and current:
+            chunks.append("\n\n".join(current))
+            current = []
+            current_len = 0
+
+        current.append(para)
+        current_len += para_len
+
+    if current:
+        chunks.append("\n\n".join(current))
+
+    return chunks if chunks else [text]
