@@ -153,7 +153,7 @@ class UniversalProcessor
 
         if (preg_match_all('/[;,]/u', $sentence, $matches, PREG_OFFSET_CAPTURE)) {
             foreach ($matches[0] as $m) {
-                $beforeText = mb_substr($sentence, 0, $m[1]);
+                $beforeText = mb_substr($sentence, 0, (int) $m[1]);
                 $wordsBefore = count(preg_split('/\s+/', trim($beforeText)));
                 $wordsAfter = count($words) - $wordsBefore;
                 $dist = abs($wordsBefore - $mid);
@@ -169,7 +169,7 @@ class UniversalProcessor
             return null;
         }
 
-        $first = trim(mb_substr($sentence, 0, $bestPos));
+        $first = trim(mb_substr($sentence, 0, (int) $bestPos));
         $second = trim(mb_substr($sentence, $bestPos + 1));
 
         if (!preg_match('/[.!?]$/', $first)) {

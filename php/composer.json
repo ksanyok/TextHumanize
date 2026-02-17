@@ -40,5 +40,11 @@
     "scripts": {
         "test": "phpunit"
     },
-    "minimum-stability": "stable"
+    "minimum-stability": "stable",
+    "funding": [
+        {
+            "type": "paypal",
+            "url": "https://www.paypal.com/paypalme/ksanyok"
+        }
+    ]
 }

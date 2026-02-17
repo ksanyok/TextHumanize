@@ -221,6 +221,10 @@ vendor/bin/phpunit
 
 **44 tests, 303 assertions** covering all pipeline stages, profiles, and language packs.
 
+## Support the Project
+
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-blue.svg?logo=paypal)](https://www.paypal.com/paypalme/ksanyok)
+
 ## License
 
 TextHumanize Personal Use License — see [LICENSE](../LICENSE) for details.

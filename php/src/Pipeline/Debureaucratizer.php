@@ -68,7 +68,7 @@ class Debureaucratizer
                 $replacement = $this->rng->choice($replacements);
                 // Preserve case of first letter
                 $replacement = self::matchCase($match[0][0], $replacement);
-                $text = substr_replace($text, $replacement, $match[0][1], strlen($match[0][0]));
+                $text = substr_replace($text, $replacement, (int) $match[0][1], strlen($match[0][0]));
 
                 $this->changes[] = [
                     'type' => 'decancel_phrase',
@@ -104,7 +104,7 @@ class Debureaucratizer
 
                 $replacement = $this->rng->choice($replacements);
                 $replacement = self::matchCase($match[0][0], $replacement);
-                $text = substr_replace($text, $replacement, $match[0][1], strlen($match[0][0]));
+                $text = substr_replace($text, $replacement, (int) $match[0][1], strlen($match[0][0]));
 
                 $this->changes[] = [
                     'type' => 'decancel_word',

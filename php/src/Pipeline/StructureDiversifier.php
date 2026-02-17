@@ -228,7 +228,7 @@ class StructureDiversifier
             if (preg_match_all($pattern, $sentence, $matches, PREG_OFFSET_CAPTURE)) {
                 foreach ($matches[0] as $m) {
                     // Count words before this position
-                    $before = mb_substr($sentence, 0, $m[1]);
+                    $before = mb_substr($sentence, 0, (int) $m[1]);
                     $wordsBefore = count(preg_split('/\s+/', trim($before)));
                     $wordsAfter = count($words) - $wordsBefore;
                     $dist = abs($wordsBefore - $mid);
@@ -245,8 +245,8 @@ class StructureDiversifier
             return null;
         }
 
-        $first = trim(mb_substr($sentence, 0, $bestPos));
-        $second = trim(mb_substr($sentence, $bestPos));
+        $first = trim(mb_substr($sentence, 0, (int) $bestPos));
+        $second = trim(mb_substr($sentence, (int) $bestPos));
 
         // Add period to first part if it doesn't end with punctuation
         if (!preg_match('/[.!?]$/', $first)) {

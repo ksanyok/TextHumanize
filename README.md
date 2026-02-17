@@ -664,6 +664,14 @@ Contributions are welcome:
 
 ---
 
+## Support the Project
+
+If you find TextHumanize useful, consider supporting the development:
+
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-blue.svg?logo=paypal)](https://www.paypal.com/paypalme/ksanyok)
+
+---
+
 ## License
 
 TextHumanize Personal Use License. See [LICENSE](LICENSE).
