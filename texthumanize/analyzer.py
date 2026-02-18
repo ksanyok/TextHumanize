@@ -59,7 +59,7 @@ class TextAnalyzer:
 
         if len(sentence_lengths) > 1:
             mean = report.avg_sentence_length
-            variance = sum((l - mean) ** 2 for l in sentence_lengths) / len(sentence_lengths)
+            variance = sum((sl - mean) ** 2 for sl in sentence_lengths) / len(sentence_lengths)
             report.sentence_length_variance = variance
         else:
             report.sentence_length_variance = 0.0
@@ -270,7 +270,7 @@ class TextAnalyzer:
         if mean == 0:
             return 0.0
 
-        variance = sum((l - mean) ** 2 for l in sentence_lengths) / len(sentence_lengths)
+        variance = sum((sl - mean) ** 2 for sl in sentence_lengths) / len(sentence_lengths)
         cv = (variance ** 0.5) / mean
 
         # Нормализуем: cv=0.7+ это хорошо (человечески), cv<0.3 это плохо (AI)
@@ -283,7 +283,7 @@ class TextAnalyzer:
         mean = sum(sentence_lengths) / len(sentence_lengths)
         if mean == 0:
             return 0.0
-        variance = sum((l - mean) ** 2 for l in sentence_lengths) / len(sentence_lengths)
+        variance = sum((sl - mean) ** 2 for sl in sentence_lengths) / len(sentence_lengths)
         return (variance ** 0.5) / mean
 
     def _find_bureaucratic_words(self, text: str) -> list[str]:
@@ -383,3 +383,109 @@ class TextAnalyzer:
         if '\u00A0' in text:
             issues.append("Неразрывные пробелы")
         return issues
+
+    # ─── Additional readability metrics ───────────────────────
+
+    @staticmethod
+    def calc_ari(text: str, words: list[str], sentences: list[str]) -> float:
+        """Automated Readability Index (ARI).
+
+        Uses character counts vs word/sentence counts.
+        Typical range: 1-14+ (US grade level).
+        """
+        if not words or not sentences:
+            return 0.0
+        num_chars = sum(1 for ch in text if ch.isalnum())
+        asl = len(words) / len(sentences)
+        awl = num_chars / len(words)
+        return 4.71 * awl + 0.5 * asl - 21.43
+
+    def calc_smog_index(self, words: list[str], sentences: list[str]) -> float:
+        """SMOG (Simple Measure of Gobbledygook) Index.
+
+        Estimates years of education needed.
+        Requires 30+ sentences for accuracy.
+        """
+        import math
+        if not words or not sentences:
+            return 0.0
+        polysyllables = sum(
+            1 for w in words if self._count_syllables(w) >= 3
+        )
+        n_sentences = len(sentences)
+        if n_sentences == 0:
+            return 0.0
+        # Adjust for small samples
+        if n_sentences < 30:
+            polysyllables = polysyllables * (30 / n_sentences)
+        return 1.0430 * math.sqrt(polysyllables * (30 / max(n_sentences, 1))) + 3.1291
+
+    def calc_gunning_fog(
+        self, words: list[str], sentences: list[str]
+    ) -> float:
+        """Gunning Fog Index.
+
+        Typical range: 6-17+ (US grade level).
+        Higher = harder to read.
+        """
+        if not words or not sentences:
+            return 0.0
+        complex_words = sum(
+            1 for w in words
+            if self._count_syllables(w) >= 3
+            and not w[0].isupper()  # не имена
+        )
+        asl = len(words) / len(sentences)
+        pct_complex = (complex_words / len(words)) * 100
+        return 0.4 * (asl + pct_complex)
+
+    @staticmethod
+    def calc_dale_chall(
+        text: str, words: list[str], sentences: list[str]
+    ) -> float:
+        """Dale-Chall Readability Score (simplified).
+
+        Uses proportion of 'difficult' words (>6 chars as proxy
+        since full Dale-Chall word list is copyrighted).
+        """
+        if not words or not sentences:
+            return 0.0
+        # Approximate: words > 6 chars as "difficult"
+        difficult = sum(
+            1 for w in words
+            if len(w.strip('.,;:!?"\'()')) > 6
+        )
+        pct_diff = (difficult / len(words)) * 100
+        asl = len(words) / len(sentences)
+        raw = 0.1579 * pct_diff + 0.0496 * asl
+        if pct_diff > 5:
+            raw += 3.6365
+        return raw
+
+    def full_readability(self, text: str) -> dict[str, float]:
+        """Calculate all readability metrics at once.
+
+        Returns:
+            Dictionary with all readability scores.
+        """
+        words = text.split()
+        sentences = self._split_sentences(text)
+        avg_syl = self._calc_avg_syllables(words)
+
+        return {
+            "flesch_kincaid_grade": self._calc_flesch_kincaid(
+                len(sentences), len(words), avg_syl
+            ),
+            "coleman_liau_index": self._calc_coleman_liau(text, words, sentences),
+            "ari": self.calc_ari(text, words, sentences),
+            "smog_index": self.calc_smog_index(words, sentences),
+            "gunning_fog": self.calc_gunning_fog(words, sentences),
+            "dale_chall": self.calc_dale_chall(text, words, sentences),
+            "avg_word_length": (
+                sum(len(w) for w in words) / len(words) if words else 0
+            ),
+            "avg_syllables_per_word": avg_syl,
+            "avg_sentence_length": (
+                len(words) / len(sentences) if sentences else 0
+            ),
+        }

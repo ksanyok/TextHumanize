@@ -6,8 +6,11 @@ import random
 import re
 from collections import Counter
 
+from texthumanize.context import ContextualSynonyms
 from texthumanize.lang import get_lang_pack
-from texthumanize.utils import get_profile, intensity_probability, coin_flip
+from texthumanize.morphology import get_morphology
+from texthumanize.sentence_split import split_sentences
+from texthumanize.utils import coin_flip, get_profile, intensity_probability
 
 
 class RepetitionReducer:
@@ -15,6 +18,8 @@ class RepetitionReducer:
 
     Ищет повторяющиеся нестоповые слова в скользящем окне
     и заменяет их синонимами из языкового пакета.
+    Использует морфологический движок для лемматизации и
+    согласования форм синонимов.
     """
 
     def __init__(
@@ -33,6 +38,8 @@ class RepetitionReducer:
         self.changes: list[dict[str, str]] = []
         self._stop_words = self.lang_pack.get("stop_words", set())
         self._synonyms = self.lang_pack.get("synonyms", {})
+        self._morph = get_morphology(lang)
+        self._ctx = ContextualSynonyms(lang=lang, seed=seed)
 
     def process(self, text: str) -> str:
         """Уменьшить повторы в тексте.
@@ -52,6 +59,9 @@ class RepetitionReducer:
         if prob < 0.05:
             return text
 
+        # Определяем тематику текста для контекстного подбора синонимов
+        self._ctx.detect_topic(text)
+
         # 1. Повторы одинаковых слов в окне
         text = self._reduce_word_repetitions(text, prob)
 
@@ -62,8 +72,7 @@ class RepetitionReducer:
 
     def _reduce_word_repetitions(self, text: str, prob: float) -> str:
         """Заменить повторяющиеся слова синонимами."""
-        # Разбиваем на предложения
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text, lang=self.lang)
         if len(sentences) < 2:
             return text
 
@@ -94,14 +103,26 @@ class RepetitionReducer:
                 # Проверяем, есть ли синоним
                 word_lower = word.lower()
                 synonyms = self._synonyms.get(word_lower, [])
+
+                # Fallback: попробовать лемму
+                if not synonyms:
+                    lemma = self._morph.lemmatize(word_lower)
+                    synonyms = self._synonyms.get(lemma, [])
+
                 if not synonyms:
                     continue
 
                 if not coin_flip(prob, self.rng):
                     continue
 
-                # Заменяем ТОЛЬКО ВТОРОЕ вхождение в текущем предложении
-                synonym = self.rng.choice(synonyms)
+                # Контекстный подбор синонима (вместо random.choice)
+                context_text = ' '.join(window_sents)
+                synonym = self._ctx.choose_synonym(
+                    word, synonyms, context_text,
+                )
+
+                # Согласовать форму синонима с оригиналом
+                synonym = self._morph.find_synonym_form(word, synonym)
 
                 # Паттерн: целое слово
                 pattern = re.compile(r'\b' + re.escape(word) + r'\b', re.IGNORECASE)

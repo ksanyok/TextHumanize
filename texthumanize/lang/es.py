@@ -98,16 +98,42 @@ LANG_ES = {
         "calidad": ["nivel", "estándar", "valor"],
     },
 
-    "sentence_starters": {},
+    "sentence_starters": {
+        "Este": ["Tal", "Dicho", "El presente"],
+        "Él": ["La persona", "El sujeto", "El individuo"],
+        "Ella": ["La persona", "La especialista", "La autora"],
+        "Ellos": ["Aquellos", "El equipo", "Estas personas"],
+        "Nosotros": ["Nuestro equipo", "El grupo", "Todos"],
+        "El": ["Un", "Cada", "Este"],
+        "La": ["Una", "Esta", "Cada"],
+        "Los": ["Unos", "Estos", "Varios"],
+        "En": ["Dentro de", "Durante", "A lo largo de"],
+        "Para": ["Con el fin de", "A fin de", "De cara a"],
+        "También": ["Igualmente", "Asimismo", "Aparte"],
+    },
 
     "colloquial_markers": [
         "la verdad", "o sea", "digamos", "eso sí",
-        "vamos", "bueno",
+        "vamos", "bueno", "sinceramente", "a decir verdad",
+        "en el fondo", "para ser honestos",
+        "curiosamente", "sorprendentemente", "entre nosotros",
+        "dicho sea de paso", "al fin y al cabo", "por cierto",
     ],
 
     "abbreviations": [
         "Sr.", "Sra.", "Dr.", "Prof.", "etc.", "p. ej.",
-        "vol.", "núm.", "pág.", "ed.",
+        "vol.", "núm.", "pág.", "ed.", "fig.", "cap.",
+        "Cía.", "S.A.", "S.L.", "avda.", "c/", "dpto.",
+        "tel.", "máx.", "mín.", "aprox.", "ref.",
+    ],
+
+    "perplexity_boosters": [
+        "de hecho", "sin ir más lejos", "que digamos",
+        "ni mucho menos", "por así decirlo", "en cierta medida",
+        "paradójicamente", "curiosamente", "irónicamente",
+        "a fin de cuentas", "al cabo", "en resumidas cuentas",
+        "dicho de otro modo", "más o menos", "en todo caso",
+        "a todas luces", "bien mirado", "todo sea dicho",
     ],
 
     "profile_targets": {

@@ -37,10 +37,14 @@ class HumanizeOptions:
             self.intensity = 0
         elif self.intensity > 100:
             self.intensity = 100
-        if self.profile not in ("chat", "web", "seo", "docs", "formal"):
+        _VALID_PROFILES = (
+            "chat", "web", "seo", "docs", "formal",
+            "academic", "marketing", "social", "email",
+        )
+        if self.profile not in _VALID_PROFILES:
             raise ValueError(
                 f"Неизвестный профиль: {self.profile}. "
-                "Доступны: chat, web, seo, docs, formal"
+                f"Доступны: {', '.join(_VALID_PROFILES)}"
             )
 
 
@@ -142,6 +146,42 @@ PROFILES = {
         "repetition_intensity": 0.4,
         "liveliness_intensity": 0.0,
         "target_sentence_len": (15, 30),
+    },
+    "academic": {
+        "description": "Академический / научный стиль",
+        "typography": {"dash": "—", "quotes": "«»", "ellipsis": "…"},
+        "decancel_intensity": 0.15,
+        "structure_intensity": 0.25,
+        "repetition_intensity": 0.3,
+        "liveliness_intensity": 0.0,
+        "target_sentence_len": (18, 35),
+    },
+    "marketing": {
+        "description": "Маркетинговый / рекламный стиль",
+        "typography": {"dash": "–", "quotes": '"', "ellipsis": "..."},
+        "decancel_intensity": 0.9,
+        "structure_intensity": 0.9,
+        "repetition_intensity": 0.6,
+        "liveliness_intensity": 0.8,
+        "target_sentence_len": (6, 16),
+    },
+    "social": {
+        "description": "Социальные сети / посты",
+        "typography": {"dash": "-", "quotes": '"', "ellipsis": "..."},
+        "decancel_intensity": 1.0,
+        "structure_intensity": 1.0,
+        "repetition_intensity": 0.7,
+        "liveliness_intensity": 0.9,
+        "target_sentence_len": (5, 14),
+    },
+    "email": {
+        "description": "Деловая переписка",
+        "typography": {"dash": "–", "quotes": '"', "ellipsis": "..."},
+        "decancel_intensity": 0.5,
+        "structure_intensity": 0.5,
+        "repetition_intensity": 0.6,
+        "liveliness_intensity": 0.1,
+        "target_sentence_len": (10, 22),
     },
 }
 

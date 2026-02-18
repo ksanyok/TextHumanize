@@ -4,10 +4,66 @@ from __future__ import annotations
 
 import re
 
-from texthumanize.lang_detect import detect_language
 from texthumanize.analyzer import TextAnalyzer
+from texthumanize.lang_detect import detect_language
 from texthumanize.pipeline import Pipeline
-from texthumanize.utils import HumanizeOptions, HumanizeResult, AnalysisReport
+from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
+
+# Ленивый импорт новых модулей (для обратной совместимости)
+_detectors = None
+_paraphrase = None
+_tone = None
+_watermark = None
+_spinner = None
+_coherence = None
+
+
+def _get_detectors():
+    global _detectors
+    if _detectors is None:
+        import texthumanize.detectors as _d
+        _detectors = _d
+    return _detectors
+
+
+def _get_paraphrase():
+    global _paraphrase
+    if _paraphrase is None:
+        import texthumanize.paraphrase as _p
+        _paraphrase = _p
+    return _paraphrase
+
+
+def _get_tone():
+    global _tone
+    if _tone is None:
+        import texthumanize.tone as _t
+        _tone = _t
+    return _tone
+
+
+def _get_watermark():
+    global _watermark
+    if _watermark is None:
+        import texthumanize.watermark as _w
+        _watermark = _w
+    return _watermark
+
+
+def _get_spinner():
+    global _spinner
+    if _spinner is None:
+        import texthumanize.spinner as _s
+        _spinner = _s
+    return _spinner
+
+
+def _get_coherence():
+    global _coherence
+    if _coherence is None:
+        import texthumanize.coherence as _c
+        _coherence = _c
+    return _coherence
 
 
 def humanize(
@@ -320,3 +376,305 @@ def _split_into_chunks(text: str, chunk_size: int) -> list[str]:
         chunks.append("\n\n".join(current))
 
     return chunks if chunks else [text]
+
+
+# ═══════════════════════════════════════════════════════════════
+#  НОВЫЕ API ФУНКЦИИ v0.4.0
+# ═══════════════════════════════════════════════════════════════
+
+def detect_ai(text: str, lang: str = "auto") -> dict:
+    """Определить вероятность AI-генерации текста.
+
+    Использует 12 независимых статистических метрик:
+    entropy, burstiness, vocabulary, zipf, stylometry,
+    ai_patterns, punctuation, coherence, grammar_perfection,
+    opening_diversity, readability_consistency, rhythm.
+
+    Args:
+        text: Текст для проверки (рекомендуется 100+ слов).
+        lang: Код языка ('auto' для автоопределения).
+
+    Returns:
+        Словарь с результатами:
+            - score (float): 0..1, вероятность AI-генерации
+            - verdict (str): 'human', 'mixed', или 'ai'
+            - confidence (float): 0..1, уверенность
+            - metrics (dict): Подробные метрики
+
+    Examples:
+        >>> result = detect_ai("This is a remarkably compelling text.")
+        >>> print(f"AI: {result['score']:.2f}, verdict: {result['verdict']}")
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    det = _get_detectors()
+    result = det.detect_ai(text, lang=lang)
+    return {
+        "score": result.ai_probability,
+        "verdict": result.verdict,
+        "confidence": result.confidence,
+        "metrics": {
+            "entropy": result.entropy_score,
+            "burstiness": result.burstiness_score,
+            "vocabulary": result.vocabulary_score,
+            "zipf": result.zipf_score,
+            "stylometry": result.stylometry_score,
+            "ai_patterns": result.pattern_score,
+            "punctuation": result.punctuation_score,
+            "coherence": result.coherence_score,
+            "grammar_perfection": result.grammar_score,
+            "opening_diversity": result.opening_score,
+            "readability_consistency": result.readability_score,
+            "rhythm": result.rhythm_score,
+        },
+        "explanations": result.explanations,
+        "lang": lang,
+    }
+
+
+def detect_ai_batch(texts: list[str], lang: str = "auto") -> list[dict]:
+    """Пакетная проверка текстов на AI-генерацию.
+
+    Args:
+        texts: Список текстов.
+        lang: Код языка.
+
+    Returns:
+        Список результатов detect_ai для каждого текста.
+    """
+    return [detect_ai(t, lang=lang) for t in texts]
+
+
+def paraphrase(
+    text: str,
+    lang: str = "auto",
+    intensity: float = 0.5,
+    seed: int | None = None,
+) -> str:
+    """Перефразировать текст, сохраняя смысл.
+
+    Применяет синтаксические трансформации:
+    - Перестановка клауз
+    - Active ↔ Passive (EN)
+    - Номинализация/вербализация
+    - Расщепление/объединение предложений
+
+    Args:
+        text: Текст для перефразирования.
+        lang: Код языка.
+        intensity: 0..1, доля предложений для изменения.
+        seed: Зерно RNG.
+
+    Returns:
+        Перефразированный текст.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+    return _get_paraphrase().paraphrase_text(
+        text, lang=lang, intensity=intensity, seed=seed
+    )
+
+
+def analyze_tone(text: str, lang: str = "auto") -> dict:
+    """Анализировать тональность текста.
+
+    Определяет тон (formal, casual, academic, marketing и т.д.),
+    формальность, субъективность.
+
+    Args:
+        text: Текст для анализа.
+        lang: Код языка.
+
+    Returns:
+        Словарь с результатами:
+            - primary_tone (str): Основной тон.
+            - formality (float): 0=разговорный, 1=формальный.
+            - subjectivity (float): 0=объективный, 1=субъективный.
+            - scores (dict): Баллы по всем тонам.
+            - confidence (float): Уверенность.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    report = _get_tone().analyze_tone(text, lang=lang)
+    return {
+        "primary_tone": report.primary_tone.value,
+        "formality": report.formality,
+        "subjectivity": report.subjectivity,
+        "scores": report.scores,
+        "confidence": report.confidence,
+        "markers": report.markers,
+    }
+
+
+def adjust_tone(
+    text: str,
+    target: str = "neutral",
+    lang: str = "auto",
+    intensity: float = 0.5,
+) -> str:
+    """Скорректировать тональность текста.
+
+    Args:
+        text: Текст.
+        target: Целевой тон — 'formal', 'casual', 'friendly',
+                'academic', 'professional', 'neutral', 'marketing'.
+        lang: Код языка.
+        intensity: 0..1, степень коррекции.
+
+    Returns:
+        Текст с скорректированной тональностью.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+    return _get_tone().adjust_tone(
+        text, target=target, lang=lang, intensity=intensity
+    )
+
+
+def detect_watermarks(text: str, lang: str = "auto") -> dict:
+    """Обнаружить скрытые водяные знаки в тексте.
+
+    Проверяет: zero-width символы, гомоглифы, стеганографию,
+    статистические AI watermarks.
+
+    Args:
+        text: Текст для проверки.
+        lang: Код языка.
+
+    Returns:
+        Словарь:
+            - has_watermarks (bool): Найдены ли водяные знаки.
+            - watermark_types (list): Типы обнаруженных знаков.
+            - cleaned_text (str): Очищенный текст.
+            - details (list): Подробности.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    report = _get_watermark().detect_watermarks(text, lang=lang)
+    return {
+        "has_watermarks": report.has_watermarks,
+        "watermark_types": report.watermark_types,
+        "cleaned_text": report.cleaned_text,
+        "details": report.details,
+        "characters_removed": report.characters_removed,
+        "confidence": report.confidence,
+    }
+
+
+def clean_watermarks(text: str, lang: str = "auto") -> str:
+    """Очистить текст от водяных знаков.
+
+    Args:
+        text: Текст.
+        lang: Код языка.
+
+    Returns:
+        Текст без водяных знаков.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+    return _get_watermark().clean_watermarks(text, lang=lang)
+
+
+def spin(
+    text: str,
+    lang: str = "auto",
+    intensity: float = 0.5,
+    seed: int | None = None,
+) -> str:
+    """Спиннинг текста — создание уникальной версии.
+
+    Args:
+        text: Исходный текст.
+        lang: Код языка.
+        intensity: 0..1, доля слов для замены.
+        seed: Зерно RNG.
+
+    Returns:
+        Уникальная версия текста.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+    return _get_spinner().spin_text(
+        text, lang=lang, intensity=intensity, seed=seed
+    )
+
+
+def spin_variants(
+    text: str,
+    count: int = 5,
+    lang: str = "auto",
+    intensity: float = 0.5,
+) -> list[str]:
+    """Сгенерировать несколько уникальных версий текста.
+
+    Args:
+        text: Исходный текст.
+        count: Количество вариантов.
+        lang: Код языка.
+        intensity: 0..1, доля слов для замены.
+
+    Returns:
+        Список уникальных версий.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+    return _get_spinner().generate_variants(
+        text, count=count, lang=lang, intensity=intensity
+    )
+
+
+def analyze_coherence(text: str, lang: str = "auto") -> dict:
+    """Анализ когерентности (связности) текста.
+
+    Args:
+        text: Текст для анализа.
+        lang: Код языка.
+
+    Returns:
+        Словарь с метриками когерентности:
+            - overall (float): 0..1
+            - lexical_cohesion (float)
+            - transition_score (float)
+            - topic_consistency (float)
+            - issues (list): Обнаруженные проблемы
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    coh = _get_coherence()
+    analyzer = coh.CoherenceAnalyzer(lang=lang)
+    report = analyzer.analyze(text)
+    return {
+        "overall": report.overall,
+        "lexical_cohesion": report.lexical_cohesion,
+        "transition_score": report.transition_score,
+        "topic_consistency": report.topic_consistency,
+        "sentence_opening_diversity": report.sentence_opening_diversity,
+        "paragraph_count": report.paragraph_count,
+        "avg_paragraph_length": report.avg_paragraph_length,
+        "issues": report.issues,
+    }
+
+
+def full_readability(text: str, lang: str = "auto") -> dict:
+    """Полный анализ читабельности текста.
+
+    Включает: Flesch-Kincaid, Coleman-Liau, ARI, SMOG,
+    Gunning Fog, Dale-Chall.
+
+    Args:
+        text: Текст для анализа.
+        lang: Код языка.
+
+    Returns:
+        Словарь со всеми метриками читабельности.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    analyzer = TextAnalyzer(lang=lang)
+    return analyzer.full_readability(text)

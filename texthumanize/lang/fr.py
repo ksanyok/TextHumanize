@@ -102,16 +102,42 @@ LANG_FR = {
         "qualité": ["niveau", "valeur", "calibre"],
     },
 
-    "sentence_starters": {},
+    "sentence_starters": {
+        "Ce": ["Cet", "Tel", "Un tel", "Pareil"],
+        "Il": ["L'homme", "On", "Le sujet"],
+        "Elle": ["La personne", "Cette femme", "On"],
+        "Ils": ["Ceux-ci", "L'équipe", "Ces gens"],
+        "Nous": ["Notre équipe", "L'équipe", "On"],
+        "Le": ["Un", "Chaque", "Ce"],
+        "La": ["Une", "Cette", "Chaque"],
+        "Les": ["Des", "Ces", "Plusieurs"],
+        "Dans": ["Au sein de", "En", "À travers"],
+        "Pour": ["Afin de", "En vue de", "Quant à"],
+        "En": ["Dans", "Au cours de", "Lors de"],
+    },
 
     "colloquial_markers": [
         "franchement", "en fait", "au fond", "à vrai dire",
-        "disons", "en gros",
+        "disons", "en gros", "avouons-le", "entre nous",
+        "pour tout dire", "à bien y réfléchir",
+        "curieusement", "étonnamment", "tout bien considéré",
+        "soit dit en passant", "au passage", "notons au passage",
     ],
 
     "abbreviations": [
         "M.", "Mme.", "Dr.", "Prof.", "etc.", "p. ex.",
-        "c.-à-d.", "cf.", "vol.", "éd.",
+        "c.-à-d.", "cf.", "vol.", "éd.", "fig.", "chap.",
+        "Cie.", "Sté.", "av.", "bd.", "sq.", "réf.",
+        "env.", "max.", "min.", "resp.", "tél.",
+    ],
+
+    "perplexity_boosters": [
+        "ma foi", "somme toute", "tant s'en faut",
+        "nolens volens", "de facto", "ipso facto",
+        "curieusement", "paradoxalement", "soit dit en passant",
+        "autrement dit", "à tout prendre", "en l'occurrence",
+        "il n'empêche que", "bon gré mal gré", "peu ou prou",
+        "en quelque sorte", "pour ainsi dire", "à la rigueur",
     ],
 
     "profile_targets": {

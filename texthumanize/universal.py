@@ -18,7 +18,8 @@ from __future__ import annotations
 
 import random
 import re
-from collections import Counter
+
+from texthumanize.sentence_split import split_sentences
 
 
 class UniversalProcessor:
@@ -142,7 +143,7 @@ class UniversalProcessor:
         if prob < 0.3:
             return text
 
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text)
         if len(sentences) < 4:
             return text
 
@@ -152,15 +153,15 @@ class UniversalProcessor:
         if avg_len == 0:
             return text
 
-        variance = sum((l - avg_len) ** 2 for l in lengths) / len(lengths)
+        variance = sum((sl - avg_len) ** 2 for sl in lengths) / len(lengths)
         cv = (variance ** 0.5) / avg_len  # Коэффициент вариации
 
         # Если уже достаточно вариативно — не трогаем
         if cv > 0.5:
             return text
 
-        modified = False
         result = list(sentences)
+        changed = False
 
         # Стратегия: разбить некоторые длинные предложения
         for i in range(len(result)):
@@ -172,13 +173,13 @@ class UniversalProcessor:
                 split = self._universal_split_sentence(result[i])
                 if split:
                     result[i] = split
-                    modified = True
+                    changed = True
                     self.changes.append({
                         "type": "universal_burstiness",
                         "description": f"Разбивка длинного предложения ({wlen} слов)",
                     })
 
-        if modified:
+        if changed:
             return ' '.join(result)
         return text
 
@@ -233,7 +234,6 @@ class UniversalProcessor:
         # Ищем случаи "слово ... слово" в пределах 5 слов
         # и убираем второе вхождение (заменяем на "" или пропускаем)
         # Это грубый подход, аккуратнее с контекстом
-        modified = False
         seen_content: dict[str, int] = {}
         window = 8
 
@@ -258,8 +258,6 @@ class UniversalProcessor:
         """Добавить вариативность пунктуации."""
         if prob < 0.2:
             return text
-
-        original = text
 
         # AI часто использует ; — заменяем часть на .
         if ';' in text and self.rng.random() < prob * 0.5:

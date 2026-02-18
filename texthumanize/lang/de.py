@@ -123,18 +123,44 @@ LANG_DE = {
     },
 
     # Альтернативные начала предложений
-    "sentence_starters": {},
+    "sentence_starters": {
+        "Dies": ["Das", "So etwas", "All das"],
+        "Es": ["Das", "Man", "Dies"],
+        "Man": ["Wir", "Es", "Die Leute"],
+        "Der": ["Ein", "Dieser", "Jener"],
+        "Die": ["Eine", "Diese", "Jene"],
+        "Das": ["Ein", "Dieses", "Jenes"],
+        "Wir": ["Unser Team", "Man", "Alle"],
+        "In": ["Innerhalb", "Während", "Bei"],
+        "Für": ["Zum", "Um", "Was"],
+        "Auch": ["Zudem", "Ebenso", "Darüber hinaus"],
+    },
 
     # Разговорные маркеры
     "colloquial_markers": [
         "ehrlich gesagt", "im Grunde", "im Prinzip", "genau genommen",
-        "unter uns gesagt", "nebenbei",
+        "unter uns gesagt", "nebenbei", "streng genommen",
+        "wenn man so will", "mal ehrlich", "ganz offen",
+        "sozusagen", "wohlgemerkt", "im Endeffekt",
+        "lustigerweise", "witzigerweise", "überraschenderweise",
     ],
 
     # Аббревиатуры
     "abbreviations": [
         "z.B.", "d.h.", "u.a.", "etc.", "bzw.", "ca.", "vgl.",
         "Dr.", "Prof.", "Nr.", "Str.", "Mio.", "Mrd.",
+        "Abb.", "Abs.", "Abt.", "Anm.", "Art.", "Bd.", "Bsp.",
+        "bzgl.", "ggf.", "Hrsg.", "inkl.", "Jh.", "Kap.",
+        "max.", "min.", "Mrd.", "o.Ä.", "s.o.", "s.u.", "usw.",
+    ],
+
+    # Бустеры перплексии (редкие слова/обороты для снижения AI-скора)
+    "perplexity_boosters": [
+        "quasi", "fürwahr", "meinetwegen", "schlechthin",
+        "mutmaßlich", "gegebenenfalls", "just", "just in dem Moment",
+        "obendrein", "kurioserweise", "paradoxerweise",
+        "nichtsdestoweniger", "strenggenommen", "wenngleich",
+        "beileibe", "mitnichten", "keineswegs", "allerdings",
     ],
 
     # Целевые метрики

@@ -36,8 +36,7 @@ import random
 import re
 from collections import Counter
 
-from texthumanize.lang import get_lang_pack, LANGUAGES
-
+from texthumanize.sentence_split import split_sentences
 
 # ─── Характерные стилевые паттерны автоматически сгенерированного текста ───
 
@@ -532,7 +531,7 @@ class TextNaturalizer:
         Ключевой метод натурализации: однообразие длины предложений —
         характерный признак автоматически сгенерированного текста.
         """
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text, lang=self.lang)
         if len(sentences) < 5:
             return text
 
@@ -542,7 +541,7 @@ class TextNaturalizer:
             return text
 
         # CV — коэффициент вариации
-        variance = sum((l - avg) ** 2 for l in lengths) / len(lengths)
+        variance = sum((sl - avg) ** 2 for sl in lengths) / len(lengths)
         cv = (variance ** 0.5) / avg
 
         # Если вариативность уже хорошая — не трогаем
@@ -662,7 +661,7 @@ class TextNaturalizer:
         if not self._boosters:
             return text
 
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text, lang=self.lang)
         if len(sentences) < 5:
             return text
 
@@ -764,20 +763,35 @@ class TextNaturalizer:
         if prob < 0.3:
             return text
 
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text, lang=self.lang)
         if len(sentences) < 4:
             return text
 
         modified = False
         result = list(sentences)
 
-        # Проверяем: начинаются ли многие предложения одинаково
+        # Проверяем: начинаются ли предложения одинаково
         starts = [s.split()[0].lower().rstrip('.,;:') if s.split() else '' for s in sentences]
         start_counts = Counter(starts)
         repeated_starts = {s: c for s, c in start_counts.items() if c >= 3 and s}
 
+        # Вводные обороты для вставки
+        introductory = {
+            "en": ["Interestingly,", "In practice,", "As expected,",
+                   "Notably,", "In many cases,", "More specifically,",
+                   "At the same time,", "On reflection,", "In reality,"],
+            "ru": ["Интересно, что", "На практике", "Как ожидалось,",
+                   "В частности,", "Во многих случаях", "Более того,",
+                   "Одновременно с этим", "В действительности",
+                   "По сути,", "Стоит заметить, что"],
+            "uk": ["Цікаво, що", "На практиці", "Як і очікувалось,",
+                   "Зокрема,", "У багатьох випадках", "Більш того,",
+                   "Водночас", "Насправді", "По суті,"],
+        }
+        intros = introductory.get(self.lang, introductory.get("en", []))
+
+        # 1. Исправляем повторяющиеся начала
         if repeated_starts:
-            # Перестраиваем предложения с повторяющимися началами
             for start_word, count in repeated_starts.items():
                 fixed = 0
                 for i in range(len(result)):
@@ -794,22 +808,103 @@ class TextNaturalizer:
                         fixed += 1
                         continue
 
-                    # Пробуем инвертировать: переставить обстоятельство/дополнение вперёд
-                    if len(words) > 6:
-                        # Ищем запятую — обычно после вводного оборота
-                        sent_text = result[i]
-                        comma_idx = sent_text.find(',')
-                        if comma_idx > 0 and comma_idx < len(sent_text) // 2:
-                            # Есть вводный оборот — уже хорошо
-                            pass
-                        else:
-                            # Пробуем перенести последние 2-3 слова в начало
-                            # Это грубая эвристика, но повышает вариативность
-                            pass
-                    fixed += 1
+                    sent_text = result[i]
 
+                    # Стратегия 1: Добавить вводный оборот
+                    if self.rng.random() < 0.4 and intros:
+                        intro = self.rng.choice(intros)
+                        lower_start = sent_text[0].lower() + sent_text[1:]
+                        result[i] = f"{intro} {lower_start}"
+                        modified = True
+                        self.changes.append({
+                            "type": "naturalize_structure",
+                            "detail": f"add_introductory_phrase '{intro}'",
+                        })
+
+                    # Стратегия 2: Инверсия (перенос обстоятельства вперёд)
+                    elif len(words) > 6:
+                        # Ищем наречие или PP в конце
+                        last_word = words[-1].rstrip('.!?')
+                        punct = sent_text[-1] if sent_text[-1] in '.!?' else '.'
+
+                        # EN: слово на -ly → наречие, выносим
+                        if (self.lang == "en" and last_word.endswith("ly")
+                                and len(last_word) > 4):
+                            front = last_word[0].upper() + last_word[1:] + ","
+                            rest_words = words[:-1]
+                            rest_words[0] = rest_words[0][0].lower() + rest_words[0][1:]
+                            rest = " ".join(rest_words)
+                            result[i] = f"{front} {rest}{punct}"
+                            modified = True
+                            self.changes.append({
+                                "type": "naturalize_structure",
+                                "detail": f"adverb_fronting '{last_word}'",
+                            })
+
+                        # RU/UK: вынос обстоятельственного оборота
+                        elif self.lang in ("ru", "uk") and len(words) > 7:
+                            # Если предложение содержит запятую — перебрасываем
+                            # часть после запятой в начало
+                            comma_idx = sent_text.rfind(',')
+                            if comma_idx > len(sent_text) // 2:
+                                part_after = sent_text[comma_idx + 1:].strip().rstrip('.!?')
+                                part_before = sent_text[:comma_idx].strip()
+                                if len(part_after.split()) >= 2:
+                                    front = part_after[0].upper() + part_after[1:]
+                                    part_before = part_before[0].lower() + part_before[1:]
+                                    result[i] = f"{front}, {part_before}{punct}"
+                                    modified = True
+                                    self.changes.append({
+                                        "type": "naturalize_structure",
+                                        "detail": "clause_fronting",
+                                    })
+
+                    # Стратегия 3: Использовать sentence_starter замену
+                    elif self.rng.random() < 0.5:
+                        starters = self.pack.get("sentence_starters", {})
+                        first_word = words[0].rstrip('.,;:')
+                        if first_word in starters and starters[first_word]:
+                            new_start = self.rng.choice(starters[first_word])
+                            rest = " ".join(words[1:])
+                            result[i] = f"{new_start} {rest}"
+                            modified = True
+                            self.changes.append({
+                                "type": "naturalize_structure",
+                                "detail": f"sentence_starter '{first_word}' → '{new_start}'",
+                            })
+
+                    fixed += 1
                     if fixed >= count:
                         break
+
+        # 2. Иногда вставляем короткий фрагмент между длинными предложениями
+        if len(result) > 3 and self.rng.random() < prob * 0.5:
+            fragments = {
+                "en": ["A key point.", "Worth noting.", "Not always.",
+                       "But not only.", "And yet.", "A small detail."],
+                "ru": ["Важный момент.", "Стоит учесть.", "Но не всегда.",
+                       "И это не всё.", "Небольшое уточнение.", "Вот в чём дело."],
+                "uk": ["Важливий момент.", "Варто врахувати.", "Але не завжди.",
+                       "І це не все.", "Невелике уточнення.", "Ось у чому справа."],
+            }
+            frags = fragments.get(self.lang, fragments.get("en", []))
+            if frags:
+                # Вставляем между двумя длинными предложениями
+                for i in range(1, len(result) - 1):
+                    words_prev = len(result[i - 1].split())
+                    words_curr = len(result[i].split())
+                    if words_prev > 15 and words_curr > 15 and self.rng.random() < 0.3:
+                        fragment = self.rng.choice(frags)
+                        result.insert(i, fragment)
+                        modified = True
+                        self.changes.append({
+                            "type": "naturalize_structure",
+                            "detail": f"insert_fragment '{fragment}'",
+                        })
+                        break  # Один фрагмент за вызов
+
+        if modified:
+            return ' '.join(result)
 
         return text
 
@@ -858,7 +953,6 @@ class TextNaturalizer:
             "let us": "let's",
         }
 
-        modified = False
         for full, short in contractions.items():
             if self.rng.random() > prob * 0.7:
                 continue
@@ -876,7 +970,6 @@ class TextNaturalizer:
                     replacement = replacement[0].upper() + replacement[1:]
 
                 text = text[:match.start()] + replacement + text[match.end():]
-                modified = True
                 self.changes.append({
                     "type": "naturalize_contraction",
                     "original": original,

@@ -83,7 +83,7 @@ LANG_EN = {
         "promulgates": ["announces", "publishes"],
         "stipulate": ["require", "specify"],
         "stipulates": ["requires", "specifies"],
-        "aforementioned": ["this", "mentioned above"],
+        # "aforementioned" already defined above
         "predominantly": ["mostly", "mainly"],
         "approximately": ["about", "around"],
         "sufficient": ["enough", "adequate"],

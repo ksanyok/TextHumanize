@@ -6,7 +6,7 @@ import random
 import re
 
 from texthumanize.lang import get_lang_pack
-from texthumanize.utils import get_profile, intensity_probability, coin_flip
+from texthumanize.utils import coin_flip, get_profile, intensity_probability
 
 
 class Debureaucratizer:

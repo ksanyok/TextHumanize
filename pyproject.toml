@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texthumanize"
-version = "0.3.0"
-description = "Алгоритмическая гуманизация текста — преобразует автоматически сгенерированные тексты в естественные"
+version = "0.5.0"
+description = "Алгоритмическая гуманизация текста с AI-детекцией, тональным анализом, перефразированием и спиннингом"
 readme = "README.md"
 license = {text = "Personal Use Only"}
 requires-python = ">=3.9"
@@ -16,6 +16,9 @@ keywords = [
     "text", "humanize", "nlp", "typography", "readability",
     "natural-language", "text-processing", "style",
     "multilingual", "text-naturalization",
+    "ai-detection", "gpt-detector", "paraphrase", "tone-analysis",
+    "watermark-detection", "content-spinner", "text-coherence",
+    "morphology", "sentence-splitter",
     "russian", "ukrainian", "german", "french", "spanish",
     "polish", "portuguese", "italian"
 ]
@@ -48,10 +51,13 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.1.0",
+    "mypy>=1.0",
+    "pre-commit>=3.0",
 ]
 
 [project.scripts]
 texthumanize = "texthumanize.cli:main"
+texthumanize-api = "texthumanize.api:run_server"
 
 [project.urls]
 Homepage = "https://github.com/ksanyok/TextHumanize"
@@ -77,3 +83,11 @@ target-version = "py39"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+ignore_missing_imports = true

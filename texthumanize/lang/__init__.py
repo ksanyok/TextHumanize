@@ -4,15 +4,15 @@
 и любые другие языки через универсальный процессор.
 """
 
-from texthumanize.lang.ru import LANG_RU
-from texthumanize.lang.uk import LANG_UK
-from texthumanize.lang.en import LANG_EN
 from texthumanize.lang.de import LANG_DE
-from texthumanize.lang.fr import LANG_FR
+from texthumanize.lang.en import LANG_EN
 from texthumanize.lang.es import LANG_ES
+from texthumanize.lang.fr import LANG_FR
+from texthumanize.lang.it import LANG_IT
 from texthumanize.lang.pl import LANG_PL
 from texthumanize.lang.pt import LANG_PT
-from texthumanize.lang.it import LANG_IT
+from texthumanize.lang.ru import LANG_RU
+from texthumanize.lang.uk import LANG_UK
 
 LANGUAGES = {
     "ru": LANG_RU,

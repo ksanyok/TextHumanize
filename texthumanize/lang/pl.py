@@ -98,16 +98,42 @@ LANG_PL = {
         "jakość": ["poziom", "standard", "klasa"],
     },
 
-    "sentence_starters": {},
+    "sentence_starters": {
+        "To": ["Owo", "Takie", "Taki"],
+        "On": ["Człowiek", "Osoba", "Podmiot"],
+        "Ona": ["Osoba", "Specjalistka", "Kobieta"],
+        "Oni": ["Ci", "Zespół", "Ludzie ci"],
+        "My": ["Nasz zespół", "Grupa", "Wszyscy"],
+        "Ten": ["Ów", "Taki", "Dany"],
+        "Ta": ["Owa", "Dana", "Taka"],
+        "W": ["Wewnątrz", "Podczas", "W trakcie"],
+        "Dla": ["Aby", "W celu", "Na rzecz"],
+        "Także": ["Również", "Oprócz tego", "Poza tym"],
+    },
 
     "colloquial_markers": [
         "szczerze mówiąc", "tak naprawdę", "de facto",
         "w gruncie rzeczy", "w zasadzie", "ogólnie rzecz biorąc",
+        "prawdę mówiąc", "bądź co bądź", "co tu dużo mówić",
+        "nomen omen", "co ciekawe", "nawiasem mówiąc",
+        "jakby nie patrzeć", "koniec końców", "z całą pewnością",
+        "jak by to powiedzieć",
     ],
 
     "abbreviations": [
         "dr", "prof.", "mgr", "inż.", "np.", "itd.", "itp.",
         "wg", "zob.", "tzw.", "ok.", "mln", "mld",
+        "ul.", "al.", "pl.", "ks.", "bp.", "abp.",
+        "pkt", "str.", "rys.", "tab.", "rozdz.",
+    ],
+
+    "perplexity_boosters": [
+        "ni stąd ni zowąd", "nolens volens", "de facto",
+        "bądź co bądź", "ni mniej ni więcej", "co tu dużo mówić",
+        "paradoksalnie", "kuriozalnie", "ironicznie",
+        "poniekąd", "niejako", "do pewnego stopnia",
+        "co prawda", "owszem", "jakkolwiek", "atoli",
+        "wszelako", "niemniej jednak",
     ],
 
     "profile_targets": {

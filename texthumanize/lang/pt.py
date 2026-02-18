@@ -94,16 +94,43 @@ LANG_PT = {
         "qualidade": ["nível", "padrão", "valor"],
     },
 
-    "sentence_starters": {},
+    "sentence_starters": {
+        "Isto": ["Tal", "Esse", "O presente"],
+        "Ele": ["A pessoa", "O sujeito", "O indivíduo"],
+        "Ela": ["A pessoa", "A especialista", "A autora"],
+        "Eles": ["Aqueles", "A equipa", "Essas pessoas"],
+        "Nós": ["A nossa equipa", "O grupo", "Todos nós"],
+        "O": ["Um", "Cada", "Este"],
+        "A": ["Uma", "Esta", "Cada"],
+        "Os": ["Uns", "Estes", "Vários"],
+        "Em": ["Dentro de", "Durante", "No âmbito de"],
+        "Para": ["A fim de", "De modo a", "Com vista a"],
+        "Também": ["Igualmente", "Da mesma forma", "Ademais"],
+    },
 
     "colloquial_markers": [
         "na verdade", "sinceramente", "no fundo",
         "digamos", "basicamente", "aliás",
+        "para ser honesto", "entre nós", "diga-se de passagem",
+        "curiosamente", "para dizer a verdade",
+        "bem vistas as coisas", "por assim dizer",
+        "no fim das contas", "afinal de contas", "por falar nisso",
     ],
 
     "abbreviations": [
         "Sr.", "Sra.", "Dr.", "Prof.", "etc.", "p. ex.",
-        "vol.", "n.º", "pág.", "ed.",
+        "vol.", "n.º", "pág.", "ed.", "fig.", "cap.",
+        "Lda.", "S.A.", "av.", "r.", "tel.", "ref.",
+        "máx.", "mín.", "aprox.", "dept.",
+    ],
+
+    "perplexity_boosters": [
+        "diga-se de passagem", "a bem dizer", "por assim dizer",
+        "nem mais nem menos", "de facto", "ipso facto",
+        "paradoxalmente", "curiosamente", "ironicamente",
+        "em boa verdade", "a rigor", "em bom rigor",
+        "por sinal", "aliás", "entretanto",
+        "de certa forma", "em certa medida", "a título de exemplo",
     ],
 
     "profile_targets": {

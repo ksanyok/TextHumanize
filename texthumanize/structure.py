@@ -6,8 +6,8 @@ import random
 import re
 
 from texthumanize.lang import get_lang_pack
-from texthumanize.utils import get_profile, intensity_probability, coin_flip
-from texthumanize.tokenizer import TokenizedText, Paragraph, Sentence
+from texthumanize.sentence_split import split_sentences
+from texthumanize.utils import coin_flip, get_profile, intensity_probability
 
 
 class StructureDiversifier:
@@ -130,8 +130,7 @@ class StructureDiversifier:
         if not starters:
             return text
 
-        # Разбиваем на предложения (простой способ)
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text, lang=self.lang)
         if len(sentences) < 2:
             return text
 
@@ -175,7 +174,7 @@ class StructureDiversifier:
         if not split_conjs:
             return text
 
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text, lang=self.lang)
         result = []
 
         for sent in sentences:
@@ -242,7 +241,7 @@ class StructureDiversifier:
         target = self.profile.get("target_sentence_len", (10, 22))
         min_len = target[0]  # Минимальная целевая длина
 
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text, lang=self.lang)
         if len(sentences) < 2:
             return text
 

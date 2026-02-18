@@ -95,16 +95,44 @@ LANG_IT = {
         "qualità": ["livello", "standard", "valore"],
     },
 
-    "sentence_starters": {},
+    "sentence_starters": {
+        "Questo": ["Tale", "Un tale", "Il presente"],
+        "Lui": ["La persona", "Il soggetto", "L'individuo"],
+        "Lei": ["La persona", "La specialista", "L'autrice"],
+        "Loro": ["Quelli", "Il team", "Queste persone"],
+        "Noi": ["Il nostro team", "Il gruppo", "Tutti noi"],
+        "Il": ["Un", "Ogni", "Questo"],
+        "La": ["Una", "Questa", "Ogni"],
+        "Le": ["Delle", "Queste", "Alcune"],
+        "In": ["All'interno di", "Durante", "Nel corso di"],
+        "Per": ["Al fine di", "Allo scopo di", "In vista di"],
+        "Anche": ["Inoltre", "Ugualmente", "Pure"],
+    },
 
     "colloquial_markers": [
         "onestamente", "in realtà", "in fondo",
         "diciamo", "in pratica", "tra l'altro",
+        "per essere onesti", "tra di noi", "detto fra noi",
+        "curiosamente", "per la verità",
+        "a ben vedere", "per così dire",
+        "alla fin fine", "in fin dei conti", "a proposito",
     ],
 
     "abbreviations": [
         "Sig.", "Sig.ra", "Dott.", "Prof.", "ecc.",
-        "es.", "vol.", "pag.", "ed.", "cap.",
+        "es.", "vol.", "pag.", "ed.", "cap.", "fig.",
+        "S.p.A.", "S.r.l.", "v.", "p.za", "tel.", "rif.",
+        "max.", "min.", "ca.", "app.",
+    ],
+
+    "perplexity_boosters": [
+        "per così dire", "a ben vedere", "in buona sostanza",
+        "né più né meno", "di fatto", "ipso facto",
+        "paradossalmente", "curiosamente", "ironicamente",
+        "a rigore", "in un certo senso",
+        "a conti fatti", "tutto sommato", "con riguardo a",
+        "detto ciò", "sia come sia", "in ogni caso",
+        "per quanto mi riguarda", "a dirla tutta",
     ],
 
     "profile_targets": {

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import random
-import re
 
 from texthumanize.lang import get_lang_pack
-from texthumanize.utils import get_profile, intensity_probability, coin_flip
+from texthumanize.sentence_split import split_sentences
+from texthumanize.utils import coin_flip, get_profile, intensity_probability
 
 
 class LivelinessInjector:
@@ -61,7 +61,7 @@ class LivelinessInjector:
         if not markers:
             return text
 
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text, lang=self.lang)
         if len(sentences) < 4:
             return text
 

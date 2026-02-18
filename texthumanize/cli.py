@@ -7,7 +7,20 @@ import json
 import sys
 
 from texthumanize import __version__
-from texthumanize.core import humanize, analyze, explain
+from texthumanize.core import (
+    adjust_tone,
+    analyze,
+    analyze_coherence,
+    analyze_tone,
+    detect_ai,
+    detect_watermarks,
+    explain,
+    full_readability,
+    humanize,
+    paraphrase,
+    spin,
+    spin_variants,
+)
 
 
 def main():
@@ -45,7 +58,8 @@ def main():
     parser.add_argument(
         "-p", "--profile",
         default="web",
-        choices=["chat", "web", "seo", "docs", "formal"],
+        choices=["chat", "web", "seo", "docs", "formal",
+                 "academic", "marketing", "social", "email"],
         help="Профиль обработки (по умолчанию: web)",
     )
     parser.add_argument(
@@ -87,6 +101,63 @@ def main():
         help="Показать подробный отчёт об изменениях",
     )
     parser.add_argument(
+        "--detect-ai",
+        action="store_true",
+        help="Проверка на AI-генерацию",
+    )
+    parser.add_argument(
+        "--paraphrase",
+        action="store_true",
+        help="Перефразировать текст",
+    )
+    parser.add_argument(
+        "--tone",
+        metavar="TARGET",
+        help="Скорректировать тональность (neutral, formal, casual, academic, marketing)",
+    )
+    parser.add_argument(
+        "--tone-analyze",
+        action="store_true",
+        help="Анализ тональности",
+    )
+    parser.add_argument(
+        "--watermarks",
+        action="store_true",
+        help="Обнаружить и удалить водяные знаки",
+    )
+    parser.add_argument(
+        "--spin",
+        action="store_true",
+        help="Спиннинг текста",
+    )
+    parser.add_argument(
+        "--variants",
+        type=int,
+        metavar="N",
+        help="Генерация N вариантов спиннинга",
+    )
+    parser.add_argument(
+        "--coherence",
+        action="store_true",
+        help="Анализ когерентности",
+    )
+    parser.add_argument(
+        "--readability",
+        action="store_true",
+        help="Полный анализ читабельности",
+    )
+    parser.add_argument(
+        "--api",
+        action="store_true",
+        help="Запустить API-сервер",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Порт API-сервера (по умолчанию: 8080)",
+    )
+    parser.add_argument(
         "--seed",
         type=int,
         help="Сид для воспроизводимости результатов",
@@ -98,6 +169,12 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # API-сервер (не требует input)
+    if getattr(args, 'api', False):
+        from texthumanize.api import run_server
+        run_server(port=args.port)
+        return
 
     # Чтение входного текста
     if args.input == "-":
@@ -112,6 +189,68 @@ def main():
         except Exception as e:
             print(f"Ошибка чтения файла: {e}", file=sys.stderr)
             sys.exit(1)
+
+    # AI Detection
+    if getattr(args, 'detect_ai', False):
+        result = detect_ai(text, lang=args.lang)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    # Paraphrase
+    if getattr(args, 'paraphrase', False):
+        result = paraphrase(text, lang=args.lang, intensity=args.intensity / 100.0)
+        _output_text(result, args)
+        return
+
+    # Tone analysis
+    if getattr(args, 'tone_analyze', False):
+        result = analyze_tone(text, lang=args.lang)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    # Tone adjustment
+    if getattr(args, 'tone', None):
+        result = adjust_tone(text, target=args.tone, lang=args.lang)
+        _output_text(result, args)
+        return
+
+    # Watermarks
+    if getattr(args, 'watermarks', False):
+        result = detect_watermarks(text, lang=args.lang)
+        if result['has_watermarks']:
+            print(json.dumps(result, ensure_ascii=False, indent=2), file=sys.stderr)
+            _output_text(result['cleaned_text'], args)
+        else:
+            print('Водяные знаки не обнаружены.', file=sys.stderr)
+            _output_text(text, args)
+        return
+
+    # Spin
+    if getattr(args, 'spin', False):
+        result = spin(text, lang=args.lang, intensity=args.intensity / 100.0)
+        _output_text(result, args)
+        return
+
+    # Spin variants
+    if getattr(args, 'variants', None):
+        results = spin_variants(text, count=args.variants, lang=args.lang)
+        for i, v in enumerate(results, 1):
+            print(f"--- Вариант {i} ---")
+            print(v)
+            print()
+        return
+
+    # Coherence
+    if getattr(args, 'coherence', False):
+        result = analyze_coherence(text, lang=args.lang)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    # Readability
+    if getattr(args, 'readability', False):
+        result = full_readability(text, lang=args.lang)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
 
     # Режим анализа
     if args.analyze:
@@ -188,6 +327,20 @@ def main():
             print(f"Отчёт сохранён в {args.report}", file=sys.stderr)
         except Exception as e:
             print(f"Ошибка записи отчёта: {e}", file=sys.stderr)
+
+
+def _output_text(text: str, args) -> None:
+    """Output text to file or stdout."""
+    if args.output:
+        try:
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write(text)
+            print(f"Результат сохранён в {args.output}", file=sys.stderr)
+        except Exception as e:
+            print(f"Ошибка записи файла: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(text)
 
 
 if __name__ == "__main__":
