@@ -32,7 +32,6 @@ from dataclasses import dataclass, field
 
 from texthumanize.sentence_split import split_sentences
 
-
 # ═══════════════════════════════════════════════════════════════
 #  Data classes
 # ═══════════════════════════════════════════════════════════════
@@ -61,58 +60,101 @@ class ParaphraseReport:
 
 _CLAUSE_REORDER = {
     "en": [
-        (re.compile(r'^(Although|Though|Even though|While|Whereas)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r'^(Because|Since|As)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')} {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r'^(If)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')} if {m.group(2).strip()}"),
-        (re.compile(r'^(When|Whenever|Once)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')} {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r'^(Before|After|Until)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')} {m.group(1).lower()} {m.group(2).strip()}"),
+        (re.compile(
+            r'^(Although|Though|Even though|While|Whereas)\s+(.+?),\s+(.+)$',
+            re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r'^(Because|Since|As)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')} "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r'^(If)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')} "
+                    f"if {m.group(2).strip()}")),
+        (re.compile(
+            r'^(When|Whenever|Once)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')} "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r'^(Before|After|Until)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')} "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
     ],
     "ru": [
-        (re.compile(r'^(Хотя|Несмотря на то,? что)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r'^(Поскольку|Так как|Потому что)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r'^(Если)\s+(.+?),\s+(то\s+)?(.+)$', re.I),
-         lambda m: f"{m.group(4).strip().rstrip('.!?')}, если {m.group(2).strip()}"),
-        (re.compile(r'^(Когда|Пока|После того как)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r'^(До того как|Прежде чем)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
+        (re.compile(
+            r'^(Хотя|Несмотря на то,? что)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r'^(Поскольку|Так как|Потому что)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r'^(Если)\s+(.+?),\s+(то\s+)?(.+)$', re.I),
+         lambda m: (f"{m.group(4).strip().rstrip('.!?')}, "
+                    f"если {m.group(2).strip()}")),
+        (re.compile(
+            r'^(Когда|Пока|После того как)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r'^(До того как|Прежде чем)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
     ],
     "uk": [
-        (re.compile(r'^(Хоча|Незважаючи на те,? що)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r'^(Оскільки|Тому що)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r'^(Якщо)\s+(.+?),\s+(то\s+)?(.+)$', re.I),
-         lambda m: f"{m.group(4).strip().rstrip('.!?')}, якщо {m.group(2).strip()}"),
-        (re.compile(r'^(Коли|Після того як|Перш ніж)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
+        (re.compile(
+            r'^(Хоча|Незважаючи на те,? що)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r'^(Оскільки|Тому що)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r'^(Якщо)\s+(.+?),\s+(то\s+)?(.+)$', re.I),
+         lambda m: (f"{m.group(4).strip().rstrip('.!?')}, "
+                    f"якщо {m.group(2).strip()}")),
+        (re.compile(
+            r'^(Коли|Після того як|Перш ніж)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
     ],
     "de": [
-        (re.compile(r'^(Obwohl|Obgleich|Obschon)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r'^(Weil|Da)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r'^(Wenn|Falls)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
+        (re.compile(
+            r'^(Obwohl|Obgleich|Obschon)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r'^(Weil|Da)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r'^(Wenn|Falls)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
     ],
     "fr": [
-        (re.compile(r"^(Bien que|Même si|Quoique)\s+(.+?),\s+(.+)$", re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r"^(Puisque|Parce que|Comme)\s+(.+?),\s+(.+)$", re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
+        (re.compile(
+            r"^(Bien que|Même si|Quoique)\s+(.+?),\s+(.+)$", re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r"^(Puisque|Parce que|Comme)\s+(.+?),\s+(.+)$", re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
     ],
     "es": [
-        (re.compile(r'^(Aunque|A pesar de que)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
-        (re.compile(r'^(Porque|Ya que|Como)\s+(.+?),\s+(.+)$', re.I),
-         lambda m: f"{m.group(3).strip().rstrip('.!?')}, {m.group(1).lower()} {m.group(2).strip()}"),
+        (re.compile(
+            r'^(Aunque|A pesar de que)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
+        (re.compile(
+            r'^(Porque|Ya que|Como)\s+(.+?),\s+(.+)$', re.I),
+         lambda m: (f"{m.group(3).strip().rstrip('.!?')}, "
+                    f"{m.group(1).lower()} {m.group(2).strip()}")),
     ],
 }
 

@@ -563,12 +563,11 @@ class AIDetector:
                 for s in spans
             ]
 
-        lang_pack = get_lang_pack(effective_lang)
+        _lang_pack = get_lang_pack(effective_lang)  # noqa: F841
         half = max(window // 2, 1)
 
         # Pre-compute fast per-sentence features
         sent_texts = [s.text for s in spans]
-        sent_lens = [len(s.text.split()) for s in spans]
 
         results: list[AIDetector.SentenceScore] = []
 
@@ -895,7 +894,6 @@ class AIDetector:
             return 0.5
 
         # Теоретический Zipf: f(r) = f(1) / r^alpha (Mandelbrot)
-        f1 = sorted_freqs[0]
         n = min(50, len(sorted_freqs))
 
         # Log-log линейная регрессия для оценки alpha
@@ -1088,10 +1086,14 @@ class AIDetector:
 
         # 5. Impersonal / hedging constructions (very strong AI signal)
         hedging_patterns = [
-            r"\bit is (?:important|essential|crucial|worth|necessary|imperative|critical)",
-            r"\bit (?:should be|must be|can be|could be) (?:noted|mentioned|emphasized|highlighted|stressed)",
-            r"\bthis (?:approach|method|strategy|technique|framework|analysis) (?:has|enables|ensures|provides|facilitates)",
-            r"\bplays? (?:a |an )?(?:crucial|important|vital|significant|key|essential|fundamental|pivotal) role",
+            r"\bit is (?:important|essential|crucial|worth"
+            r"|necessary|imperative|critical)",
+            r"\bit (?:should be|must be|can be|could be) "
+            r"(?:noted|mentioned|emphasized|highlighted|stressed)",
+            r"\bthis (?:approach|method|strategy|technique"
+            r"|framework|analysis) (?:has|enables|ensures|provides|facilitates)",
+            r"\bplays? (?:a |an )?(?:crucial|important|vital"
+            r"|significant|key|essential|fundamental|pivotal) role",
             r"\bin (?:today's|the modern|the current|the contemporary|an increasingly) ",
             r"\bone of the most (?:important|significant|pressing|critical|challenging)",
             r"\bthe (?:importance|significance|impact|role) of\b",
@@ -1132,7 +1134,8 @@ class AIDetector:
             if para_lens:
                 mean_len = sum(para_lens) / len(para_lens)
                 if mean_len > 0:
-                    cv = (sum((l - mean_len)**2 for l in para_lens) / len(para_lens)) ** 0.5 / mean_len
+                    dev = sum((x - mean_len)**2 for x in para_lens)
+                    cv = (dev / len(para_lens)) ** 0.5 / mean_len
                     symmetry_score = max(0, 1.0 - cv * 2)  # Low CV = symmetric = AI-like
 
         score = (
@@ -1791,7 +1794,8 @@ class AIDetector:
         sim_values: list[float] = []
 
         for i in range(len(sent_words)):
-            for j in range(i + 2, min(i + 6, len(sent_words))):  # Skip adjacent, check within window of 6
+            # Skip adjacent, check within window of 6
+            for j in range(i + 2, min(i + 6, len(sent_words))):
                 intersection = len(sent_words[i] & sent_words[j])
                 union = len(sent_words[i] | sent_words[j])
                 if union > 0:
@@ -2012,7 +2016,7 @@ class AIDetector:
                 continue
 
             first_sent = para_sentences[0].lower()
-            rest = ' '.join(para_sentences[1:]).lower()
+            _rest = ' '.join(para_sentences[1:]).lower()  # noqa: F841
 
             # Topic sentence indicators:
             # 1. First sentence contains abstract/general words

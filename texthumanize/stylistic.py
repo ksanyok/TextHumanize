@@ -171,7 +171,9 @@ class StylisticAnalyzer:
             sorted_lengths[mid] if len(sorted_lengths) % 2 == 1
             else (sorted_lengths[mid - 1] + sorted_lengths[mid]) / 2.0
         )
-        variance = sum((l - fp.sentence_length_mean) ** 2 for l in lengths) / len(lengths)
+        variance = sum(
+            (sl - fp.sentence_length_mean) ** 2 for sl in lengths
+        ) / len(lengths)
         fp.sentence_length_std = variance ** 0.5
 
         # Мода

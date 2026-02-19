@@ -9,7 +9,6 @@ from texthumanize.lang import get_lang_pack
 from texthumanize.morphology import get_morphology
 from texthumanize.utils import coin_flip, get_profile, intensity_probability
 
-
 # ═══════════════════════════════════════════════════════════════
 #  Context guards — запрещаем замену слова, если рядом стоят
 #  слова, меняющие его семантику.

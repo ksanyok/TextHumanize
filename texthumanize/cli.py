@@ -387,13 +387,13 @@ def _handle_detect_command(args, remaining: list[str]) -> None:
     print(f"  Confidence: {result['confidence']:.1%}")
 
     if verbose:
-        print(f"\n  Metrics (0.0=human, 1.0=AI):")
+        print("\n  Metrics (0.0=human, 1.0=AI):")
         for metric, val in result["metrics"].items():
             bar = "█" * int(val * 20) + "░" * (20 - int(val * 20))
             print(f"    {metric:25s} {bar} {val:.2f}")
 
         if result.get("explanations"):
-            print(f"\n  Key findings:")
+            print("\n  Key findings:")
             for exp in result["explanations"]:
                 if exp:
                     print(f"    • {exp}")

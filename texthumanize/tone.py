@@ -498,7 +498,10 @@ class ToneAdjuster:
         current: ToneLevel, target: ToneLevel
     ) -> tuple[str, str] | None:
         """Определить направление коррекции."""
-        formal_levels = {ToneLevel.FORMAL, ToneLevel.ACADEMIC, ToneLevel.PROFESSIONAL, ToneLevel.MARKETING}
+        formal_levels = {
+            ToneLevel.FORMAL, ToneLevel.ACADEMIC,
+            ToneLevel.PROFESSIONAL, ToneLevel.MARKETING,
+        }
         informal_levels = {ToneLevel.CASUAL, ToneLevel.FRIENDLY}
 
         if current in informal_levels and target in formal_levels:

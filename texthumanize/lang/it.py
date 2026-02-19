@@ -50,7 +50,6 @@ LANG_IT = {
         "olistico": ["globale", "complessivo", "d'insieme"],
         "catalizzare": ["stimolare", "accelerare", "innescare"],
         "corroborare": ["confermare", "avvalorare", "sostenere"],
-        "preponderante": ["principale", "dominante", "maggiore"],
         "concomitante": ["simultaneo", "parallelo", "congiunto"],
         "perenne": ["duraturo", "stabile", "continuo"],
         "trasversale": ["comune", "condiviso", "generale"],

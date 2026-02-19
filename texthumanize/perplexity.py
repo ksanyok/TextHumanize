@@ -75,7 +75,7 @@ class PerplexityEstimator:
         # 2. Словарная энтропия
         report.word_entropy = self._calc_word_entropy(words)
 
-        # 3. Предсказуемость биграмм  
+        # 3. Предсказуемость биграмм
         report.bigram_predictability = self._calc_bigram_predictability(words)
 
         # 4. Vocabulary richness (TTR)

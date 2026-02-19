@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from difflib import SequenceMatcher
 from typing import Callable, Protocol
 
 from texthumanize.analyzer import TextAnalyzer
 from texthumanize.decancel import Debureaucratizer
 from texthumanize.lang import has_deep_support
-from texthumanize.stylistic import StylisticAnalyzer, StylisticFingerprint
 from texthumanize.liveliness import LivelinessInjector
 from texthumanize.naturalizer import TextNaturalizer
 from texthumanize.normalizer import TypographyNormalizer
@@ -15,11 +15,10 @@ from texthumanize.paraphraser_ext import SemanticParaphraser
 from texthumanize.repetitions import RepetitionReducer
 from texthumanize.segmenter import Segmenter
 from texthumanize.structure import StructureDiversifier
+from texthumanize.stylistic import StylisticAnalyzer, StylisticFingerprint
 from texthumanize.universal import UniversalProcessor
-from texthumanize.utils import HumanizeOptions, HumanizeResult
+from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
 from texthumanize.validator import QualityValidator
-
-from difflib import SequenceMatcher
 
 
 class StagePlugin(Protocol):

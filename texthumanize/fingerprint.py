@@ -9,14 +9,11 @@ Zero-dependency, pure Python.
 from __future__ import annotations
 
 import math
-import re
 import statistics
 from dataclasses import dataclass, field
-from typing import Any
 
 from texthumanize.lang_detect import detect_language
 from texthumanize.sentence_split import split_sentences
-
 
 # ═════════════════════════════════════════════════════════════
 #  AUTHOR FINGERPRINT
@@ -343,7 +340,9 @@ class AuthorFingerprint:
             n_sent = len(first_words) or 1
             p.pronoun_start_ratio = sum(1 for w in first_words if w in _PRONOUNS_EN) / n_sent
             p.article_start_ratio = sum(1 for w in first_words if w in _ARTICLES_EN) / n_sent
-            p.conjunction_start_ratio = sum(1 for w in first_words if w in _CONJUNCTIONS_EN) / n_sent
+            p.conjunction_start_ratio = (
+                sum(1 for w in first_words if w in _CONJUNCTIONS_EN) / n_sent
+            )
 
         # Paragraph-level
         paragraphs = [p_text for p_text in text.split("\n") if p_text.strip()]

@@ -31,6 +31,7 @@ __version__ = "0.8.2"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
+from texthumanize.autotune import AutoTuner
 from texthumanize.core import (
     adjust_tone,
     adversarial_calibrate,
@@ -58,7 +59,6 @@ from texthumanize.core import (
 )
 from texthumanize.pipeline import Pipeline
 from texthumanize.stylistic import STYLE_PRESETS, StylisticAnalyzer, StylisticFingerprint
-from texthumanize.autotune import AutoTuner
 from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
 
 __all__ = [
