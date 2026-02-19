@@ -1,23 +1,25 @@
 {
   "name": "texthumanize",
-  "version": "0.8.1",
-  "description": "Algorithmic text humanization — transforms machine-generated text into natural, human-sounding prose",
-  "main": "index.js",
-  "keywords": [
-    "text", "humanize", "nlp", "typography", "readability",
-    "natural-language", "text-processing", "multilingual",
-    "text-naturalization"
-  ],
+  "version": "0.8.2",
+  "private": true,
+  "description": "Text style normalization & readability engine — Python, TypeScript, PHP",
   "repository": {
     "type": "git",
     "url": "https://github.com/ksanyok/TextHumanize"
   },
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
-    "humanize": "echo 'TextHumanize is a Python library. Install with: pip install texthumanize'"
+    "test:js": "cd js && npm test",
+    "build:js": "cd js && npm run build",
+    "test:py": "python -m pytest tests/ -q",
+    "test:php": "cd php && vendor/bin/phpunit",
+    "test": "npm run test:py && npm run test:js && npm run test:php"
   },
+  "workspaces": [
+    "js"
+  ],
   "engines": {
-    "node": ">=14"
+    "node": ">=18"
   },
   "funding": {
     "type": "paypal",

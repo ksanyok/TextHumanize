@@ -1,25 +1,23 @@
 {
     "name": "ksanyok/texthumanize",
-    "description": "Algorithmic text humanization — transforms machine-generated text into natural, human-sounding prose",
-    "type": "library",
+    "description": "Text style normalization & readability engine — zero-dependency, multi-language",
+    "type": "project",
     "keywords": [
-        "text", "humanize", "nlp", "typography", "readability",
-        "natural-language", "text-processing", "multilingual"
+        "text-processing", "nlp", "typography", "readability",
+        "style-normalization", "multilingual", "text-naturalization"
     ],
     "homepage": "https://github.com/ksanyok/TextHumanize",
     "license": "proprietary",
     "require": {
-        "php": ">=7.4"
+        "php": ">=8.1"
     },
     "autoload": {
         "psr-4": {
-            "TextHumanize\\": "src/"
+            "TextHumanize\\": "php/src/"
         }
     },
     "scripts": {
-        "post-install-cmd": [
-            "echo 'TextHumanize is a Python library. Install with: pip install texthumanize'"
-        ]
+        "test": "cd php && vendor/bin/phpunit"
     },
     "funding": [
         {

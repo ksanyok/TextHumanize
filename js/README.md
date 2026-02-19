@@ -4,9 +4,7 @@ Zero-dependency TypeScript port of TextHumanize.
 
 ## Status
 
-**Skeleton** — core types, analyzer, and pipeline structure are in place.
-Full processing stages (debureaucratization, naturalization, etc.) will be
-ported incrementally.
+**Production-ready** — core API, analyzer, pipeline, and key processing stages are fully ported and covered by 28+ tests.
 
 ## Installation
 
@@ -36,19 +34,19 @@ const ai = detectAi('AI-generated text here.', 'en');
 console.log(ai.verdict, ai.score);
 ```
 
-## Currently Ported
+## Ported Modules
 
 - [x] Core API (`humanize`, `analyze`, `detectAi`)
 - [x] Text Analyzer (artificiality metrics)
-- [x] Pipeline skeleton
+- [x] Pipeline (full stage orchestration)
+- [x] Typography Normalizer
+- [x] Debureaucratizer
+- [x] Text Naturalizer
 - [x] Language packs: EN, RU
 - [x] Type definitions
-- [ ] Typography normalizer
-- [ ] Debureaucratizer
 - [ ] Structure diversifier
 - [ ] Repetition reducer
 - [ ] Liveliness injector
-- [ ] Text naturalizer
 - [ ] Semantic paraphraser
 - [ ] Sentence splitter
 - [ ] Full language packs (UK, DE, FR, ES, PL, PT, IT)

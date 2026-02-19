@@ -4,7 +4,7 @@
 
 ### The most advanced open-source text naturalization engine
 
-**Transform AI-generated text into authentic, human-like prose — offline, private, and blazing fast**
+**Normalize style, improve readability, and ensure brand-safe content — offline, private, and blazing fast**
 
 <br/>
 
@@ -23,7 +23,7 @@
 [![Ruff](https://img.shields.io/badge/linting-ruff-261230.svg)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen.svg)](https://pre-commit.com/)
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)]()
-[![License](https://img.shields.io/badge/license-Personal%20Use-orange.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Dual%20(Free%20%2B%20Commercial)-blue.svg)](LICENSE)
 
 <br/>
 
@@ -35,7 +35,7 @@
 
 ---
 
-TextHumanize is a **pure-algorithmic text processing engine** that makes machine-generated text indistinguishable from human writing. No neural networks, no API keys, no internet — just 27K+ lines of finely tuned rules, dictionaries, and statistical methods.
+TextHumanize is a **pure-algorithmic text processing engine** that normalizes style, improves readability, and removes mechanical patterns from text. No neural networks, no API keys, no internet — just 27K+ lines of finely tuned rules, dictionaries, and statistical methods.
 
 It normalizes typography, simplifies bureaucratic language, diversifies sentence structure, increases burstiness and perplexity, replaces formulaic phrases, and applies context-aware synonym substitution — all while preserving semantic meaning.
 
@@ -91,6 +91,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 - [Code Quality & Tooling](#code-quality--tooling)
 - [FAQ & Troubleshooting](#faq--troubleshooting)
 - [Contributing](#contributing)
+- [Security & Limits](#security--limits)
 - [For Business & Enterprise](#for-business--enterprise)
 - [Support the Project](#support-the-project)
 - [License & Pricing](#license--pricing)
@@ -99,15 +100,15 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 
 ## Why TextHumanize?
 
-> **The problem:** AI-generated text follows predictable patterns — uniform sentence lengths, bureaucratic vocabulary, formulaic connectors, perfect grammar, and low perplexity. AI detectors like GPTZero, Originality.ai, and Turnitin exploit these patterns.
+> **The problem:** Machine-generated and template-based text often has uniform sentence lengths, bureaucratic vocabulary, formulaic connectors, and low stylistic diversity. This reduces readability, engagement, and brand authenticity.
 
-> **The solution:** TextHumanize algorithmically breaks every detectable pattern while preserving the original meaning. No cloud APIs, no rate limits, no data leaks.
+> **The solution:** TextHumanize algorithmically normalizes text style while preserving the original meaning. Configurable intensity, deterministic output, full change reports. No cloud APIs, no rate limits, no data leaks.
 
 ### Core Advantages
 
 | Advantage | Details |
 |:----------|:--------|
-| 🚀 **Blazing fast** | 56,000+ chars/sec — process a full article in milliseconds, not seconds |
+| 🚀 **Blazing fast** | 30,000+ chars/sec — process a full article in milliseconds, not seconds |
 | 🔒 **100% private** | All processing is local. Your text never leaves your machine |
 | 🎯 **Precise control** | Intensity 0–100, 9 profiles, keyword preservation, max change ratio |
 | 🌍 **9 languages + universal** | Full dictionaries for 9 languages; statistical processor for any other |
@@ -175,7 +176,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 
 ## Comparison with Competitors
 
-### vs. Online Humanizers (Undetectable.ai, HIX Bypass, WriteHuman, etc.)
+### vs. Online Text-Processing Services
 
 | Criterion | TextHumanize | Online Humanizers |
 |:----------|:------------:|:-----------------:|
@@ -202,12 +203,12 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 | Works offline | ✅ | ❌ |
 | Zero dependencies | ✅ | ❌ Requires API key + billing |
 | Deterministic | ✅ Same seed = same output | ❌ Non-deterministic |
-| Speed | **56K chars/sec** | ~500 chars/sec (API) |
+| Speed | **30K+ chars/sec** | ~500 chars/sec (API) |
 | Cost per 1M chars | **$0** | ~$15–60 (GPT-4) |
 | Preserves meaning | ✅ Controlled change ratio | ⚠️ May hallucinate |
 | Max change control | ✅ `max_change_ratio` | ❌ Unpredictable |
 | Self-contained | ✅ pip install, done | ❌ Needs OpenAI account |
-| Detectable as AI | ❌ Breaks AI patterns | ⚠️ AI rewriting AI = still detectable |
+| Deterministic output | ✅ Seed-based | ❌ Non-deterministic |
 
 ### vs. Other Open-Source Libraries
 
@@ -271,7 +272,7 @@ npm install
 
 ```python
 import texthumanize
-print(texthumanize.__version__)  # 0.8.1
+print(texthumanize.__version__)  # 0.8.2
 ```
 
 ### Updating to latest version
@@ -2517,6 +2518,71 @@ pytest --cov=texthumanize
 
 ---
 
+## Security & Limits
+
+### Input Limits
+
+| Parameter | Default | Configurable | Notes |
+|:----------|:-------:|:------------:|:------|
+| Max input length | 500 KB | Yes (`max_input_size`) | Texts above this limit should be processed via chunk API |
+| Max sentence length | 5,000 chars | Internal | Sentences exceeding this are passed through unchanged |
+| Max paragraph count | None | — | No hard limit; memory usage scales linearly |
+
+### Resource Consumption
+
+- **Memory**: ~2.5 MB peak for a 10 KB text; scales linearly with input size  
+- **CPU**: Single-threaded, no background workers or child processes  
+- **Disk**: Zero disk I/O during processing (all dictionaries are in-memory)  
+- **Network**: Zero network calls. Ever. No telemetry, no analytics, no phone-home  
+
+### Regex Safety (ReDoS)
+
+All regular expressions in the library are:
+
+1. **Bounded** — no unbounded repetitions on overlapping character classes  
+2. **Linear-time** — worst-case O(n) execution for any input string  
+3. **Fuzz-tested** — CI runs property-based tests with random Unicode strings up to 100 KB  
+
+No user input is ever compiled into a regex pattern.
+
+### Sandboxing Recommendations
+
+For production deployments processing untrusted input:
+
+```python
+import resource, signal
+
+# Limit memory to 256 MB
+resource.setrlimit(resource.RLIMIT_AS, (256 * 1024 * 1024, 256 * 1024 * 1024))
+
+# Limit CPU time to 10 seconds per call
+signal.alarm(10)
+
+result = humanize(untrusted_text, lang="en")
+
+signal.alarm(0)  # Cancel alarm after success
+```
+
+### Threat Model
+
+| Threat | Mitigation |
+|:-------|:-----------|
+| Denial of service via large input | Use chunk API or enforce `max_input_size` |
+| ReDoS via crafted patterns | All regexes are linear-time; no user input compiled to regex |
+| Data exfiltration | Zero network calls; all processing is local |
+| Supply-chain attack | Zero runtime dependencies; pure stdlib |
+| Non-deterministic output in audit | Seed-based PRNG guarantees reproducibility |
+
+### Testing & Quality Assurance
+
+- **1,584 tests** across Python, PHP, and TypeScript  
+- **99% code coverage** (Python)  
+- **Property-based fuzzing** with random Unicode, empty strings, extremely long inputs  
+- **Golden tests** — reference outputs checked against known-good baselines  
+- **CI/CD** — ruff linting + mypy type checking on every commit  
+
+---
+
 ## For Business & Enterprise
 
 TextHumanize is designed for production use in corporate environments:
@@ -2531,7 +2597,7 @@ TextHumanize is designed for production use in corporate environments:
 | **Reliability** | 1,584 tests across 3 platforms, 99% code coverage, CI/CD with ruff + mypy. |
 | **No vendor lock-in** | Zero dependencies. Pure stdlib. No cloud APIs, no API keys, no rate limits. |
 | **Language coverage** | 9 full language packs + universal statistical processor for any language. |
-| **Licensing** | Clear dual license. [Commercial tiers from $99/year →](COMMERCIAL.md) |
+| **Licensing** | Clear dual license. [Commercial tiers from $199/year →](COMMERCIAL.md) |
 
 ### Processing Modes
 
@@ -2576,9 +2642,9 @@ TextHumanize uses a **dual license model**:
 | Academic / Research | Free License | **Free** |
 | Open-source (non-commercial) | Free License | **Free** |
 | Evaluation / Testing | Free License | **Free** |
-| Commercial — 1 dev, 1 project | Indie | **$99/year** |
-| Commercial — up to 5 devs | Startup | **$299/year** |
-| Commercial — up to 20 devs | Business | **$799/year** |
+| Commercial — 1 dev, 1 project | Indie | **$199/year** |
+| Commercial — up to 5 devs | Startup | **$499/year** |
+| Commercial — up to 20 devs | Business | **$1,499/year** |
 | Enterprise / On-prem / SLA | Enterprise | [Contact us](mailto:ksanyok@me.com) |
 
 All commercial licenses include full source code, updates for 1 year, and email support.

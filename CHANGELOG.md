@@ -3,10 +3,23 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.8.2] - 2026-02-19
+
+### Added
+- **Security & Limits section** in README — input limits, resource consumption, ReDoS safety, sandboxing recommendations, threat model, and testing/QA summary. Addresses enterprise compliance requirements.
+
+### Changed
+- **Enterprise-friendly positioning** — replaced "indistinguishable from human writing" and AI-detector-bypass claims with readability/style normalization messaging throughout README. Removed competitor brand names from comparison headers.
+- **JS/TS README** — updated status from "Skeleton" to "Production-ready"; corrected ported modules checklist to reflect actually ported Typography Normalizer, Debureaucratizer, and TextNaturalizer.
+- **Root package.json** — converted from stub to proper private monorepo config with workspaces, cross-platform test scripts, and `node >= 18` engine requirement.
+- **Root composer.json** — fixed PHP requirement (`>=7.4` → `>=8.1`), corrected PSR-4 autoload path (`src/` → `php/src/`), replaced stub post-install echo with proper test script.
+- **Commercial license pricing** — Indie $99 → $199/yr, Startup $299 → $499/yr, Business $799 → $1,499/yr. Updated across COMMERCIAL.md, LICENSE, and README.
+- **Speed claims** — corrected from 56K to 30K+ chars/sec to match real benchmark data in comparison tables.
+
 ## [0.8.1] - 2026-02-19
 
 ### Added
-- **Dual License** — replaced "Personal Use Only" with clear dual license: free for personal/academic/non-commercial use, commercial licenses from $99/year with 4 tiers (Indie, Startup, Business, Enterprise).
+- **Dual License** — replaced "Personal Use Only" with clear dual license: free for personal/academic/non-commercial use, commercial licenses with 4 tiers (Indie, Startup, Business, Enterprise).
 - **COMMERCIAL.md** — dedicated commercial licensing page with pricing table, feature comparison, FAQ, and purchase instructions.
 - **Full benchmark suite** (`benchmarks/full_benchmark.py`) — reproducible benchmark covering processing speed, AI detection speed, predictability (determinism), memory usage, quality metrics, and change reports.
 - **"For Business & Enterprise" section** in README — corporate-focused block addressing predictability, privacy, auditability, processing modes, and integration options.

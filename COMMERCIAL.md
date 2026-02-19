@@ -6,7 +6,7 @@ TextHumanize is free for personal, academic, and non-commercial use. If your com
 
 ## What You Get
 
-| Feature | Free | Indie $99/yr | Startup $299/yr | Business $799/yr | Enterprise |
+| Feature | Free | Indie $199/yr | Startup $499/yr | Business $1,499/yr | Enterprise |
 |:--------|:----:|:------------:|:---------------:|:----------------:|:----------:|
 | Full source code | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Personal/academic use | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -69,7 +69,7 @@ After payment, you'll receive a license certificate (PDF) with your company name
 | **SDK/API/CLI** | ✅ | API only | API only | varies |
 | **Configurable profiles** | ✅ | ❌ | ❌ | ❌ |
 | **Speed** | 30K+ chars/sec | ~1-5 sec/req | ~2-10 sec/req | varies |
-| **Cost at scale** (1M chars/month) | $99/yr flat | $50-500/mo | $100-2000/mo | $0 + time |
+| **Cost at scale** (1M chars/month) | $199/yr flat | $50-500/mo | $100-2000/mo | $0 + time |
 | **1,584 tests** | ✅ | unknown | N/A | unlikely |
 
 ## Enterprise Contact
