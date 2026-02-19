@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import random
+from typing import Any
 
 from texthumanize.morphology import get_morphology
 
@@ -25,10 +26,18 @@ _NEGATIVE_COLLOCATIONS = {
         ("состоять", "ошибку"),  # "совершить ошибку"
         ("проводить", "время"),  # Ок, но "убивать время" — нет
         ("делать", "промах"),  # "допустить промах"
+        ("поставить", "вопрос"),  # "задать вопрос"
+        ("быстрый", "развитие"),  # "стремительное развитие"
+        ("давать", "ответственность"),  # "нести ответственность"
+        ("покупать", "доверие"),  # "завоевать доверие"
+        ("взять", "выводы"),  # "сделать выводы"
     },
     "uk": {
         ("взяти", "рішення"),
         ("брати", "рішення"),
+        ("давати", "відповідальність"),
+        ("купувати", "довіру"),  # "здобути довіру"
+        ("ставити", "питання"),  # "задати питання"
     },
     "en": {
         ("do", "mistake"),  # "make a mistake"
@@ -37,6 +46,19 @@ _NEGATIVE_COLLOCATIONS = {
         ("big", "temperature"),  # "high temperature"
         ("quick", "food"),  # "fast food"
         ("hard", "decision"),  # "difficult decision" is ok, but "hard decision" also ok
+        ("make", "damage"),  # "cause/do damage"
+        ("do", "progress"),  # "make progress"
+        ("take", "advantage"),  # ok as "take advantage", but NOT "do advantage"
+        ("do", "advantage"),
+        ("give", "attention"),  # "pay attention"
+        ("say", "speech"),  # "give a speech"
+    },
+    "de": {
+        ("machen", "Entscheidung"),  # "eine Entscheidung treffen"
+        ("nehmen", "Schluss"),  # "einen Schluss ziehen"
+        ("geben", "Aufmerksamkeit"),  # "Aufmerksamkeit schenken"
+        ("tun", "Fehler"),  # "einen Fehler machen"
+        ("starker", "Regen"),  # "starker Regen" is OK, but "heftiger" better for heavy
     },
 }
 
@@ -143,7 +165,7 @@ class ContextualSynonyms:
         self.morph = get_morphology(lang)
         self._neg_colloc = _NEGATIVE_COLLOCATIONS.get(lang, set())
         self._pos_colloc = _POSITIVE_COLLOCATIONS.get(lang, {})
-        self._topics = _TOPIC_PREFERENCES.get(lang, {})
+        self._topics: dict[str, dict[str, Any]] = _TOPIC_PREFERENCES.get(lang, {})
         self._detected_topic: str | None = None
 
     def detect_topic(self, text: str) -> str | None:
@@ -266,7 +288,7 @@ class ContextualSynonyms:
         weights = [max(s - min_score + 0.1, 0.1) for _, s in top]
         total = sum(weights)
         r = self.rng.uniform(0, total)
-        cumulative = 0
+        cumulative: float = 0
         for (syn, _), w in zip(top, weights):
             cumulative += w
             if r <= cumulative:
@@ -287,9 +309,9 @@ class ContextualSynonyms:
         result = self.morph.find_synonym_form(original, synonym)
 
         # Сохраняем регистр
-        if original and original[0].isupper() and result and result[0].islower():
-            result = result[0].upper() + result[1:]
-        elif original and original.isupper():
+        if original and original.isupper():
             result = result.upper()
+        elif original and original[0].isupper() and result and result[0].islower():
+            result = result[0].upper() + result[1:]
 
         return result

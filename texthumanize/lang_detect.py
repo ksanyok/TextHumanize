@@ -191,14 +191,14 @@ def _detect_latin_language(text: str) -> str:
                 trigram_scores[lang_code] = score
 
         if trigram_scores:
-            best = max(trigram_scores, key=trigram_scores.get)
+            best = max(trigram_scores, key=lambda k: trigram_scores.get(k, 0))
             if trigram_scores[best] > 5:
                 return best
 
         return "en"  # Ultimate fallback
 
     # Возвращаем язык с наибольшим score
-    best_lang = max(scores, key=scores.get)
+    best_lang = max(scores, key=lambda k: scores.get(k, 0))
 
     # Порог: если лучший score < 6 — вероятно неизвестный язык
     if scores[best_lang] < 6:
@@ -213,7 +213,7 @@ def _detect_latin_language(text: str) -> str:
                 trigram_scores[lang_code] = score
 
         if trigram_scores:
-            best_tri = max(trigram_scores, key=trigram_scores.get)
+            best_tri = max(trigram_scores, key=lambda k: trigram_scores.get(k, 0))
             if trigram_scores[best_tri] > sum(trigrams.values()) * 0.05:
                 return best_tri
 

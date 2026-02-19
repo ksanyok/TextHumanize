@@ -170,13 +170,38 @@ class TextNaturalizer
 
         $prob = $this->intensity / 100.0;
 
+        // Phrase/word replacements — regex-based, safe on full text
         $text = $this->replaceAiPhrases($text, $prob);
         $text = $this->replaceAiWords($text, $prob);
-        $text = $this->injectBurstiness($text, $prob);
-        $text = $this->boostPerplexity($text, $prob);
+
+        // Burstiness & perplexity use splitSentences + implode(' ') which
+        // destroys newline structure.  Process per-line to preserve structure.
+        $text = $this->perParagraph($text, 'injectBurstiness', $prob);
+        $text = $this->perParagraph($text, 'boostPerplexity', $prob);
+
+        // Contractions — regex, safe
         $text = $this->applyContractions($text, $prob);
 
         return $text;
+    }
+
+    /**
+     * Apply a processing method to each non-empty line independently.
+     *
+     * Preserves paragraph / list structure.
+     */
+    private function perParagraph(string $text, string $method, float $prob): string
+    {
+        $lines = explode("\n", $text);
+        $result = [];
+        foreach ($lines as $line) {
+            if (trim($line) === '' || str_contains($line, "\x00THZ_")) {
+                $result[] = $line;
+            } else {
+                $result[] = $this->$method($line, $prob);
+            }
+        }
+        return implode("\n", $result);
     }
 
     /**
@@ -228,6 +253,11 @@ class TextNaturalizer
 
             $pattern = '/\b' . preg_quote($word, '/') . '\b/ui';
             if (preg_match($pattern, $text, $match, PREG_OFFSET_CAPTURE)) {
+                // Context guard: check if replacement is safe
+                if (!ContextGuard::isSafe($word, $text, (int) $match[0][1], (int) $match[0][1] + strlen($match[0][0]))) {
+                    continue;
+                }
+
                 $replacement = $this->rng->choice($replacements);
                 $replacement = self::matchCase($match[0][0], $replacement);
                 $text = substr_replace($text, $replacement, $match[0][1], strlen($match[0][0]));
@@ -407,17 +437,18 @@ class TextNaturalizer
         $changed = false;
 
         for ($i = 2; $i < count($sentences) && $inserts < $maxInserts; $i++) {
-            // Discourse marker after first word
+            // Discourse marker at start of sentence (safer than after word 1 —
+            // avoids splitting multi-word constructions like "Поки що")
             if (Profiles::coinFlip($prob * 0.3, $this->rng) && !empty($boosters['discourse_markers'])) {
                 $marker = $this->rng->choice($boosters['discourse_markers']);
-                $words = preg_split('/\s+/', trim($sentences[$i]), 2);
-                if (count($words) >= 2) {
-                    $sentences[$i] = $words[0] . ', ' . $marker . ', ' . $words[1];
-                    $this->changes[] = ['type' => 'naturalize_perplexity', 'what' => 'discourse_marker'];
-                    $inserts++;
-                    $changed = true;
-                    continue;
-                }
+                $capMarker = mb_strtoupper(mb_substr($marker, 0, 1)) . mb_substr($marker, 1);
+                $sent = $sentences[$i];
+                $lowered = mb_strtolower(mb_substr($sent, 0, 1)) . mb_substr($sent, 1);
+                $sentences[$i] = $capMarker . ', ' . $lowered;
+                $this->changes[] = ['type' => 'naturalize_perplexity', 'what' => 'discourse_marker'];
+                $inserts++;
+                $changed = true;
+                continue;
             }
 
             // Hedge at start

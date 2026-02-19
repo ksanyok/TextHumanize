@@ -130,6 +130,9 @@ class WatermarkDetector:
         # 5. Statistical watermark patterns
         self._detect_statistical_watermarks(text, report)
 
+        # 6. C2PA / IPTC metadata markers
+        self._detect_metadata_markers(text, report)
+
         # Determine overall result
         report.has_watermarks = len(report.watermark_types) > 0
         if report.has_watermarks:
@@ -322,6 +325,76 @@ class WatermarkDetector:
                         f"in {ratio:.1%} of words"
                     )
                     break
+
+    # ───────────────────────────────────────────────────────────
+    #  C2PA / IPTC METADATA MARKERS
+    # ───────────────────────────────────────────────────────────
+
+    # Regex patterns for content provenance metadata embedded in text
+    _METADATA_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+        # C2PA content credential markers
+        (re.compile(
+            r'(?:c2pa|smpte|cr|cai):[a-zA-Z0-9_./-]+',
+            re.IGNORECASE,
+        ), "c2pa_manifest"),
+        # IPTC / XMP metadata namespace prefixes
+        (re.compile(
+            r'(?:iptc|dc|xmp|exif|photoshop|rdf):[a-zA-Z][a-zA-Z0-9_]+',
+            re.IGNORECASE,
+        ), "iptc_metadata"),
+        # Content Credentials / Content Authenticity Initiative strings
+        (re.compile(
+            r'Content\s+Credentials?|Content\s+Authenticity'
+            r'|AI[\s-]?Generated|Machine[\s-]?Generated'
+            r'|Generative[\s-]?AI',
+            re.IGNORECASE,
+        ), "content_provenance"),
+        # Embedded base64 provenance blobs (≥ 40 chars of base64)
+        (re.compile(
+            r'(?:^|[\s;,])([A-Za-z0-9+/]{40,}={0,2})(?:$|[\s;,])',
+            re.MULTILINE,
+        ), "embedded_blob"),
+        # UUID-style provenance identifiers
+        (re.compile(
+            r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
+            re.IGNORECASE,
+        ), "provenance_uuid"),
+    ]
+
+    def _detect_metadata_markers(
+        self, text: str, report: WatermarkReport
+    ) -> None:
+        """Detect C2PA / IPTC content-provenance markers embedded in text.
+
+        Looks for namespace prefixes (c2pa:, iptc:, dc:, xmp:, etc.),
+        Content Credentials strings, base64 provenance blobs and UUIDs
+        that AI systems or pipelines may inject.
+        """
+        found_types: list[str] = []
+        found_details: list[str] = []
+        cleaned = report.cleaned_text
+
+        for pattern, marker_kind in self._METADATA_PATTERNS:
+            matches = pattern.findall(cleaned)
+            if not matches:
+                continue
+            found_types.append(marker_kind)
+            # Show at most 3 samples per kind to keep output readable
+            samples = [m if isinstance(m, str) else m[0]
+                       for m in matches[:3]]
+            found_details.append(
+                f"{marker_kind}: {len(matches)} occurrence(s) "
+                f"(e.g. {', '.join(repr(s[:40]) for s in samples)})"
+            )
+            # Remove detected markers from cleaned text
+            cleaned = pattern.sub('', cleaned)
+
+        if found_types:
+            report.watermark_types.append("metadata_markers")
+            report.details.extend(found_details)
+            # Clean up leftover whitespace after removal
+            cleaned = re.sub(r' {2,}', ' ', cleaned).strip()
+            report.cleaned_text = cleaned
 
     # ───────────────────────────────────────────────────────────
     #  HELPERS

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from typing import Any
 
 from texthumanize import __version__
 from texthumanize.core import (
@@ -37,13 +38,16 @@ def main():
   texthumanize input.txt -o output.txt --report report.json
   texthumanize input.txt --keep "RankBot AI" "Promopilot"
   texthumanize --analyze input.txt
+  texthumanize detect input.txt
+  texthumanize detect input.txt --verbose
+  echo "Текст" | texthumanize detect -
   echo "Текст" | texthumanize -
         """,
     )
 
     parser.add_argument(
         "input",
-        help="Входной файл (или '-' для stdin)",
+        help="Входной файл (или '-' для stdin), или 'detect' для детекции AI",
     )
     parser.add_argument(
         "-o", "--output",
@@ -104,6 +108,11 @@ def main():
         "--detect-ai",
         action="store_true",
         help="Проверка на AI-генерацию",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Подробный вывод (для detect-ai / detect)",
     )
     parser.add_argument(
         "--paraphrase",
@@ -168,7 +177,12 @@ def main():
         version=f"texthumanize {__version__}",
     )
 
-    args = parser.parse_args()
+    args, remaining = parser.parse_known_args()
+
+    # ── Handle detect subcommand ──
+    if args.input == 'detect':
+        _handle_detect_command(args, remaining)
+        return
 
     # API-сервер (не требует input)
     if getattr(args, 'api', False):
@@ -191,6 +205,7 @@ def main():
             sys.exit(1)
 
     # AI Detection
+    result: Any
     if getattr(args, 'detect_ai', False):
         result = detect_ai(text, lang=args.lang)
         print(json.dumps(result, ensure_ascii=False, indent=2))
@@ -327,6 +342,63 @@ def main():
             print(f"Отчёт сохранён в {args.report}", file=sys.stderr)
         except Exception as e:
             print(f"Ошибка записи отчёта: {e}", file=sys.stderr)
+
+
+def _handle_detect_command(args, remaining: list[str]) -> None:
+    """Handle 'texthumanize detect [file] [--verbose] [--json]' command."""
+    detect_input = "-"
+    use_json = False
+    verbose = getattr(args, 'verbose', False)
+
+    for a in remaining:
+        if a == "--json":
+            use_json = True
+        elif a == "--verbose":
+            verbose = True
+        elif not a.startswith("-"):
+            detect_input = a
+
+    if detect_input == "-":
+        text = sys.stdin.read()
+    else:
+        try:
+            with open(detect_input, "r", encoding="utf-8") as f:
+                text = f.read()
+        except FileNotFoundError:
+            print(f"Error: file '{detect_input}' not found", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error reading file: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    lang = args.lang if hasattr(args, 'lang') else "auto"
+    result = detect_ai(text, lang=lang)
+
+    if use_json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    # Human-readable output
+    verdict_icons = {"ai": "🤖", "human": "👤", "mixed": "🔀", "unknown": "❓"}
+    icon = verdict_icons.get(result["verdict"], "")
+
+    print(f"\n  {icon} Verdict: {result['verdict'].upper()}")
+    print(f"  AI Probability: {result['score']:.1%}")
+    print(f"  Confidence: {result['confidence']:.1%}")
+
+    if verbose:
+        print(f"\n  Metrics (0.0=human, 1.0=AI):")
+        for metric, val in result["metrics"].items():
+            bar = "█" * int(val * 20) + "░" * (20 - int(val * 20))
+            print(f"    {metric:25s} {bar} {val:.2f}")
+
+        if result.get("explanations"):
+            print(f"\n  Key findings:")
+            for exp in result["explanations"]:
+                if exp:
+                    print(f"    • {exp}")
+
+    print()
 
 
 def _output_text(text: str, args) -> None:

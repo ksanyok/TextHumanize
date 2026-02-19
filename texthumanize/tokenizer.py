@@ -110,10 +110,6 @@ class Tokenizer:
             raw_sentences = self._split_sentences(raw_para)
 
             for raw_sent in raw_sentences:
-                raw_sent = raw_sent.strip()
-                if not raw_sent:
-                    continue
-
                 sentence = self._parse_sentence(raw_sent)
                 if sentence.words:
                     para.sentences.append(sentence)

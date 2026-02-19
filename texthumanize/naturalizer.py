@@ -24,6 +24,9 @@
 5. **Sentence structure** — предпочтение SVO.
    Решение: инверсия, вставки, фрагменты.
 
+6. **Context-aware replacement (WSD)** — проверка контекста
+   перед заменой слова, чтобы не заменять омонимы в неверном значении.
+
 6. **Perfect grammar** — отсутствие естественных конструкций.
    Решение: добавить живые обороты (не ошибки!).
 
@@ -36,6 +39,7 @@ import random
 import re
 from collections import Counter
 
+from texthumanize.decancel import _is_replacement_safe
 from texthumanize.sentence_split import split_sentences
 
 # ─── Характерные стилевые паттерны автоматически сгенерированного текста ───
@@ -158,15 +162,43 @@ _AI_WORD_REPLACEMENTS = {
     },
     "de": {
         "implementieren": ["umsetzen", "einführen", "einrichten"],
+        "Implementierung": ["Umsetzung", "Einführung"],
         "optimieren": ["verbessern", "anpassen", "verfeinern"],
+        "Optimierung": ["Verbesserung", "Anpassung"],
         "signifikant": ["deutlich", "merklich", "spürbar"],
         "fundamental": ["grundlegend", "wesentlich", "elementar"],
         "innovativ": ["neu", "neuartig", "kreativ"],
         "umfassend": ["breit", "vollständig", "gründlich"],
+        "umfassender": ["breiter", "vollständiger", "gründlicher"],
         "gewährleisten": ["sicherstellen", "sorgen für"],
+        "sicherzustellen": ["zu sorgen", "zu gewährleisten"],
+        "sicherstellen": ["sorgen", "gewährleisten"],
         "darüber hinaus": ["außerdem", "zudem", "dazu"],
         "nichtsdestotrotz": ["trotzdem", "aber", "dennoch"],
         "demzufolge": ["daher", "deshalb", "also"],
+        "evaluieren": ["bewerten", "prüfen", "beurteilen"],
+        "generieren": ["erzeugen", "erstellen", "schaffen"],
+        "adressieren": ["angehen", "behandeln", "lösen"],
+        "essentiell": ["wichtig", "nötig", "wesentlich"],
+        "konsequent": ["folgerichtig", "durchgehend", "stetig"],
+        "adäquat": ["passend", "angemessen", "geeignet"],
+        "sukzessive": ["nach und nach", "schrittweise", "allmählich"],
+        "inhärent": ["eigen", "innewohnend", "wesenseigen"],
+        "primär": ["hauptsächlich", "vor allem", "in erster Linie"],
+        "manifestieren": ["zeigen", "offenbaren", "deutlich machen"],
+        # Noun forms often used in AI text
+        "Berücksichtigung": ["Beachtung", "Rücksicht"],
+        "sorgfältig": ["gründlich", "gewissenhaft", "genau"],
+        "sorgfältige": ["gründliche", "genaue"],
+        "angemessen": ["passend", "richtig", "geeignet"],
+        "grundlegend": ["wesentlich", "elementar", "zentral"],
+        "grundlegenden": ["wesentlichen", "zentralen", "wichtigen"],
+        "verschiedener": ["unterschiedlicher", "diverser", "mehrerer"],
+        "verschiedenen": ["unterschiedlichen", "diversen", "mehreren"],
+        "bestehender": ["vorhandener", "aktueller", "bisheriger"],
+        "erfordert": ["braucht", "verlangt", "benötigt"],
+        "darstellt": ["bildet", "ist", "ausmacht"],
+        "wesentlich": ["wichtig", "zentral", "bedeutend"],
     },
     "fr": {
         "implémenter": ["mettre en place", "réaliser", "installer"],
@@ -179,6 +211,16 @@ _AI_WORD_REPLACEMENTS = {
         "en outre": ["de plus", "aussi", "par ailleurs"],
         "néanmoins": ["toutefois", "cependant", "mais"],
         "par conséquent": ["donc", "du coup", "ainsi"],
+        "conceptualiser": ["penser", "imaginer", "concevoir"],
+        "préconiser": ["recommander", "conseiller", "suggérer"],
+        "appréhender": ["comprendre", "saisir", "cerner"],
+        "substantiel": ["important", "considérable", "ample"],
+        "primordial": ["essentiel", "capital", "vital"],
+        "inhérent": ["propre", "naturel", "lié"],
+        "adéquat": ["adapté", "convenable", "approprié"],
+        "subséquent": ["suivant", "après", "ultérieur"],
+        "préalable": ["avant", "premier", "initial"],
+        "concrétiser": ["réaliser", "accomplir", "matérialiser"],
     },
     "es": {
         "implementar": ["poner en marcha", "llevar a cabo", "aplicar"],
@@ -191,6 +233,16 @@ _AI_WORD_REPLACEMENTS = {
         "además": ["también", "aparte de eso", "igualmente"],
         "sin embargo": ["pero", "no obstante", "aun así"],
         "por consiguiente": ["por eso", "así que", "entonces"],
+        "conceptualizar": ["pensar", "idear", "concebir"],
+        "potenciar": ["fortalecer", "mejorar", "impulsar"],
+        "coadyuvar": ["ayudar", "contribuir", "apoyar"],
+        "paradigmático": ["ejemplar", "modelo", "típico"],
+        "exponencial": ["rápido", "acelerado", "veloz"],
+        "inherente": ["propio", "natural", "intrínseco"],
+        "subsiguiente": ["siguiente", "posterior", "ulterior"],
+        "primordial": ["esencial", "principal", "vital"],
+        "multidimensional": ["variado", "complejo", "amplio"],
+        "viabilizar": ["hacer posible", "permitir", "facilitar"],
     },
     "pl": {
         "implementować": ["wdrożyć", "wprowadzić", "zastosować"],
@@ -202,6 +254,15 @@ _AI_WORD_REPLACEMENTS = {
         "ponadto": ["poza tym", "oprócz tego", "do tego"],
         "niemniej jednak": ["ale", "jednak", "mimo to"],
         "w konsekwencji": ["dlatego", "więc", "zatem"],
+        "ewaluować": ["oceniać", "sprawdzać", "weryfikować"],
+        "koordynować": ["organizować", "zarządzać", "kierować"],
+        "dedykować": ["poświęcać", "przeznaczać", "przydzielać"],
+        "kluczowy": ["główny", "najważniejszy", "centralny"],
+        "zasadniczy": ["główny", "podstawowy", "istotny"],
+        "adekwatny": ["odpowiedni", "stosowny", "właściwy"],
+        "priorytetowy": ["najważniejszy", "główny", "pilny"],
+        "komplementarny": ["uzupełniający", "dodatkowy", "wspierający"],
+        "determinować": ["określać", "wyznaczać", "decydować"],
     },
     "pt": {
         "implementar": ["pôr em prática", "realizar", "aplicar"],
@@ -213,6 +274,15 @@ _AI_WORD_REPLACEMENTS = {
         "além disso": ["também", "por outro lado", "mais ainda"],
         "no entanto": ["mas", "porém", "contudo"],
         "consequentemente": ["por isso", "assim", "então"],
+        "viabilizar": ["possibilitar", "tornar possível", "facilitar"],
+        "operacionalizar": ["pôr em prática", "executar", "realizar"],
+        "primordial": ["essencial", "principal", "vital"],
+        "inerente": ["próprio", "natural", "intrínseco"],
+        "paradigmático": ["exemplar", "modelo", "típico"],
+        "contundente": ["forte", "decisivo", "claro"],
+        "exponencial": ["rápido", "acelerado", "intenso"],
+        "subsequente": ["seguinte", "posterior", "ulterior"],
+        "exaustivo": ["completo", "detalhado", "minucioso"],
     },
     "it": {
         "implementare": ["mettere in atto", "realizzare", "applicare"],
@@ -224,6 +294,15 @@ _AI_WORD_REPLACEMENTS = {
         "inoltre": ["in più", "anche", "per di più"],
         "tuttavia": ["ma", "però", "eppure"],
         "di conseguenza": ["quindi", "perciò", "così"],
+        "determinare": ["stabilire", "decidere", "fissare"],
+        "concretizzare": ["realizzare", "mettere in pratica", "attuare"],
+        "primario": ["principale", "primo", "essenziale"],
+        "inerente": ["proprio", "legato", "connesso"],
+        "preponderante": ["principale", "dominante", "maggiore"],
+        "imprescindibile": ["necessario", "essenziale", "irrinunciabile"],
+        "onnicomprensivo": ["completo", "totale", "globale"],
+        "paradigmatico": ["esemplare", "tipico", "modello"],
+        "finalizzare": ["concludere", "finire", "completare"],
     },
 }
 
@@ -265,6 +344,76 @@ _AI_PHRASE_PATTERNS = {
         "має першочергове значення": ["дуже важливо", "критично важливо"],
         "у сучасному світі": ["сьогодні", "зараз", "у наш час"],
         "на сьогоднішній день": ["зараз", "сьогодні", "поки"],
+    },
+    "de": {
+        "es ist festzustellen": ["es zeigt sich", "klar ist"],
+        "in Anbetracht der Tatsache": ["angesichts", "weil"],
+        "zum Zwecke der": ["für", "um zu"],
+        "es lässt sich konstatieren": ["man sieht", "es zeigt sich"],
+        "von großer Bedeutung": ["wichtig", "bedeutend"],
+        "eine zentrale Rolle spielen": ["wichtig sein", "zentral sein"],
+        "im Hinblick auf": ["für", "bezüglich", "was betrifft"],
+        "aufgrund der Tatsache": ["weil", "da", "denn"],
+        "ist es wesentlich": ["ist es wichtig", "sollte man"],
+        "stellt einen grundlegenden Aspekt dar": [
+            "ist ein wichtiger Punkt", "ist zentral", "spielt eine wichtige Rolle",
+        ],
+        "einen grundlegenden Aspekt": ["einen wichtigen Punkt", "eine Kernfrage"],
+        "unter Berücksichtigung": ["mit Blick auf", "angesichts"],
+        "in Bezug auf": ["zu", "bei", "was betrifft"],
+        "darüber hinaus ist es": ["außerdem ist es", "zudem sollte man"],
+        "Darüber hinaus ist": ["Außerdem ist", "Zudem ist"],
+        "Zudem stellt": ["Und", "Außerdem bildet", "Dazu kommt:"],
+    },
+    "fr": {
+        "il convient de noter": ["notons que", "on remarque que"],
+        "force est de constater": ["on voit que", "clairement"],
+        "dans le cadre de": ["dans", "pendant", "lors de"],
+        "de manière significative": ["nettement", "clairement", "beaucoup"],
+        "joue un rôle crucial": ["est très important", "compte beaucoup"],
+        "revêt une importance": ["est important", "compte"],
+        "il est à souligner": ["soulignons", "important :"],
+        "en vue de": ["pour", "afin de"],
+    },
+    "es": {
+        "es menester señalar": ["cabe decir", "vale notar"],
+        "en el marco de": ["dentro de", "en", "durante"],
+        "de manera significativa": ["mucho", "claramente", "bastante"],
+        "desempeña un papel crucial": ["es muy importante", "es clave"],
+        "reviste especial importancia": ["es importante", "importa mucho"],
+        "resulta imprescindible": ["es necesario", "hace falta"],
+        "con el objetivo de": ["para", "con el fin de"],
+        "en lo que respecta a": ["en cuanto a", "sobre"],
+    },
+    "it": {
+        "è doveroso sottolineare": ["va detto", "bisogna dire"],
+        "nell'ambito di": ["in", "dentro", "durante"],
+        "in maniera significativa": ["molto", "parecchio", "nettamente"],
+        "riveste un ruolo cruciale": ["è molto importante", "conta molto"],
+        "risulta necessario": ["bisogna", "serve", "occorre"],
+        "per quanto concerne": ["per quanto riguarda", "riguardo a"],
+        "al fine di": ["per", "allo scopo di"],
+        "assume un'importanza": ["è importante", "conta"],
+    },
+    "pl": {
+        "należy podkreślić": ["warto powiedzieć", "zaznaczmy"],
+        "w odniesieniu do": ["wobec", "co do", "jeśli chodzi o"],
+        "odgrywa kluczową rolę": ["jest bardzo ważny", "ma duże znaczenie"],
+        "ma fundamentalne znaczenie": ["jest bardzo ważne", "jest kluczowe"],
+        "w istotny sposób": ["znacznie", "dużo", "bardzo"],
+        "mając na uwadze": ["biorąc pod uwagę", "z uwagi na"],
+        "w ramach": ["w", "podczas", "w obrębie"],
+        "w zakresie": ["w", "pod względem", "co do"],
+    },
+    "pt": {
+        "importa referir": ["vale notar", "cabe dizer"],
+        "no âmbito de": ["em", "dentro de", "durante"],
+        "de forma significativa": ["muito", "bastante", "claramente"],
+        "desempenha um papel crucial": ["é muito importante", "é central"],
+        "torna-se imprescindível": ["é preciso", "é necessário"],
+        "no que diz respeito a": ["quanto a", "sobre"],
+        "com o objetivo de": ["para", "a fim de"],
+        "reveste-se de importância": ["é importante", "importa"],
     },
 }
 
@@ -370,19 +519,118 @@ _PERPLEXITY_BOOSTERS = {
         ],
     },
     "de": {
-        "hedges": ["wahrscheinlich", "vermutlich", "wohl", "irgendwie"],
-        "discourse_markers": ["naja", "eigentlich", "im Grunde", "ehrlich gesagt"],
-        "fragments": ["Nicht immer.", "Logisch.", "Kein Wunder."],
+        "hedges": ["wahrscheinlich", "vermutlich", "wohl", "irgendwie",
+                   "möglicherweise", "unter Umständen", "gewissermaßen"],
+        "discourse_markers": ["naja", "eigentlich", "im Grunde", "ehrlich gesagt",
+                              "genau genommen", "streng genommen", "nebenbei"],
+        "parenthetical": [
+            "(wenn man so will)",
+            "(zumindest theoretisch)",
+            "(mehr oder weniger)",
+            "(immerhin)",
+        ],
+        "rhetorical_questions": [
+            "Aber warum ist das wichtig?",
+            "Was bedeutet das nun?",
+            "Klingt bekannt?",
+        ],
+        "fragments": ["Nicht immer.", "Logisch.", "Kein Wunder.",
+                      "Und das aus gutem Grund.", "Gut so.", "Eben."],
     },
     "fr": {
-        "hedges": ["probablement", "sans doute", "peut-être", "en quelque sorte"],
-        "discourse_markers": ["bon", "en fait", "franchement", "disons"],
-        "fragments": ["Pas toujours.", "Logique.", "C'est normal."],
+        "hedges": ["probablement", "sans doute", "peut-être", "en quelque sorte",
+                   "vraisemblablement", "d'une certaine manière", "apparemment"],
+        "discourse_markers": ["bon", "en fait", "franchement", "disons",
+                              "avouons-le", "soit dit en passant", "au passage"],
+        "parenthetical": [
+            "(du moins en théorie)",
+            "(ou presque)",
+            "(à peu de chose près)",
+            "(soyons honnêtes)",
+        ],
+        "rhetorical_questions": [
+            "Mais pourquoi est-ce important ?",
+            "Et alors, que retenir ?",
+            "Ça vous dit quelque chose ?",
+        ],
+        "fragments": ["Pas toujours.", "Logique.", "C'est normal.",
+                      "Et pour cause.", "En un mot.", "Voilà."],
     },
     "es": {
-        "hedges": ["probablemente", "seguramente", "quizás", "en cierto modo"],
-        "discourse_markers": ["bueno", "la verdad", "o sea", "digamos"],
-        "fragments": ["No siempre.", "Lógico.", "Normal."],
+        "hedges": ["probablemente", "seguramente", "quizás", "en cierto modo",
+                   "posiblemente", "de alguna manera", "aparentemente"],
+        "discourse_markers": ["bueno", "la verdad", "o sea", "digamos",
+                              "a decir verdad", "es más", "eso sí"],
+        "parenthetical": [
+            "(al menos en teoría)",
+            "(o casi)",
+            "(más o menos)",
+            "(seamos honestos)",
+        ],
+        "rhetorical_questions": [
+            "¿Pero por qué importa?",
+            "¿Y qué significa eso?",
+            "¿Suena familiar?",
+        ],
+        "fragments": ["No siempre.", "Lógico.", "Normal.",
+                      "Y con razón.", "En una palabra.", "Claro."],
+    },
+    "it": {
+        "hedges": ["probabilmente", "forse", "in un certo senso", "pare",
+                   "verosimilmente", "in qualche modo", "apparentemente"],
+        "discourse_markers": ["beh", "in realtà", "diciamo", "onestamente",
+                              "tra l'altro", "a proposito", "per così dire"],
+        "parenthetical": [
+            "(almeno in teoria)",
+            "(o quasi)",
+            "(più o meno)",
+            "(a ben vedere)",
+        ],
+        "rhetorical_questions": [
+            "Ma perché è importante?",
+            "E cosa significa?",
+            "Suona familiare?",
+        ],
+        "fragments": ["Non sempre.", "Logico.", "Normale.",
+                      "E a ragione.", "In una parola.", "Ecco."],
+    },
+    "pl": {
+        "hedges": ["prawdopodobnie", "zapewne", "być może", "w pewnym sensie",
+                   "przypuszczalnie", "poniekąd", "najwyraźniej"],
+        "discourse_markers": ["no", "tak naprawdę", "powiedzmy", "szczerze mówiąc",
+                              "w gruncie rzeczy", "nawiasem mówiąc", "zresztą"],
+        "parenthetical": [
+            "(przynajmniej w teorii)",
+            "(lub prawie)",
+            "(mniej więcej)",
+            "(bądź co bądź)",
+        ],
+        "rhetorical_questions": [
+            "Ale dlaczego to ważne?",
+            "I co to oznacza?",
+            "Brzmi znajomo?",
+        ],
+        "fragments": ["Nie zawsze.", "Logiczne.", "Normalne.",
+                      "I słusznie.", "Jednym słowem.", "Właśnie."],
+    },
+    "pt": {
+        "hedges": ["provavelmente", "talvez", "de certa forma", "aparentemente",
+                   "possivelmente", "de alguma maneira", "supostamente"],
+        "discourse_markers": ["bom", "na verdade", "digamos", "sinceramente",
+                              "aliás", "por sinal", "a propósito"],
+        "parenthetical": [
+            "(pelo menos em teoria)",
+            "(ou quase)",
+            "(mais ou menos)",
+            "(sejamos honestos)",
+        ],
+        "rhetorical_questions": [
+            "Mas por que isso importa?",
+            "E o que isso significa?",
+            "Soa familiar?",
+        ],
+        "fragments": ["Nem sempre.", "Lógico.", "Normal.",
+                      "E com razão.", "Em uma palavra.", "Pois é."],
     },
 }
 
@@ -407,10 +655,18 @@ class TextNaturalizer:
         self.rng = random.Random(seed)
         self.changes: list[dict[str, str]] = []
 
+        # Морфологический движок для согласования форм
+        from texthumanize.morphology import get_morphology
+        self._morph = get_morphology(lang)
+
         # Загружаем данные для языка (или пустые)
         self._replacements = _AI_WORD_REPLACEMENTS.get(lang, {})
         self._phrase_patterns = _AI_PHRASE_PATTERNS.get(lang, {})
         self._boosters = _PERPLEXITY_BOOSTERS.get(lang, {})
+
+        # Lang pack для sentence_starters и т.д.
+        from texthumanize.lang import get_lang_pack
+        self.pack = get_lang_pack(lang)
 
     def process(self, text: str) -> str:
         """Применить натурализацию к тексту.
@@ -428,27 +684,48 @@ class TextNaturalizer:
 
         prob = self.intensity / 100.0
 
-        # 1. Замена AI-характерных фраз (сначала фразы, потом слова)
+        # 1. Замена AI-характерных фраз (regex на полном тексте — безопасно)
         text = self._replace_ai_phrases(text, prob)
 
-        # 2. Замена AI-характерных слов
+        # 2. Замена AI-характерных слов (regex на полном тексте — безопасно)
         text = self._replace_ai_words(text, prob)
 
-        # 3. Burstiness injection — вариация длины предложений
-        text = self._inject_burstiness(text, prob)
+        # 3-5: Эти методы используют split_sentences + join → обрабатываем
+        # каждый абзац/строку отдельно, чтобы не разрушать структуру
+        text = self._per_paragraph(text, self._inject_burstiness, prob)
 
-        # 4. Perplexity boost — вставка «человеческих» конструкций
         if self.profile in ("chat", "web"):
-            text = self._boost_perplexity(text, prob)
+            text = self._per_paragraph(text, self._boost_perplexity, prob)
 
-        # 5. Sentence structure variation
-        text = self._vary_sentence_structure(text, prob)
+        text = self._per_paragraph(text, self._vary_sentence_structure, prob)
 
-        # 6. Контрактива / разговорность (для EN и профилей chat/web)
+        # 6. Контрактива (regex — безопасно)
         if self.lang == "en" and self.profile in ("chat", "web"):
             text = self._apply_contractions(text, prob)
 
         return text
+
+    # ─── Paragraph-safe wrapper ────────────────────────────────
+
+    def _per_paragraph(
+        self,
+        text: str,
+        fn: object,
+        *args: object,
+    ) -> str:
+        """Применить *fn* к каждой непустой строке независимо.
+
+        Сохраняет структуру абзацев/списков: строки, разделённые ``\\n``,
+        обрабатываются по отдельности и не склеиваются друг с другом.
+        """
+        lines = text.split('\n')
+        result: list[str] = []
+        for line in lines:
+            if line.strip():
+                result.append(fn(line, *args))  # type: ignore[operator]
+            else:
+                result.append(line)
+        return '\n'.join(result)
 
     def _replace_ai_phrases(self, text: str, prob: float) -> str:
         """Заменить фразовые AI-паттерны."""
@@ -506,14 +783,28 @@ class TextNaturalizer:
 
             # Заменяем первое вхождение
             match = matches[0]
+
             original = match.group(0)
             replacement = self.rng.choice(replacements)
 
+            # Context guard: проверяем, безопасна ли замена в контексте
+            if not _is_replacement_safe(
+                word, text, match.start(), match.end(),
+                replacement=replacement,
+            ):
+                continue
+
+            # Морфологическое согласование: подбираем форму синонима
+            if self.lang in ("ru", "uk", "en", "de"):
+                replacement = self._morph.find_synonym_form(
+                    original.lower(), replacement,
+                )
+
             # Сохраняем регистр
-            if original[0].isupper() and replacement[0].islower():
-                replacement = replacement[0].upper() + replacement[1:]
-            elif original.isupper():
+            if original.isupper():
                 replacement = replacement.upper()
+            elif original[0].isupper() and replacement[0].islower():
+                replacement = replacement[0].upper() + replacement[1:]
 
             text = text[:match.start()] + replacement + text[match.end():]
             replaced += 1
@@ -679,9 +970,12 @@ class TextNaturalizer:
                 marker = self.rng.choice(discourse)
                 words = result[idx].split()
                 if len(words) > 4:
-                    # Вставляем после первого слова
-                    words.insert(1, f"{marker},")
-                    result[idx] = ' '.join(words)
+                    # Вставляем в начало предложения (безопасно —
+                    # не разбивает составные конструкции типа "Поки що")
+                    if words[0][0].isupper():
+                        words[0] = words[0][0].lower() + words[0][1:]
+                    cap_marker = marker[0].upper() + marker[1:]
+                    result[idx] = f"{cap_marker}, " + ' '.join(words)
                     insertions += 1
                     self.changes.append({
                         "type": "naturalize_perplexity",

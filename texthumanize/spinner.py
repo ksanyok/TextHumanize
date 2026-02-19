@@ -286,7 +286,7 @@ class ContentSpinner:
         """Развернуть spintax, выбирая случайные варианты."""
         def resolve_match(m: re.Match) -> str:
             options = m.group(1).split("|")
-            return self.rng.choice(options)
+            return str(self.rng.choice(options))
 
         # Многоуровневый spintax — разворачиваем изнутри
         result = spintax

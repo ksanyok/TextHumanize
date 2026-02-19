@@ -39,12 +39,38 @@ class StructureDiversifier
             return $text;
         }
 
+        // AI connectors — regex-based, safe on full text
         $text = $this->replaceAiConnectors($text, $prob);
-        $text = $this->diversifySentenceStarts($text, $prob);
-        $text = $this->splitLongSentences($text, $prob);
-        $text = $this->joinShortSentences($text, $prob);
+
+        // The remaining methods use splitSentences + implode(' ') which
+        // destroys newline structure.  Process each line independently.
+        $text = $this->perParagraph($text, 'diversifySentenceStarts', $prob);
+        $text = $this->perParagraph($text, 'splitLongSentences', $prob);
+        $text = $this->perParagraph($text, 'joinShortSentences', $prob);
 
         return $text;
+    }
+
+    /**
+     * Apply a processing method to each non-empty line independently.
+     *
+     * Preserves paragraph / list structure by never merging lines separated
+     * by newlines.
+     */
+    private function perParagraph(string $text, string $method, float $prob): string
+    {
+        $lines = explode("\n", $text);
+        $result = [];
+        foreach ($lines as $line) {
+            // Skip empty lines and lines with segmenter placeholders
+            // (trim() strips \x00 which destroys placeholder markers)
+            if (trim($line) === '' || str_contains($line, "\x00THZ_")) {
+                $result[] = $line;
+            } else {
+                $result[] = $this->$method($line, $prob);
+            }
+        }
+        return implode("\n", $result);
     }
 
     /**

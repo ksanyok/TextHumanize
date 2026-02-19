@@ -81,6 +81,20 @@ class Validator
             }
         }
 
+        // 6. Paragraph / line-structure preserved
+        $origLines = array_filter(explode("\n", $original), fn(string $s): bool => trim($s) !== '');
+        $procLines = array_filter(explode("\n", $processed), fn(string $s): bool => trim($s) !== '');
+        if (count($origLines) > 0 && count($procLines) > 0) {
+            $lineRatio = count($procLines) / count($origLines);
+            if ($lineRatio < 0.7) {
+                $warnings[] = sprintf(
+                    'Line structure lost: %d → %d lines',
+                    count($origLines),
+                    count($procLines),
+                );
+            }
+        }
+
         $isValid = count($errors) === 0;
         $shouldRollback = count($errors) >= 2;
 

@@ -137,6 +137,60 @@ _FORMAL_MARKERS = {
             "на жаль", "на щастя", "очевидно",
         ],
     },
+    "de": {
+        "formal": [
+            "durchführen", "bereitstellen", "gewährleisten",
+            "implementieren", "diesbezüglich", "dementsprechend",
+            "folglich", "infolgedessen", "hinsichtlich",
+            "gemäß", "entsprechend", "darüber hinaus",
+        ],
+        "informal": [
+            "halt", "eben", "quasi", "irgendwie", "sozusagen",
+            "krass", "geil", "cool", "mega", "voll",
+            "echt", "total", "na ja", "also",
+        ],
+        "subjective": [
+            "ich denke", "ich glaube", "meiner meinung nach",
+            "wahrscheinlich", "vielleicht", "möglicherweise",
+            "offensichtlich", "leider", "glücklicherweise",
+        ],
+    },
+    "fr": {
+        "formal": [
+            "effectuer", "mettre en œuvre", "conformément",
+            "en conséquence", "néanmoins", "toutefois",
+            "préalablement", "notamment", "en ce qui concerne",
+            "afin de", "dans le cadre de", "à cet égard",
+        ],
+        "informal": [
+            "genre", "carrément", "trop", "vachement", "bof",
+            "ouais", "ben", "bah", "quoi", "du coup",
+            "franchement", "grave", "en mode", "kiffer",
+        ],
+        "subjective": [
+            "je pense", "je crois", "à mon avis",
+            "probablement", "peut-être", "évidemment",
+            "malheureusement", "heureusement", "apparemment",
+        ],
+    },
+    "es": {
+        "formal": [
+            "realizar", "implementar", "conforme a",
+            "en consecuencia", "no obstante", "sin embargo",
+            "previamente", "asimismo", "en lo que respecta",
+            "con el fin de", "en el marco de", "al respecto",
+        ],
+        "informal": [
+            "mola", "flipar", "currar", "tío", "chaval",
+            "guay", "vale", "bueno", "pues", "o sea",
+            "es que", "la verdad", "en plan", "mogollón",
+        ],
+        "subjective": [
+            "creo que", "pienso que", "en mi opinión",
+            "probablemente", "quizás", "tal vez",
+            "obviamente", "desafortunadamente", "afortunadamente",
+        ],
+    },
 }
 
 
@@ -184,6 +238,77 @@ _TONE_REPLACEMENTS = {
             "содействовать": "помогать", "являться": "быть",
             "представлять собой": "быть", "в целях": "чтобы",
             "в рамках": "в", "вследствие": "из-за",
+        },
+    },
+    "uk": {
+        ("informal", "formal"): {
+            "робити": "здійснювати", "почати": "розпочати",
+            "показати": "продемонструвати", "треба": "необхідно",
+            "допомогти": "сприяти", "думати": "вважати",
+            "зробити": "виконати", "великий": "значний",
+            "гарний": "належний", "поганий": "незадовільний",
+            "дати": "надати", "сказати": "зазначити",
+        },
+        ("formal", "informal"): {
+            "здійснювати": "робити", "забезпечувати": "давати",
+            "необхідно": "треба", "вважати": "думати",
+            "сприяти": "допомагати", "являти собою": "бути",
+            "з метою": "щоб", "в межах": "в",
+            "внаслідок": "через", "передбачати": "планувати",
+        },
+    },
+    "de": {
+        ("informal", "formal"): {
+            "machen": "durchführen", "anfangen": "beginnen",
+            "zeigen": "demonstrieren", "brauchen": "benötigen",
+            "helfen": "unterstützen", "denken": "erwägen",
+            "kriegen": "erhalten", "kaufen": "erwerben",
+            "sagen": "mitteilen", "fragen": "erkundigen",
+            "gucken": "betrachten", "echt": "tatsächlich",
+        },
+        ("formal", "informal"): {
+            "durchführen": "machen", "bereitstellen": "geben",
+            "benötigen": "brauchen", "erwägen": "denken",
+            "unterstützen": "helfen", "darstellen": "sein",
+            "erhalten": "kriegen", "erwerben": "kaufen",
+            "mitteilen": "sagen", "betrachten": "gucken",
+            "implementieren": "umsetzen", "gewährleisten": "sicherstellen",
+        },
+    },
+    "fr": {
+        ("informal", "formal"): {
+            "faire": "effectuer", "commencer": "débuter",
+            "montrer": "démontrer", "aider": "assister",
+            "penser": "considérer", "acheter": "acquérir",
+            "demander": "solliciter", "regarder": "examiner",
+            "trouver": "identifier", "dire": "indiquer",
+            "parler": "communiquer", "essayer": "tenter",
+        },
+        ("formal", "informal"): {
+            "effectuer": "faire", "débuter": "commencer",
+            "démontrer": "montrer", "assister": "aider",
+            "considérer": "penser", "acquérir": "acheter",
+            "solliciter": "demander", "examiner": "regarder",
+            "identifier": "trouver", "indiquer": "dire",
+            "mettre en œuvre": "faire", "faciliter": "aider",
+        },
+    },
+    "es": {
+        ("informal", "formal"): {
+            "hacer": "realizar", "empezar": "iniciar",
+            "mostrar": "demostrar", "ayudar": "asistir",
+            "pensar": "considerar", "comprar": "adquirir",
+            "pedir": "solicitar", "mirar": "examinar",
+            "buscar": "identificar", "decir": "indicar",
+            "hablar": "comunicar", "intentar": "procurar",
+        },
+        ("formal", "informal"): {
+            "realizar": "hacer", "iniciar": "empezar",
+            "demostrar": "mostrar", "asistir": "ayudar",
+            "considerar": "pensar", "adquirir": "comprar",
+            "solicitar": "pedir", "examinar": "mirar",
+            "identificar": "buscar", "indicar": "decir",
+            "implementar": "hacer", "facilitar": "ayudar",
         },
     },
 }
@@ -294,8 +419,6 @@ class ToneAnalyzer:
         if len(sorted_scores) >= 2:
             gap = sorted_scores[0] - sorted_scores[1]
             report.confidence = min(gap * 2 + 0.3, 1.0)
-        else:
-            report.confidence = 0.5
 
         return report
 
@@ -354,8 +477,6 @@ class ToneAdjuster:
             matches = list(pattern.finditer(result))
 
             for match in matches:
-                if changes_made >= max_changes:
-                    break
                 if self.rng.random() > intensity:
                     continue
 
@@ -377,7 +498,7 @@ class ToneAdjuster:
         current: ToneLevel, target: ToneLevel
     ) -> tuple[str, str] | None:
         """Определить направление коррекции."""
-        formal_levels = {ToneLevel.FORMAL, ToneLevel.ACADEMIC, ToneLevel.PROFESSIONAL}
+        formal_levels = {ToneLevel.FORMAL, ToneLevel.ACADEMIC, ToneLevel.PROFESSIONAL, ToneLevel.MARKETING}
         informal_levels = {ToneLevel.CASUAL, ToneLevel.FRIENDLY}
 
         if current in informal_levels and target in formal_levels:

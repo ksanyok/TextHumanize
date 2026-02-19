@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
+from difflib import SequenceMatcher
 from typing import Any
 
 
@@ -31,6 +32,8 @@ class HumanizeOptions:
         "keep_keywords": [],
     })
     seed: int | None = None
+    # Целевой стилистический отпечаток для имитации авторского стиля
+    target_style: Any | None = None  # StylisticFingerprint, preset name (str), or None
 
     def __post_init__(self):
         if self.intensity < 0:
@@ -63,16 +66,61 @@ class HumanizeResult:
 
     @property
     def change_ratio(self) -> float:
-        """Доля изменений в тексте (0..1)."""
+        """Доля изменений в тексте (0..1).
+
+        Использует SequenceMatcher для корректного сравнения —
+        вставка/удаление одного слова не сдвигает все позиции.
+        """
         if not self.original:
             return 0.0
         orig_words = self.original.split()
         new_words = self.text.split()
         if not orig_words:
             return 0.0
-        diff = sum(1 for a, b in zip(orig_words, new_words) if a != b)
-        diff += abs(len(orig_words) - len(new_words))
-        return min(diff / len(orig_words), 1.0)
+        matcher = SequenceMatcher(None, orig_words, new_words)
+        return min(1.0 - matcher.ratio(), 1.0)
+
+    @property
+    def similarity(self) -> float:
+        """Jaccard-подобие оригинала и результата (0..1).
+
+        1.0 = идентичные тексты, 0.0 = полностью разные.
+        """
+        if not self.original or not self.text:
+            return 1.0 if self.original == self.text else 0.0
+        orig_set = set(self.original.lower().split())
+        new_set = set(self.text.lower().split())
+        if not orig_set and not new_set:
+            return 1.0
+        intersection = orig_set & new_set
+        union = orig_set | new_set
+        return len(intersection) / len(union) if union else 1.0
+
+    @property
+    def quality_score(self) -> float:
+        """Общий балл качества обработки (0..1).
+
+        Учитывает баланс между достаточным изменением текста
+        и сохранением смысла (similarity). Идеал: ~0.75-0.90.
+        """
+        sim = self.similarity
+        change = self.change_ratio
+        # Штраф за слишком малые или слишком большие изменения
+        if change < 0.01:
+            # Текст не изменился — проверяем, нужны ли были изменения
+            # Если similarity = 1.0, значит текст вернулся без изменений;
+            # для уже естественных текстов это может быть желательно
+            ai_before = self.metrics_before.get("artificiality_score", 50)
+            if ai_before < 15:
+                return 0.7  # Лёгкий текст — отсутствие изменений ОК
+            return 0.3  # AI-текст без изменений — плохо
+        if sim < 0.3:
+            return 0.2  # Слишком сильно изменён — потеря смысла
+        # Оптимальный диапазон change: 3%-35%
+        # Центр оптимума: 15%
+        change_score = 1.0 - abs(change - 0.15) / 0.35
+        change_score = max(0.0, min(1.0, change_score))
+        return sim * 0.6 + change_score * 0.4
 
 
 @dataclass
@@ -96,6 +144,10 @@ class AnalysisReport:
     coleman_liau_index: float = 0.0
     avg_word_length: float = 0.0
     avg_syllables_per_word: float = 0.0
+    # N-gram perplexity metrics
+    predictability_score: float = 0.0
+    char_perplexity: float = 0.0
+    vocabulary_richness: float = 0.0
     details: dict[str, Any] = field(default_factory=dict)
 
 

@@ -45,6 +45,15 @@ LANG_IT = {
         "preponderante": ["principale", "dominante", "maggiore"],
         "onnicomprensivo": ["completo", "totale", "globale"],
         "imprescindibile": ["necessario", "essenziale", "irrinunciabile"],
+        "sistematico": ["regolare", "ordinato", "metodico"],
+        "paradigma": ["modello", "schema", "quadro"],
+        "olistico": ["globale", "complessivo", "d'insieme"],
+        "catalizzare": ["stimolare", "accelerare", "innescare"],
+        "corroborare": ["confermare", "avvalorare", "sostenere"],
+        "preponderante": ["principale", "dominante", "maggiore"],
+        "concomitante": ["simultaneo", "parallelo", "congiunto"],
+        "perenne": ["duraturo", "stabile", "continuo"],
+        "trasversale": ["comune", "condiviso", "generale"],
     },
 
     "bureaucratic_phrases": {

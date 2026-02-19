@@ -27,39 +27,61 @@
     >>> print(ai["verdict"])
 """
 
-__version__ = "0.4.0"
+__version__ = "0.8.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
 from texthumanize.core import (
     adjust_tone,
+    adversarial_calibrate,
     analyze,
     analyze_coherence,
     analyze_tone,
+    build_author_profile,
     clean_watermarks,
+    compare_fingerprint,
+    detect_ab,
     detect_ai,
     detect_ai_batch,
+    detect_ai_mixed,
+    detect_ai_sentences,
     detect_watermarks,
+    evasion_resistance,
     explain,
     full_readability,
     humanize,
+    humanize_batch,
     humanize_chunked,
     paraphrase,
     spin,
     spin_variants,
 )
 from texthumanize.pipeline import Pipeline
+from texthumanize.stylistic import STYLE_PRESETS, StylisticAnalyzer, StylisticFingerprint
+from texthumanize.autotune import AutoTuner
 from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
 
 __all__ = [
     # Core
     "humanize",
+    "humanize_batch",
     "humanize_chunked",
     "analyze",
     "explain",
     # AI Detection
     "detect_ai",
     "detect_ai_batch",
+    "detect_ai_sentences",
+    "detect_ai_mixed",
+    # Author Fingerprint
+    "build_author_profile",
+    "compare_fingerprint",
+    # A/B Detection
+    "detect_ab",
+    # Evasion Resistance
+    "evasion_resistance",
+    # Adversarial Calibration
+    "adversarial_calibrate",
     # Paraphrase
     "paraphrase",
     # Tone
@@ -80,5 +102,9 @@ __all__ = [
     "HumanizeOptions",
     "HumanizeResult",
     "AnalysisReport",
+    "StylisticFingerprint",
+    "StylisticAnalyzer",
+    "STYLE_PRESETS",
+    "AutoTuner",
     "__version__",
 ]

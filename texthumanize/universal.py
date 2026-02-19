@@ -278,7 +278,7 @@ class UniversalProcessor:
         # AI часто ставит : для пояснений — иногда заменяем на . или —
         if text.count(':') > 2 and self.rng.random() < prob * 0.3:
             # Заменяем один : на . (тот, что не в URL и не в начале строки)
-            for m in re.finditer(r'(?<!https?)(?<!http):\s', text):
+            for m in re.finditer(r'(?<!https)(?<!http):\s', text):
                 pos = m.start()
                 before = text[:pos]
                 after = text[pos + 1:].lstrip()
@@ -307,9 +307,6 @@ class UniversalProcessor:
 
         # Анализируем размеры абзацев
         sizes = [len(p.split()) for p in paragraphs]
-        if not sizes:
-            return text
-
         avg_size = sum(sizes) / len(sizes)
         if avg_size == 0:
             return text

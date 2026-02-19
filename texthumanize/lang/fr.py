@@ -48,6 +48,15 @@ LANG_FR = {
         "subséquent": ["suivant", "après", "ultérieur"],
         "exhaustif": ["complet", "détaillé", "approfondi"],
         "innovant": ["nouveau", "novateur", "créatif"],
+        "systématique": ["régulier", "ordonné", "méthodique"],
+        "paradigme": ["modèle", "schéma", "cadre"],
+        "pérenne": ["durable", "stable", "continu"],
+        "catalyser": ["stimuler", "accélérer", "déclencher"],
+        "corroborer": ["confirmer", "valider", "appuyer"],
+        "prépondérant": ["dominant", "majeur", "principal"],
+        "concomitant": ["simultané", "parallèle", "conjoint"],
+        "holistique": ["global", "complet", "d'ensemble"],
+        "paradigmatique": ["exemplaire", "typique", "modèle"],
     },
 
     "bureaucratic_phrases": {

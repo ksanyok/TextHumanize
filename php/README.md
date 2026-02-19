@@ -77,6 +77,30 @@ $result = TextHumanize::humanizeChunked(
 );
 ```
 
+### `TextHumanize::humanizeBatch()`
+
+Process multiple texts at once with index-based seeding for reproducibility.
+
+```php
+$texts = [
+    "First text to humanize.",
+    "Second text to humanize.",
+    "Third text to humanize.",
+];
+
+$results = TextHumanize::humanizeBatch(
+    texts: $texts,
+    lang: 'en',
+    profile: 'web',
+    intensity: 50,
+    seed: 42,
+);
+
+foreach ($results as $i => $result) {
+    echo "Text {$i}: {$result->processed}\n";
+}
+```
+
 ### `TextHumanize::analyze()`
 
 Analyze text for artificiality markers.
@@ -113,6 +137,39 @@ $explanation = TextHumanize::explain("Text", profile: 'chat', intensity: 70);
 //     'summary' => '...',
 // ]
 ```
+
+### `HumanizeResult` Properties
+
+| Method | Returns | Description |
+|---|---|---|
+| `$result->processed` | `string` | Processed text |
+| `$result->lang` | `string` | Detected language |
+| `$result->profile` | `string` | Applied profile |
+| `$result->getChangeRatio()` | `float` | Change ratio 0.0–1.0 |
+| `$result->getSimilarity()` | `float` | Jaccard similarity to original 0.0–1.0 |
+| `$result->getQualityScore()` | `float` | Composite quality score 0.0–1.0 |
+| `$result->changes` | `array` | List of applied pipeline stages |
+
+### Tone Analysis
+
+Analyze and adjust text tone across 7 levels: formal, academic, professional, neutral, friendly, casual, marketing.
+
+```php
+use TextHumanize\ToneAnalyzer;
+
+$analyzer = new ToneAnalyzer('en');
+$report = $analyzer->analyze("This is a formal document regarding the implementation.");
+
+echo $report->primaryTone;    // "formal"
+echo $report->formality;      // 0.8
+echo $report->subjectivity;   // 0.2
+
+// Adjust tone
+$adjusted = $analyzer->adjust("Obtain the data", 'informal');
+echo $adjusted; // "Get the data"
+```
+
+**Supported tone replacement languages:** `en`, `ru`, `uk`, `de`, `fr`, `es`
 
 ## Plugin System
 
@@ -219,7 +276,7 @@ composer install
 vendor/bin/phpunit
 ```
 
-**44 tests, 303 assertions** covering all pipeline stages, profiles, and language packs.
+**223 tests, 825 assertions** covering all pipeline stages, profiles, language packs, batch processing, and quality metrics.
 
 ## Support the Project
 

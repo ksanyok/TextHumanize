@@ -165,6 +165,60 @@ class ToneAnalyzer
                 'на жаль', 'на щастя', 'очевидно',
             ],
         ],
+        'de' => [
+            'formal' => [
+                'durchführen', 'bereitstellen', 'gewährleisten',
+                'implementieren', 'diesbezüglich', 'dementsprechend',
+                'folglich', 'infolgedessen', 'hinsichtlich',
+                'gemäß', 'entsprechend', 'darüber hinaus',
+            ],
+            'informal' => [
+                'halt', 'eben', 'quasi', 'irgendwie', 'sozusagen',
+                'krass', 'geil', 'cool', 'mega', 'voll',
+                'echt', 'total', 'na ja', 'also',
+            ],
+            'subjective' => [
+                'ich denke', 'ich glaube', 'meiner meinung nach',
+                'wahrscheinlich', 'vielleicht', 'möglicherweise',
+                'offensichtlich', 'leider', 'glücklicherweise',
+            ],
+        ],
+        'fr' => [
+            'formal' => [
+                'effectuer', 'mettre en œuvre', 'conformément',
+                'en conséquence', 'néanmoins', 'toutefois',
+                'préalablement', 'notamment', 'en ce qui concerne',
+                'afin de', 'dans le cadre de', 'à cet égard',
+            ],
+            'informal' => [
+                'genre', 'carrément', 'trop', 'vachement', 'bof',
+                'ouais', 'ben', 'bah', 'quoi', 'du coup',
+                'franchement', 'grave', 'en mode', 'kiffer',
+            ],
+            'subjective' => [
+                'je pense', 'je crois', 'à mon avis',
+                'probablement', 'peut-être', 'évidemment',
+                'malheureusement', 'heureusement', 'apparemment',
+            ],
+        ],
+        'es' => [
+            'formal' => [
+                'realizar', 'implementar', 'conforme a',
+                'en consecuencia', 'no obstante', 'sin embargo',
+                'previamente', 'asimismo', 'en lo que respecta',
+                'con el fin de', 'en el marco de', 'al respecto',
+            ],
+            'informal' => [
+                'mola', 'flipar', 'currar', 'tío', 'chaval',
+                'guay', 'vale', 'bueno', 'pues', 'o sea',
+                'es que', 'la verdad', 'en plan', 'mogollón',
+            ],
+            'subjective' => [
+                'creo que', 'pienso que', 'en mi opinión',
+                'probablemente', 'quizás', 'tal vez',
+                'obviamente', 'desafortunadamente', 'afortunadamente',
+            ],
+        ],
     ];
 
     // ═══════════════════════════════════════════════════════════════
@@ -210,6 +264,77 @@ class ToneAnalyzer
                 'содействовать' => 'помогать', 'являться' => 'быть',
                 'представлять собой' => 'быть', 'в целях' => 'чтобы',
                 'в рамках' => 'в', 'вследствие' => 'из-за',
+            ],
+        ],
+        'uk' => [
+            'informal_to_formal' => [
+                'робити' => 'здійснювати', 'почати' => 'розпочати',
+                'показати' => 'продемонструвати', 'треба' => 'необхідно',
+                'допомогти' => 'сприяти', 'думати' => 'вважати',
+                'зробити' => 'виконати', 'великий' => 'значний',
+                'гарний' => 'належний', 'поганий' => 'незадовільний',
+                'дати' => 'надати', 'сказати' => 'зазначити',
+            ],
+            'formal_to_informal' => [
+                'здійснювати' => 'робити', 'забезпечувати' => 'давати',
+                'необхідно' => 'треба', 'вважати' => 'думати',
+                'сприяти' => 'допомагати', 'являти собою' => 'бути',
+                'з метою' => 'щоб', 'в межах' => 'в',
+                'внаслідок' => 'через', 'передбачати' => 'планувати',
+            ],
+        ],
+        'de' => [
+            'informal_to_formal' => [
+                'machen' => 'durchführen', 'anfangen' => 'beginnen',
+                'zeigen' => 'demonstrieren', 'brauchen' => 'benötigen',
+                'helfen' => 'unterstützen', 'denken' => 'erwägen',
+                'kriegen' => 'erhalten', 'kaufen' => 'erwerben',
+                'sagen' => 'mitteilen', 'fragen' => 'erkundigen',
+                'gucken' => 'betrachten', 'echt' => 'tatsächlich',
+            ],
+            'formal_to_informal' => [
+                'durchführen' => 'machen', 'bereitstellen' => 'geben',
+                'benötigen' => 'brauchen', 'erwägen' => 'denken',
+                'unterstützen' => 'helfen', 'darstellen' => 'sein',
+                'erhalten' => 'kriegen', 'erwerben' => 'kaufen',
+                'mitteilen' => 'sagen', 'betrachten' => 'gucken',
+                'implementieren' => 'umsetzen', 'gewährleisten' => 'sicherstellen',
+            ],
+        ],
+        'fr' => [
+            'informal_to_formal' => [
+                'faire' => 'effectuer', 'commencer' => 'débuter',
+                'montrer' => 'démontrer', 'aider' => 'assister',
+                'penser' => 'considérer', 'acheter' => 'acquérir',
+                'demander' => 'solliciter', 'regarder' => 'examiner',
+                'trouver' => 'identifier', 'dire' => 'indiquer',
+                'parler' => 'communiquer', 'essayer' => 'tenter',
+            ],
+            'formal_to_informal' => [
+                'effectuer' => 'faire', 'débuter' => 'commencer',
+                'démontrer' => 'montrer', 'assister' => 'aider',
+                'considérer' => 'penser', 'acquérir' => 'acheter',
+                'solliciter' => 'demander', 'examiner' => 'regarder',
+                'identifier' => 'trouver', 'indiquer' => 'dire',
+                'mettre en œuvre' => 'faire', 'faciliter' => 'aider',
+            ],
+        ],
+        'es' => [
+            'informal_to_formal' => [
+                'hacer' => 'realizar', 'empezar' => 'iniciar',
+                'mostrar' => 'demostrar', 'ayudar' => 'asistir',
+                'pensar' => 'considerar', 'comprar' => 'adquirir',
+                'pedir' => 'solicitar', 'mirar' => 'examinar',
+                'buscar' => 'identificar', 'decir' => 'indicar',
+                'hablar' => 'comunicar', 'intentar' => 'procurar',
+            ],
+            'formal_to_informal' => [
+                'realizar' => 'hacer', 'iniciar' => 'empezar',
+                'demostrar' => 'mostrar', 'asistir' => 'ayudar',
+                'considerar' => 'pensar', 'adquirir' => 'comprar',
+                'solicitar' => 'pedir', 'examinar' => 'mirar',
+                'identificar' => 'buscar', 'indicar' => 'decir',
+                'implementar' => 'hacer', 'facilitar' => 'ayudar',
             ],
         ],
     ];
@@ -434,7 +559,7 @@ class ToneAnalyzer
      */
     private static function getDirection(ToneLevel $current, ToneLevel $target): ?string
     {
-        $formalLevels = [ToneLevel::FORMAL, ToneLevel::ACADEMIC, ToneLevel::PROFESSIONAL];
+        $formalLevels = [ToneLevel::FORMAL, ToneLevel::ACADEMIC, ToneLevel::PROFESSIONAL, ToneLevel::MARKETING];
         $informalLevels = [ToneLevel::CASUAL, ToneLevel::FRIENDLY];
 
         $currentFormal = in_array($current, $formalLevels, true);

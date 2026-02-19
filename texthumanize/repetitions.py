@@ -134,10 +134,10 @@ class RepetitionReducer:
                     original_word = match.group(0)
 
                     # Сохраняем регистр
-                    if original_word[0].isupper():
-                        synonym = synonym[0].upper() + synonym[1:]
-                    elif original_word.isupper():
+                    if original_word.isupper():
                         synonym = synonym.upper()
+                    elif original_word[0].isupper():
+                        synonym = synonym[0].upper() + synonym[1:]
 
                     sentences[i] = (
                         sentences[i][:match.start()]

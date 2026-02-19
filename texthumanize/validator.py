@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from difflib import SequenceMatcher
 
 from texthumanize.analyzer import TextAnalyzer
 from texthumanize.utils import AnalysisReport
@@ -15,6 +16,7 @@ class QualityValidator:
     - Не пропали ли ключевые слова
     - Не превышен ли change_ratio
     - Метрики стали лучше, а не хуже
+    - Структура (абзацы/списки) сохранена
     """
 
     def __init__(
@@ -75,14 +77,26 @@ class QualityValidator:
                 f"Длина текста сильно изменилась: {len_ratio:.1%}"
             )
 
-        # 5. Проверка метрик (если есть до-обработка)
+        # 5. Проверка сохранения структуры (абзацы/строки)
+        self._check_structure_preservation(original, processed, result)
+
+        # 6. Проверка метрик (если есть до-обработка)
         if metrics_before:
             metrics_after = self.analyzer.analyze(processed)
             result.metrics_before = metrics_before
             result.metrics_after = metrics_after
 
             # Искусственность должна снизиться или не измениться
-            if metrics_after.artificiality_score > metrics_before.artificiality_score + 5:
+            diff = metrics_after.artificiality_score - metrics_before.artificiality_score
+            if diff > 15:
+                # Серьёзное ухудшение — откат
+                result.errors.append(
+                    f"Искусственность значительно выросла: "
+                    f"{metrics_before.artificiality_score:.1f} → "
+                    f"{metrics_after.artificiality_score:.1f} (+{diff:.1f})"
+                )
+                result.should_rollback = True
+            elif diff > 5:
                 result.warnings.append(
                     "Оценка искусственности увеличилась после обработки"
                 )
@@ -90,27 +104,43 @@ class QualityValidator:
         result.is_valid = not result.errors and not result.should_rollback
         return result
 
+    def _check_structure_preservation(
+        self,
+        original: str,
+        processed: str,
+        result: ValidationResult,
+    ) -> None:
+        """Проверить, что абзацная/списковая структура сохранена."""
+        orig_lines = [ln for ln in original.split('\n') if ln.strip()]
+        proc_lines = [ln for ln in processed.split('\n') if ln.strip()]
+
+        # Количество непустых строк не должно уменьшиться более чем на 30%
+        if orig_lines and proc_lines:
+            ratio = len(proc_lines) / len(orig_lines)
+            if ratio < 0.7:
+                result.warnings.append(
+                    f"Потеряна структура: строк было {len(orig_lines)}, "
+                    f"стало {len(proc_lines)}"
+                )
+
+        # Количество абзацев (блоков, разделённых пустыми строками)
+        orig_paras = len(re.split(r'\n\s*\n', original))
+        proc_paras = len(re.split(r'\n\s*\n', processed))
+        if orig_paras > 1 and proc_paras < orig_paras:
+            result.warnings.append(
+                f"Абзацы объединены: было {orig_paras}, стало {proc_paras}"
+            )
+
     def _calc_change_ratio(self, original: str, processed: str) -> float:
-        """Вычислить долю изменений."""
+        """Вычислить долю изменений (SequenceMatcher-based)."""
         if not original:
             return 0.0
-
         orig_words = original.split()
         proc_words = processed.split()
-
         if not orig_words:
             return 0.0
-
-        # Простое сравнение по словам
-        max_len = max(len(orig_words), len(proc_words))
-        diff = 0
-        for i in range(max_len):
-            orig = orig_words[i] if i < len(orig_words) else ""
-            proc = proc_words[i] if i < len(proc_words) else ""
-            if orig != proc:
-                diff += 1
-
-        return diff / len(orig_words)
+        matcher = SequenceMatcher(None, orig_words, proc_words)
+        return min(1.0 - matcher.ratio(), 1.0)
 
     def _extract_numbers(self, text: str) -> set[str]:
         """Извлечь числовые значения из текста."""

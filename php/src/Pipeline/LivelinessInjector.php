@@ -39,10 +39,28 @@ class LivelinessInjector
             return $text;
         }
 
-        $text = $this->injectMarkers($text, $prob);
+        // Markers use splitSentences + implode(' ') — process per-line
+        $text = $this->perParagraph($text, 'injectMarkers', $prob);
         $text = $this->varyPunctuation($text, $prob);
 
         return $text;
+    }
+
+    /**
+     * Apply a processing method to each non-empty line independently.
+     */
+    private function perParagraph(string $text, string $method, float $prob): string
+    {
+        $lines = explode("\n", $text);
+        $result = [];
+        foreach ($lines as $line) {
+            if (trim($line) === '' || str_contains($line, "\x00THZ_")) {
+                $result[] = $line;
+            } else {
+                $result[] = $this->$method($line, $prob);
+            }
+        }
+        return implode("\n", $result);
     }
 
     /**

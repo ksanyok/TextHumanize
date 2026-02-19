@@ -21,7 +21,7 @@ use TextHumanize\Pipeline\Pipeline;
  */
 class TextHumanize
 {
-    public const VERSION = '0.1.0';
+    public const VERSION = '0.8.0';
 
     /**
      * Humanize text — the primary API method.
@@ -107,6 +107,46 @@ class TextHumanize
             profile: $profile,
             changes: $allChanges,
         );
+    }
+
+    /**
+     * Humanize multiple texts in a single call.
+     *
+     * Each text is processed independently. When a seed is provided,
+     * the i-th text uses seed + i for reproducibility.
+     *
+     * @param list<string> $texts        Texts to process
+     * @param string|null  $lang         Language code (auto-detect if null)
+     * @param string       $profile      Profile: chat, web, seo, docs, formal
+     * @param int          $intensity    Processing intensity 0-100
+     * @param array        $preserve     Keys preserved during processing
+     * @param array        $constraints  Output constraints
+     * @param int|null     $seed         Base random seed
+     * @return list<HumanizeResult>
+     */
+    public static function humanizeBatch(
+        array $texts,
+        ?string $lang = null,
+        string $profile = 'web',
+        int $intensity = 50,
+        array $preserve = [],
+        array $constraints = [],
+        ?int $seed = null,
+    ): array {
+        $results = [];
+        foreach ($texts as $i => $text) {
+            $itemSeed = $seed !== null ? $seed + $i : null;
+            $results[] = self::humanize(
+                $text,
+                lang: $lang,
+                profile: $profile,
+                intensity: $intensity,
+                preserve: $preserve,
+                constraints: $constraints,
+                seed: $itemSeed,
+            );
+        }
+        return $results;
     }
 
     /**

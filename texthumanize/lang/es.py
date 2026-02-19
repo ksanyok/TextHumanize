@@ -47,6 +47,15 @@ LANG_ES = {
         "paradigmático": ["ejemplar", "modelo", "típico"],
         "exponencial": ["rápido", "acelerado", "veloz"],
         "multidimensional": ["variado", "complejo", "amplio"],
+        "paradigma": ["modelo", "esquema", "marco"],
+        "holístico": ["integral", "global", "completo"],
+        "catalizar": ["estimular", "acelerar", "provocar"],
+        "corroborar": ["confirmar", "validar", "respaldar"],
+        "sistémico": ["general", "global", "integral"],
+        "transversal": ["cruzado", "general", "compartido"],
+        "coyuntural": ["temporal", "pasajero", "momentáneo"],
+        "subyacente": ["de fondo", "implícito", "oculto"],
+        "preponderante": ["dominante", "principal", "mayor"],
     },
 
     "bureaucratic_phrases": {

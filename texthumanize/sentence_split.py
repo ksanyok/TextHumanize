@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 
 from texthumanize.lang import get_lang_pack
 
@@ -49,43 +50,6 @@ class SentenceSplitter:
         "oct", "nov", "dec",
         "www", "http", "https", "ftp",
     }
-
-    # Паттерны, после которых точка НЕ является концом предложения
-    _NOT_SENTENCE_END = re.compile(
-        r'(?:'
-        # Инициалы: А. Б.
-        r'(?<!\w)[A-ZА-ЯЁІЇЄҐ]\.'
-        r'|'
-        # Десятичные числа: 3.14
-        r'\d+\.\d+'
-        r'|'
-        # Сокращения с точкой: т.д., т.п., т.е.
-        r'(?:т\.д|т\.п|т\.е|и т\.д|и т\.п|т\.к|т\.н|к\.т\.н|д\.т\.н|к\.ф-м\.н)'
-        r'|'
-        # Cокращения: p.m., a.m., e.g., i.e.
-        r'(?:a\.m|p\.m|e\.g|i\.e|vs|u\.s|u\.k)'
-        r')',
-        re.IGNORECASE | re.UNICODE,
-    )
-
-    # Конец предложения
-    _SENTENCE_END = re.compile(
-        r'(?<=[.!?…])'
-        r'(?:'
-        r'["»"\'\)]*'  # Закрывающие кавычки/скобки после пунктуации
-        r')'
-        r'\s+'
-        r'(?=[A-ZА-ЯЁІЇЄҐ"\'"«(—\-])',  # Начало следующего предложения
-        re.UNICODE,
-    )
-
-    # Многоточие + начало нового предложения
-    _ELLIPSIS_END = re.compile(
-        r'(?:\.{3}|…)'
-        r'\s+'
-        r'(?=[A-ZА-ЯЁІЇЄҐ])',
-        re.UNICODE,
-    )
 
     def __init__(self, lang: str = "en"):
         self.lang = lang
@@ -128,7 +92,7 @@ class SentenceSplitter:
         breaks = self._find_breaks(text)
 
         # Шаг 2: Разбиваем текст по точкам разрыва
-        sentences = []
+        sentences: list[SentenceSpan] = []
         start = 0
         for brk in breaks:
             sent_text = text[start:brk].strip()
@@ -189,11 +153,6 @@ class SentenceSplitter:
                 if word_before and len(word_before) == 1 and word_before.isalpha():
                     continue
 
-                # Проверяем десятичные числа
-                if dot_pos > 0 and text[dot_pos - 1].isdigit():
-                    if dot_pos + 1 < len(text) and text[dot_pos + 1].isdigit():
-                        continue
-
             breaks.append(pos)
 
         return sorted(set(breaks))
@@ -223,11 +182,40 @@ class SentenceSplitter:
         for m in re.finditer(r'\.\.\.(?!\s+[A-ZА-ЯЁІЇЄҐ])', text):
             zones.append((m.start(), m.end()))
 
+        # Десятичные числа (3.14, 2.5, 0.001)
+        for m in re.finditer(r'\d+\.\d+', text):
+            zones.append((m.start(), m.end()))
+
+        # Числа с единицами (3.5 млн, 1.2 тыс., $1.5M, 2.0x)
+        for m in re.finditer(
+            r'\d+\.\d+\s*(?:млн|млрд|тыс|мільйонів|тис|Mio|Mrd|'
+            r'M|B|K|x|%|km|m|kg|g|l|ml|GB|MB|TB)\b',
+            text, re.IGNORECASE,
+        ):
+            zones.append((m.start(), m.end()))
+
+        # Порядковые числительные с точкой (нем/пл: 1., 2., 15.)
+        for m in re.finditer(r'\b\d{1,4}\.(?=\s+[a-zа-яёіїєґüöäß])', text):
+            zones.append((m.start(), m.end()))
+
+        # IP-адреса (192.168.0.1)
+        for m in re.finditer(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', text):
+            zones.append((m.start(), m.end()))
+
+        # Версии (v2.3.1, 3.11.0)
+        for m in re.finditer(r'\b[vV]?\d+\.\d+(?:\.\d+)*\b', text):
+            zones.append((m.start(), m.end()))
+
         # Сокращения с точками: т.д., т.п., т.е., etc.
         for m in re.finditer(
-            r'(?:т\.д|т\.п|т\.е|и т\.д|и т\.п|т\.к|т\.н'
-            r'|e\.g|i\.e|a\.m|p\.m|vs|p\.s'
-            r'|к\.т\.н|д\.т\.н|Ph\.D|M\.D|B\.A|M\.A)\.',
+            r'(?:т\.д|т\.п|т\.е|и т\.д|и т\.п|т\.к|т\.н|т\.ін|і т\.д|і т\.п'
+            r'|e\.g|i\.e|a\.m|p\.m|vs|p\.s|P\.S'
+            r'|к\.т\.н|д\.т\.н|Ph\.D|M\.D|B\.A|M\.A'
+            r'|St\.|Mt\.|Ft\.|Ltd\.|Corp\.|Bros'
+            r'|тис\.|грн\.|руб\.|коп\.|млн\.|млрд'
+            r'|r\.r\.|n\.e\.|p\.n\.e'
+            r'|S\.p\.A|S\.r\.l|S\.A|S\.L'
+            r'|z\.B|d\.h|u\.a|bzw|ggf|inkl|bzgl)\.',
             text, re.IGNORECASE,
         ):
             zones.append((m.start(), m.end()))
@@ -302,8 +290,30 @@ class SentenceSplitter:
         return result
 
 
+# ─── Кэш для сплиттеров по языкам ────────────────────────────
+_splitter_cache: dict[str, SentenceSplitter] = {}
+
+
+def _get_splitter(lang: str) -> SentenceSplitter:
+    """Получить или создать кэшированный сплиттер для языка."""
+    if lang not in _splitter_cache:
+        _splitter_cache[lang] = SentenceSplitter(lang=lang)
+    return _splitter_cache[lang]
+
+
+# LRU-кэш для результатов split_sentences (до 256 уникальных текстов)
+@lru_cache(maxsize=256)
+def _cached_split(text: str, lang: str) -> tuple[str, ...]:
+    """Кэшированная версия split для одинаковых текстов."""
+    splitter = _get_splitter(lang)
+    return tuple(splitter.split(text))
+
+
 def split_sentences(text: str, lang: str = "en") -> list[str]:
     """Удобная функция для разбивки текста на предложения.
+
+    Результаты кэшируются — повторный вызов с тем же текстом
+    не пересчитывает разбивку.
 
     Args:
         text: Текст для разбиения.
@@ -312,8 +322,7 @@ def split_sentences(text: str, lang: str = "en") -> list[str]:
     Returns:
         Список предложений.
     """
-    splitter = SentenceSplitter(lang=lang)
-    return splitter.split(text)
+    return list(_cached_split(text, lang))
 
 
 def split_sentences_with_spans(text: str, lang: str = "en") -> list[SentenceSpan]:
@@ -326,5 +335,5 @@ def split_sentences_with_spans(text: str, lang: str = "en") -> list[SentenceSpan
     Returns:
         Список SentenceSpan.
     """
-    splitter = SentenceSplitter(lang=lang)
+    splitter = _get_splitter(lang)
     return splitter.split_spans(text)

@@ -1,0 +1,35 @@
+{
+  "name": "texthumanize",
+  "version": "0.8.0",
+  "description": "Algorithmic text humanization — transforms AI-generated text into natural-sounding content",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "text-humanize",
+    "ai-detection",
+    "content-rewriting",
+    "paraphrasing",
+    "nlp",
+    "text-processing"
+  ],
+  "author": "TextHumanize Contributors",
+  "license": "SEE LICENSE IN LICENSE",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^1.6.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

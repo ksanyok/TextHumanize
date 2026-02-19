@@ -52,19 +52,40 @@ class StructureDiversifier:
         if prob < 0.05:
             return text
 
-        # 1. Замена ИИ-связок
+        # Замена ИИ-связок — работает по regex на всём тексте, безопасно
         text = self._replace_ai_connectors(text, prob)
 
-        # 2. Разнообразие начал предложений (работаем с парами предложений)
-        text = self._diversify_sentence_starts(text, prob)
-
-        # 3. Разбивка длинных предложений
-        text = self._split_long_sentences(text, prob)
-
-        # 4. Склейка коротких предложений
-        text = self._join_short_sentences(text, prob)
+        # Остальные этапы используют split_sentences + join — нужно
+        # обрабатывать каждый параграф/строку отдельно, иначе \n теряются
+        text = self._per_paragraph(
+            text, self._diversify_sentence_starts, prob,
+        )
+        text = self._per_paragraph(text, self._split_long_sentences, prob)
+        text = self._per_paragraph(text, self._join_short_sentences, prob)
 
         return text
+
+    # ─── Paragraph-safe wrapper ────────────────────────────────
+
+    def _per_paragraph(
+        self,
+        text: str,
+        fn: object,
+        *args: object,
+    ) -> str:
+        """Применить *fn* к каждой непустой строке независимо.
+
+        Сохраняет структуру абзацев/списков: строки, разделённые ``\\n``,
+        обрабатываются по отдельности и не склеиваются друг с другом.
+        """
+        lines = text.split('\n')
+        result: list[str] = []
+        for line in lines:
+            if line.strip():
+                result.append(fn(line, *args))  # type: ignore[operator]
+            else:
+                result.append(line)
+        return '\n'.join(result)
 
     def _replace_ai_connectors(self, text: str, prob: float) -> str:
         """Заменить типичные ИИ-связки."""

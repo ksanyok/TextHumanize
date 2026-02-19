@@ -54,4 +54,54 @@ class HumanizeResult
 
         return $diffs / $total;
     }
+
+    /**
+     * Jaccard similarity between original and processed text (0..1).
+     *
+     * 1.0 = identical, 0.0 = completely different.
+     */
+    public function getSimilarity(): float
+    {
+        if ($this->original === '' && $this->processed === '') {
+            return 1.0;
+        }
+        if ($this->original === '' || $this->processed === '') {
+            return 0.0;
+        }
+
+        $origWords = array_unique(preg_split('/\s+/', mb_strtolower(trim($this->original))));
+        $newWords = array_unique(preg_split('/\s+/', mb_strtolower(trim($this->processed))));
+
+        $origSet = array_flip($origWords);
+        $newSet = array_flip($newWords);
+
+        $intersection = count(array_intersect_key($origSet, $newSet));
+        $union = count($origSet) + count($newSet) - $intersection;
+
+        return $union > 0 ? $intersection / $union : 1.0;
+    }
+
+    /**
+     * Overall quality score (0..1).
+     *
+     * Balances sufficient change with preservation of meaning.
+     * Ideal range: ~0.75-0.90.
+     */
+    public function getQualityScore(): float
+    {
+        $sim = $this->getSimilarity();
+        $change = $this->getChangeRatio();
+
+        if ($change < 0.01) {
+            return 0.3;
+        }
+        if ($sim < 0.3) {
+            return 0.2;
+        }
+
+        $changeScore = 1.0 - abs($change - 0.2) / 0.4;
+        $changeScore = max(0.0, min(1.0, $changeScore));
+
+        return $sim * 0.6 + $changeScore * 0.4;
+    }
 }

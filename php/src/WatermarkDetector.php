@@ -183,6 +183,9 @@ class WatermarkDetector
         // 5. Statistical watermark patterns
         $this->detectStatisticalWatermarks($text, $report);
 
+        // 6. C2PA / IPTC metadata markers
+        $this->detectMetadataMarkers($text, $report);
+
         // Determine overall result
         $report->hasWatermarks = count($report->watermarkTypes) > 0;
         if ($report->hasWatermarks) {
@@ -424,6 +427,68 @@ class WatermarkDetector
                 $report->details[] = "Suspicious word ending bias: '{$ending}' appears in {$pct} of words";
                 break;
             }
+        }
+    }
+
+    // ───────────────────────────────────────────────────────────
+    //  C2PA / IPTC METADATA MARKERS
+    // ───────────────────────────────────────────────────────────
+
+    /** Regex patterns for content provenance metadata embedded in text */
+    private const METADATA_PATTERNS = [
+        // C2PA content credential markers
+        ['pattern' => '/(?:c2pa|smpte|cr|cai):[a-zA-Z0-9_.\\/\\-]+/iu', 'kind' => 'c2pa_manifest'],
+        // IPTC / XMP metadata namespace prefixes
+        ['pattern' => '/(?:iptc|dc|xmp|exif|photoshop|rdf):[a-zA-Z][a-zA-Z0-9_]+/iu', 'kind' => 'iptc_metadata'],
+        // Content Credentials / Content Authenticity Initiative strings
+        ['pattern' => '/Content\s+Credentials?|Content\s+Authenticity|AI[\s\-]?Generated|Machine[\s\-]?Generated|Generative[\s\-]?AI/iu', 'kind' => 'content_provenance'],
+        // Embedded base64 provenance blobs (≥ 40 chars of base64)
+        ['pattern' => '/(?:^|[\s;,])([A-Za-z0-9+\\/]{40,}={0,2})(?:$|[\s;,])/mu', 'kind' => 'embedded_blob'],
+        // UUID-style provenance identifiers
+        ['pattern' => '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/iu', 'kind' => 'provenance_uuid'],
+    ];
+
+    /**
+     * Detect C2PA / IPTC content-provenance markers embedded in text.
+     *
+     * Looks for namespace prefixes (c2pa:, iptc:, dc:, xmp:, etc.),
+     * Content Credentials strings, base64 provenance blobs and UUIDs
+     * that AI systems or pipelines may inject.
+     */
+    private function detectMetadataMarkers(string $text, WatermarkReport $report): void
+    {
+        $foundTypes = [];
+        $foundDetails = [];
+        $cleaned = $report->cleanedText;
+
+        foreach (self::METADATA_PATTERNS as $entry) {
+            $pattern = $entry['pattern'];
+            $kind = $entry['kind'];
+
+            if (preg_match_all($pattern, $cleaned, $matches)) {
+                $allMatches = $matches[0];
+                $count = count($allMatches);
+                $foundTypes[] = $kind;
+
+                // Show at most 3 samples per kind
+                $samples = array_slice($allMatches, 0, 3);
+                $sampleStrs = array_map(
+                    static fn(string $s): string => "'" . mb_substr($s, 0, 40, 'UTF-8') . "'",
+                    $samples
+                );
+                $foundDetails[] = "{$kind}: {$count} occurrence(s) (e.g. " . implode(', ', $sampleStrs) . ")";
+
+                // Remove detected markers from cleaned text
+                $cleaned = (string) preg_replace($pattern, '', $cleaned);
+            }
+        }
+
+        if ($foundTypes !== []) {
+            $report->watermarkTypes[] = 'metadata_markers';
+            array_push($report->details, ...$foundDetails);
+            // Clean up leftover whitespace after removal
+            $cleaned = trim((string) preg_replace('/ {2,}/', ' ', $cleaned));
+            $report->cleanedText = $cleaned;
         }
     }
 

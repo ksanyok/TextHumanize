@@ -41,14 +41,16 @@ class TestDetectAI:
         r = detect_ai("Some sample text here for analysis.", lang="en")
         assert r["verdict"] in ("human", "mixed", "ai", "unknown")
 
-    def test_metrics_12_keys(self):
+    def test_metrics_18_keys(self):
         r = detect_ai("Text with enough words for analysis.", lang="en")
         metrics = r["metrics"]
         expected = {
             "entropy", "burstiness", "vocabulary", "zipf",
             "stylometry", "ai_patterns", "punctuation", "coherence",
             "grammar_perfection", "opening_diversity",
-            "readability_consistency", "rhythm",
+            "readability_consistency", "rhythm", "perplexity",
+            "discourse", "semantic_repetition", "entity_specificity",
+            "voice", "topic_sentence",
         }
         assert set(metrics.keys()) == expected
 

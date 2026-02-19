@@ -14,7 +14,7 @@ use TextHumanize\RandomHelper;
 use TextHumanize\TextAnalyzer;
 
 /**
- * Pipeline — the 10-stage text humanization pipeline.
+ * Pipeline — the 11-stage text humanization pipeline.
  *
  * Stages:
  *  1. Segmentation (protect code, URLs, etc.)
@@ -23,10 +23,11 @@ use TextHumanize\TextAnalyzer;
  *  4. Structure diversification (deep languages only)
  *  5. Repetition reduction (deep languages only)
  *  6. Liveliness injection (deep languages only)
- *  7. Universal processing (all languages)
- *  8. Style naturalization (all languages)
- *  9. Validation
- * 10. Segment restoration
+ *  7. Semantic paraphrasing (deep languages only)
+ *  8. Universal processing (all languages)
+ *  9. Style naturalization (all languages)
+ * 10. Validation
+ * 11. Segment restoration
  */
 class Pipeline
 {
@@ -39,7 +40,8 @@ class Pipeline
     private const STAGE_NAMES = [
         'segmentation', 'typography', 'debureaucratize',
         'structure', 'repetitions', 'liveliness',
-        'universal', 'naturalize', 'validation', 'restore',
+        'paraphrasing', 'universal', 'naturalize',
+        'validation', 'restore',
     ];
 
     /**
@@ -187,7 +189,19 @@ class Pipeline
             $processed = self::runPlugins('liveliness', $processed, $lang, $options->profile, $options->intensity, false);
         }
 
-        // --- Stage 7: Universal processing ---
+        // --- Stage 7: Semantic paraphrasing (deep languages only) ---
+        if ($hasDeep) {
+            $processed = self::runPlugins('paraphrasing', $processed, $lang, $options->profile, $options->intensity, true);
+            $paraphraser = new SemanticParaphraser($lang, $options->intensity / 100.0, $rng);
+            $before = $processed;
+            $processed = $paraphraser->process($processed);
+            if ($processed !== $before) {
+                $changes[] = ['stage' => 'paraphrasing', 'transforms' => $paraphraser->changes];
+            }
+            $processed = self::runPlugins('paraphrasing', $processed, $lang, $options->profile, $options->intensity, false);
+        }
+
+        // --- Stage 8: Universal processing ---
         $processed = self::runPlugins('universal', $processed, $lang, $options->profile, $options->intensity, true);
         $universalProcessor = new UniversalProcessor();
         $before = $processed;
@@ -197,7 +211,7 @@ class Pipeline
         }
         $processed = self::runPlugins('universal', $processed, $lang, $options->profile, $options->intensity, false);
 
-        // --- Stage 8: Style naturalization ---
+        // --- Stage 9: Style naturalization ---
         $processed = self::runPlugins('naturalize', $processed, $lang, $options->profile, $options->intensity, true);
         $naturalizer = new TextNaturalizer();
         $before = $processed;
@@ -207,7 +221,7 @@ class Pipeline
         }
         $processed = self::runPlugins('naturalize', $processed, $lang, $options->profile, $options->intensity, false);
 
-        // --- Stage 9: Validation ---
+        // --- Stage 10: Validation ---
         $processed = self::runPlugins('validation', $processed, $lang, $options->profile, $options->intensity, true);
         $validator = new Validator();
         $validation = $validator->validate($text, $processed, $options);
@@ -226,7 +240,7 @@ class Pipeline
             $processed = $segmented2->restore($processed);
             $changes = [['stage' => 'rollback', 'reason' => $validation->errors]];
         } else {
-            // --- Stage 10: Restore segments ---
+            // --- Stage 11: Restore segments ---
             $processed = self::runPlugins('restore', $processed, $lang, $options->profile, $options->intensity, true);
             $processed = $segmented->restore($processed);
             $processed = self::runPlugins('restore', $processed, $lang, $options->profile, $options->intensity, false);

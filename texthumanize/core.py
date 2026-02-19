@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from texthumanize.analyzer import TextAnalyzer
 from texthumanize.lang_detect import detect_language
@@ -74,6 +76,7 @@ def humanize(
     preserve: dict | None = None,
     constraints: dict | None = None,
     seed: int | None = None,
+    target_style: object | str | None = None,
 ) -> HumanizeResult:
     """Гуманизировать текст — сделать его более естественным.
 
@@ -108,6 +111,9 @@ def humanize(
             - min_sentence_length (int): Минимальная длина предложения.
             - keep_keywords (list[str]): Ключевые слова для SEO.
         seed: Сид для воспроизводимости результатов.
+        target_style: Целевой стилистический отпечаток.
+            Может быть StylisticFingerprint или имя пресета (str):
+            'student', 'copywriter', 'scientist', 'journalist', 'blogger'.
 
     Returns:
         HumanizeResult с полями:
@@ -154,6 +160,7 @@ def humanize(
         profile=profile,
         intensity=intensity,
         seed=seed,
+        target_style=target_style,
     )
 
     if preserve:
@@ -279,11 +286,12 @@ def humanize_chunked(
     preserve: dict | None = None,
     constraints: dict | None = None,
     seed: int | None = None,
+    max_workers: int | None = None,
 ) -> HumanizeResult:
     """Process large texts by splitting into manageable chunks.
 
     Splits the text at paragraph or sentence boundaries, processes each
-    chunk independently, then reassembles the result.
+    chunk independently (optionally in parallel), then reassembles.
 
     Args:
         text: Text to process (any length).
@@ -295,6 +303,8 @@ def humanize_chunked(
         preserve: Preservation settings.
         constraints: Processing constraints.
         seed: Random seed for reproducibility.
+        max_workers: Number of parallel workers (None = sequential,
+            1 = sequential, 2+ = parallel threads).
 
     Returns:
         HumanizeResult with the fully processed text.
@@ -318,11 +328,12 @@ def humanize_chunked(
     # Split into paragraph-based chunks
     chunks = _split_into_chunks(text, chunk_size)
 
-    all_processed: list[str] = []
-    all_changes: list[dict] = []
     detected_lang = lang
+    if lang == "auto":
+        detected_lang = detect_language(text[:2000])
 
-    for i, chunk in enumerate(chunks):
+    def _process_chunk(idx_chunk: tuple[int, str]) -> tuple[int, HumanizeResult]:
+        i, chunk = idx_chunk
         chunk_seed = seed + i if seed is not None else None
         result = humanize(
             chunk,
@@ -333,11 +344,33 @@ def humanize_chunked(
             constraints=constraints,
             seed=chunk_seed,
         )
-        all_processed.append(result.text)
-        all_changes.extend(result.changes)
-        # Use detected language from first chunk for consistency
-        if i == 0:
-            detected_lang = result.lang
+        return (i, result)
+
+    indexed_chunks = list(enumerate(chunks))
+    results_map: dict[int, HumanizeResult] = {}
+
+    if max_workers and max_workers >= 2 and len(chunks) > 1:
+        # Параллельная обработка
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(_process_chunk, ic): ic[0]
+                for ic in indexed_chunks
+            }
+            for future in as_completed(futures):
+                idx, result = future.result()
+                results_map[idx] = result
+    else:
+        # Последовательная обработка
+        for ic in indexed_chunks:
+            idx, result = _process_chunk(ic)
+            results_map[idx] = result
+
+    # Собираем в порядке
+    ordered = [results_map[i] for i in range(len(chunks))]
+    all_processed = [r.text for r in ordered]
+    all_changes: list[dict] = []
+    for r in ordered:
+        all_changes.extend(r.changes)
 
     processed_text = "\n\n".join(all_processed)
 
@@ -349,6 +382,74 @@ def humanize_chunked(
         intensity=intensity,
         changes=all_changes,
     )
+
+
+def humanize_batch(
+    texts: list[str],
+    lang: str = "auto",
+    profile: str = "web",
+    intensity: int = 60,
+    preserve: dict | None = None,
+    constraints: dict | None = None,
+    seed: int | None = None,
+    on_progress: Callable[[int, int, HumanizeResult], None] | None = None,
+    max_workers: int | None = None,
+) -> list[HumanizeResult]:
+    """Гуманизировать несколько текстов за один вызов.
+
+    Удобная обёртка для пакетной обработки. Каждый текст обрабатывается
+    независимо с собственным сидом (seed + index) для воспроизводимости.
+
+    Args:
+        texts: Список текстов для обработки.
+        lang: Код языка ('auto' для автоопределения).
+        profile: Профиль обработки.
+        intensity: Интенсивность обработки (0-100).
+        preserve: Настройки защиты элементов.
+        constraints: Ограничения обработки.
+        seed: Базовый сид. Для i-го текста используется seed + i.
+        on_progress: Callback, вызываемый после обработки каждого текста.
+            Принимает (current_index, total_count, result).
+        max_workers: Число потоков (None/1 = последовательно, 2+ = параллельно).
+            Внимание: при max_workers > 1 on_progress может вызываться не по порядку.
+
+    Returns:
+        Список HumanizeResult — по одному для каждого входного текста.
+    """
+    total = len(texts)
+
+    def _process_item(idx: int) -> tuple[int, HumanizeResult]:
+        item_seed = seed + idx if seed is not None else None
+        result = humanize(
+            texts[idx],
+            lang=lang,
+            profile=profile,
+            intensity=intensity,
+            preserve=preserve,
+            constraints=constraints,
+            seed=item_seed,
+        )
+        if on_progress is not None:
+            on_progress(idx, total, result)
+        return (idx, result)
+
+    results_map: dict[int, HumanizeResult] = {}
+
+    if max_workers and max_workers >= 2 and total > 1:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(_process_item, i): i
+                for i in range(total)
+            }
+            for future in as_completed(futures):
+                idx, result = future.result()
+                results_map[idx] = result
+    else:
+        for i in range(total):
+            idx, result = _process_item(i)
+            results_map[idx] = result
+
+    return [results_map[i] for i in range(total)]
 
 
 def _split_into_chunks(text: str, chunk_size: int) -> list[str]:
@@ -427,8 +528,15 @@ def detect_ai(text: str, lang: str = "auto") -> dict:
             "opening_diversity": result.opening_score,
             "readability_consistency": result.readability_score,
             "rhythm": result.rhythm_score,
+            "perplexity": result.perplexity_score,
+            "discourse": result.discourse_score,
+            "semantic_repetition": result.semantic_rep_score,
+            "entity_specificity": result.entity_score,
+            "voice": result.voice_score,
+            "topic_sentence": result.topic_sent_score,
         },
         "explanations": result.explanations,
+        "domain": result.detected_domain,
         "lang": lang,
     }
 
@@ -444,6 +552,61 @@ def detect_ai_batch(texts: list[str], lang: str = "auto") -> list[dict]:
         Список результатов detect_ai для каждого текста.
     """
     return [detect_ai(t, lang=lang) for t in texts]
+
+
+def detect_ai_sentences(
+    text: str,
+    lang: str = "auto",
+    *,
+    window: int = 3,
+) -> list[dict]:
+    """Per-sentence AI detection.
+
+    Returns a list of dicts, one per sentence, with keys:
+    text, start, end, ai_probability, label ("human"/"mixed"/"ai").
+
+    Args:
+        text: Text to analyse.
+        lang: Language code (or "auto").
+        window: Sliding window size in sentences.
+    """
+    mod = _get_detectors()
+    detector = mod.AIDetector(lang=lang)
+    results = detector.detect_sentences(text, lang=lang, window=window)
+    return [
+        {
+            "text": r.text,
+            "start": r.start,
+            "end": r.end,
+            "ai_probability": r.ai_probability,
+            "label": r.label,
+        }
+        for r in results
+    ]
+
+
+def detect_ai_mixed(text: str, lang: str = "auto") -> list[dict]:
+    """Detect mixed AI/human text by finding boundaries.
+
+    Groups consecutive sentences with the same label into segments.
+
+    Returns a list of dicts with keys:
+    text, start, end, label, ai_probability, sentence_count.
+    """
+    mod = _get_detectors()
+    detector = mod.AIDetector(lang=lang)
+    segments = detector.detect_mixed(text, lang=lang)
+    return [
+        {
+            "text": seg.text,
+            "start": seg.start,
+            "end": seg.end,
+            "label": seg.label,
+            "ai_probability": seg.ai_probability,
+            "sentence_count": seg.sentence_count,
+        }
+        for seg in segments
+    ]
 
 
 def paraphrase(
@@ -471,9 +634,9 @@ def paraphrase(
     """
     if lang == "auto":
         lang = detect_language(text)
-    return _get_paraphrase().paraphrase_text(
+    return str(_get_paraphrase().paraphrase_text(
         text, lang=lang, intensity=intensity, seed=seed
-    )
+    ))
 
 
 def analyze_tone(text: str, lang: str = "auto") -> dict:
@@ -528,9 +691,9 @@ def adjust_tone(
     """
     if lang == "auto":
         lang = detect_language(text)
-    return _get_tone().adjust_tone(
+    return str(_get_tone().adjust_tone(
         text, target=target, lang=lang, intensity=intensity
-    )
+    ))
 
 
 def detect_watermarks(text: str, lang: str = "auto") -> dict:
@@ -576,7 +739,7 @@ def clean_watermarks(text: str, lang: str = "auto") -> str:
     """
     if lang == "auto":
         lang = detect_language(text)
-    return _get_watermark().clean_watermarks(text, lang=lang)
+    return str(_get_watermark().clean_watermarks(text, lang=lang))
 
 
 def spin(
@@ -598,9 +761,9 @@ def spin(
     """
     if lang == "auto":
         lang = detect_language(text)
-    return _get_spinner().spin_text(
+    return str(_get_spinner().spin_text(
         text, lang=lang, intensity=intensity, seed=seed
-    )
+    ))
 
 
 def spin_variants(
@@ -622,9 +785,9 @@ def spin_variants(
     """
     if lang == "auto":
         lang = detect_language(text)
-    return _get_spinner().generate_variants(
+    return list(_get_spinner().generate_variants(
         text, count=count, lang=lang, intensity=intensity
-    )
+    ))
 
 
 def analyze_coherence(text: str, lang: str = "auto") -> dict:
@@ -678,3 +841,216 @@ def full_readability(text: str, lang: str = "auto") -> dict:
 
     analyzer = TextAnalyzer(lang=lang)
     return analyzer.full_readability(text)
+
+
+# ═════════════════════════════════════════════════════════════
+#  AUTHOR FINGERPRINT
+# ═════════════════════════════════════════════════════════════
+
+def build_author_profile(texts: list[str], lang: str = "auto") -> dict:
+    """Build a style profile from reference texts by one author.
+
+    Args:
+        texts: Reference texts written by the author.
+        lang: Language code.
+
+    Returns:
+        Dict with profile data (can be stored as JSON).
+    """
+    from texthumanize.fingerprint import AuthorFingerprint
+    fp = AuthorFingerprint()
+    profile = fp.build_profile(texts, lang=lang)
+    # Convert to dict for serialization
+    from dataclasses import asdict
+    return asdict(profile)
+
+
+def compare_fingerprint(
+    profile: dict,
+    text: str,
+    lang: str | None = None,
+) -> dict:
+    """Compare text against an author profile.
+
+    Args:
+        profile: Profile dict from build_author_profile().
+        text: New text to compare.
+        lang: Language code (uses profile's lang if None).
+
+    Returns:
+        Dict with similarity, verdict, confidence, deviations.
+    """
+    from texthumanize.fingerprint import AuthorFingerprint, StyleProfile
+    fp = AuthorFingerprint()
+
+    # Reconstruct StyleProfile from dict
+    style = StyleProfile(**{
+        k: v for k, v in profile.items()
+        if k in StyleProfile.__dataclass_fields__
+    })
+
+    result = fp.compare(style, text, lang=lang)
+    return {
+        "similarity": result.similarity,
+        "verdict": result.verdict,
+        "confidence": result.confidence,
+        "deviations": result.deviations,
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+#  A/B DETECTION
+# ═════════════════════════════════════════════════════════════
+
+def detect_ab(
+    original: str,
+    processed: str,
+    lang: str = "auto",
+) -> dict:
+    """Compare AI detection scores before and after processing.
+
+    Useful for checking how humanization or editing changed
+    the AI detection outcome.
+
+    Args:
+        original: Original text.
+        processed: Processed (humanized/edited) text.
+        lang: Language code.
+
+    Returns:
+        Dict with before/after scores and per-metric deltas.
+    """
+    before = detect_ai(original, lang=lang)
+    after = detect_ai(processed, lang=lang)
+
+    deltas = {}
+    for key in before["metrics"]:
+        deltas[key] = round(after["metrics"][key] - before["metrics"][key], 4)
+
+    return {
+        "before": {
+            "score": before["score"],
+            "verdict": before["verdict"],
+        },
+        "after": {
+            "score": after["score"],
+            "verdict": after["verdict"],
+        },
+        "score_delta": round(after["score"] - before["score"], 4),
+        "metric_deltas": deltas,
+        "improved": after["score"] < before["score"],
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+#  EVASION RESISTANCE SCORE
+# ═════════════════════════════════════════════════════════════
+
+def evasion_resistance(text: str, lang: str = "auto") -> dict:
+    """Score how many detection signals catch this text.
+
+    A high resistance score means the text is detectable by
+    many independent metrics — harder to evade.
+
+    Args:
+        text: Text to evaluate.
+        lang: Language code.
+
+    Returns:
+        Dict with resistance score, triggered metrics, and details.
+    """
+    result = detect_ai(text, lang=lang)
+    metrics = result["metrics"]
+
+    # Count how many metrics flag the text as AI
+    ai_threshold = 0.55
+    triggered = {k: v for k, v in metrics.items() if v >= ai_threshold}
+    resistance = len(triggered) / len(metrics) if metrics else 0.0
+
+    # Categorize strength
+    if resistance >= 0.7:
+        strength = "strong"
+    elif resistance >= 0.4:
+        strength = "moderate"
+    else:
+        strength = "weak"
+
+    return {
+        "resistance_score": round(resistance, 4),
+        "strength": strength,
+        "triggered_count": len(triggered),
+        "total_metrics": len(metrics),
+        "triggered_metrics": triggered,
+        "overall_score": result["score"],
+        "verdict": result["verdict"],
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+#  ADVERSARIAL LOOP CALIBRATION
+# ═════════════════════════════════════════════════════════════
+
+def adversarial_calibrate(
+    text: str,
+    lang: str = "auto",
+    *,
+    max_rounds: int = 5,
+    target_score: float = 0.35,
+    intensity: float = 0.5,
+) -> dict:
+    """Run humanize → detect loop until target score is reached.
+
+    Repeatedly humanizes and checks AI score, adjusting parameters
+    to find the minimum humanization needed to pass detection.
+
+    Args:
+        text: AI-generated text to calibrate.
+        lang: Language code.
+        max_rounds: Maximum humanization rounds.
+        target_score: Target AI probability (stop when reached).
+        intensity: Starting humanization intensity.
+
+    Returns:
+        Dict with: final_text, rounds, score_history, final_score.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    current_text = text
+    score_history: list[dict] = []
+
+    for round_num in range(1, max_rounds + 1):
+        # Detect current
+        result = detect_ai(current_text, lang=lang)
+        score_history.append({
+            "round": round_num,
+            "score": result["score"],
+            "verdict": result["verdict"],
+        })
+
+        if result["score"] <= target_score:
+            break
+
+        # Humanize with current intensity
+        current_text = humanize(
+            current_text,
+            lang=lang,
+            intensity=min(intensity, 1.0),
+        )
+
+        # Increase intensity slightly for next round
+        intensity = min(intensity + 0.1, 1.0)
+
+    # Final check
+    final = detect_ai(current_text, lang=lang)
+
+    return {
+        "original_score": score_history[0]["score"] if score_history else 0.0,
+        "final_score": final["score"],
+        "final_verdict": final["verdict"],
+        "rounds": len(score_history),
+        "target_reached": final["score"] <= target_score,
+        "score_history": score_history,
+        "final_text": current_text,
+    }
+

@@ -65,6 +65,11 @@ class Debureaucratizer
 
             $pattern = '/\b' . preg_quote($phrase, '/') . '\b/ui';
             if (preg_match($pattern, $text, $match, PREG_OFFSET_CAPTURE)) {
+                // Context guard: check if replacement is safe in context
+                if (!ContextGuard::isSafe($phrase, $text, (int) $match[0][1], (int) $match[0][1] + strlen($match[0][0]))) {
+                    continue;
+                }
+
                 $replacement = $this->rng->choice($replacements);
                 // Preserve case of first letter
                 $replacement = self::matchCase($match[0][0], $replacement);
@@ -99,6 +104,11 @@ class Debureaucratizer
             $pattern = '/\b' . preg_quote($word, '/') . '\b/ui';
             if (preg_match($pattern, $text, $match, PREG_OFFSET_CAPTURE)) {
                 if (!Profiles::coinFlip($prob, $this->rng)) {
+                    continue;
+                }
+
+                // Context guard: check if replacement is safe in context
+                if (!ContextGuard::isSafe($word, $text, (int) $match[0][1], (int) $match[0][1] + strlen($match[0][0]))) {
                     continue;
                 }
 

@@ -7,15 +7,19 @@ from typing import Callable, Protocol
 from texthumanize.analyzer import TextAnalyzer
 from texthumanize.decancel import Debureaucratizer
 from texthumanize.lang import has_deep_support
+from texthumanize.stylistic import StylisticAnalyzer, StylisticFingerprint
 from texthumanize.liveliness import LivelinessInjector
 from texthumanize.naturalizer import TextNaturalizer
 from texthumanize.normalizer import TypographyNormalizer
+from texthumanize.paraphraser_ext import SemanticParaphraser
 from texthumanize.repetitions import RepetitionReducer
 from texthumanize.segmenter import Segmenter
 from texthumanize.structure import StructureDiversifier
 from texthumanize.universal import UniversalProcessor
 from texthumanize.utils import HumanizeOptions, HumanizeResult
 from texthumanize.validator import QualityValidator
+
+from difflib import SequenceMatcher
 
 
 class StagePlugin(Protocol):
@@ -40,10 +44,11 @@ class Pipeline:
     4. Разнообразие структуры (для языков с полным словарём)
     5. Уменьшение повторов (для языков с полным словарём)
     6. Инъекция «живости» (для языков с полным словарём)
-    7. Универсальная обработка (для ВСЕХ языков)
-    8. Натурализация стиля (для ВСЕХ языков — КЛЮЧЕВОЙ ЭТАП)
-    9. Валидация качества
-    10. Восстановление защищённых сегментов
+    7. Семантическое перефразирование (синтаксические трансформации)
+    8. Универсальная обработка (для ВСЕХ языков)
+    9. Натурализация стиля (для ВСЕХ языков — КЛЮЧЕВОЙ ЭТАП)
+    10. Валидация качества
+    11. Восстановление защищённых сегментов
 
     Supports custom plugins that can be inserted before or after
     any built-in stage via register_plugin().
@@ -58,7 +63,8 @@ class Pipeline:
     STAGE_NAMES = (
         "segmentation", "typography", "debureaucratization",
         "structure", "repetitions", "liveliness",
-        "universal", "naturalization", "validation", "restore",
+        "paraphrasing", "universal", "naturalization",
+        "validation", "restore",
     )
 
     def __init__(self, options: HumanizeOptions | None = None):
@@ -156,6 +162,118 @@ class Pipeline:
         Returns:
             HumanizeResult с обработанным текстом и метаданными.
         """
+        max_change = self.options.constraints.get("max_change_ratio", 0.4)
+
+        result = self._run_pipeline(text, lang, intensity_factor=1.0)
+
+        # Graduated retry: если change_ratio слишком высокий,
+        # повторяем с пониженной интенсивностью
+        if result.change_ratio > max_change:
+            for factor in (0.4, 0.15):
+                retry = self._run_pipeline(text, lang, intensity_factor=factor)
+                if retry.change_ratio <= max_change:
+                    return retry
+                if retry.quality_score > result.quality_score:
+                    result = retry
+
+        return result
+
+    @staticmethod
+    def _calc_change_ratio(original: str, current: str) -> float:
+        """Вычислить текущий change_ratio (SequenceMatcher-based)."""
+        if not original:
+            return 0.0
+        orig_words = original.split()
+        curr_words = current.split()
+        if not orig_words:
+            return 0.0
+        matcher = SequenceMatcher(None, orig_words, curr_words)
+        return min(1.0 - matcher.ratio(), 1.0)
+
+    def _typography_only(
+        self,
+        text: str,
+        lang: str,
+        metrics_before: "AnalysisReport",
+        changes: list[dict],
+        *,
+        preserve_config: dict | None = None,
+    ) -> HumanizeResult:
+        """Fast path for already-natural text: only typography normalization.
+
+        Skips all semantic stages to prevent over-processing genuine
+        human-written content.
+        """
+        original = text
+        all_changes = list(changes)
+        all_changes.append({
+            "type": "skip_natural",
+            "description": (
+                f"Текст уже естественный (AI={metrics_before.artificiality_score:.0f}%). "
+                "Применяется только типографика."
+            ),
+        })
+
+        # Segmentation
+        preserve = preserve_config or {}
+        segmenter = Segmenter(preserve=preserve)
+        segmented = segmenter.segment(text)
+        text = segmented.text
+
+        # Typography only
+        normalizer = TypographyNormalizer(
+            profile=self.options.profile,
+            lang=lang,
+        )
+        text = normalizer.normalize(text)
+        all_changes.extend(normalizer.changes)
+
+        # Restore segments
+        text = segmented.restore(text)
+
+        # Metrics after
+        analyzer = TextAnalyzer(lang=lang)
+        metrics_after = analyzer.analyze(text)
+
+        return HumanizeResult(
+            original=original,
+            text=text,
+            lang=lang,
+            profile=self.options.profile,
+            intensity=self.options.intensity,
+            changes=all_changes,
+            metrics_before={
+                "artificiality_score": metrics_before.artificiality_score,
+                "avg_sentence_length": metrics_before.avg_sentence_length,
+                "bureaucratic_ratio": metrics_before.bureaucratic_ratio,
+                "connector_ratio": metrics_before.connector_ratio,
+                "repetition_score": metrics_before.repetition_score,
+                "typography_score": metrics_before.typography_score,
+                "predictability_score": metrics_before.predictability_score,
+                "vocabulary_richness": metrics_before.vocabulary_richness,
+            },
+            metrics_after={
+                "artificiality_score": metrics_after.artificiality_score,
+                "avg_sentence_length": metrics_after.avg_sentence_length,
+                "bureaucratic_ratio": metrics_after.bureaucratic_ratio,
+                "connector_ratio": metrics_after.connector_ratio,
+                "repetition_score": metrics_after.repetition_score,
+                "typography_score": metrics_after.typography_score,
+                "predictability_score": metrics_after.predictability_score,
+                "vocabulary_richness": metrics_after.vocabulary_richness,
+            },
+        )
+
+    def _run_pipeline(
+        self, text: str, lang: str, *, intensity_factor: float = 1.0,
+    ) -> HumanizeResult:
+        """Выполнить один проход пайплайна.
+
+        Args:
+            text: Текст для обработки.
+            lang: Код языка.
+            intensity_factor: Множитель интенсивности (0-1) для graduated retry.
+        """
         original = text
         all_changes: list[dict] = []
 
@@ -163,8 +281,87 @@ class Pipeline:
         analyzer = TextAnalyzer(lang=lang)
         metrics_before = analyzer.analyze(text)
 
+        # ── Адаптивная интенсивность ──────────────────────────
+        # Автоматически корректируем intensity на основе artificiality_score:
+        # - Высокий AI-скор (>60) → усиливаем обработку
+        # - Низкий AI-скор (<25) → ослабляем, чтобы не портить живой текст
+        effective_options = self.options
+        ai_score = metrics_before.artificiality_score
+        base_intensity = self.options.intensity
+
+        # Применяем graduated retry factor
+        base_intensity = max(5, int(base_intensity * intensity_factor))
+
+        if ai_score >= 70:
+            # Сильно «искусственный» текст — усиливаем
+            adjusted = min(100, int(base_intensity * 1.3))
+        elif ai_score >= 50:
+            # Средне «искусственный» — немного усиливаем
+            adjusted = min(100, int(base_intensity * 1.1))
+        elif ai_score <= 5:
+            # Полностью «живой» текст — применяем только типографику
+            return self._typography_only(
+                text, lang, metrics_before, all_changes,
+                preserve_config=dict(self.options.preserve),
+            )
+        elif ai_score <= 10:
+            # Почти полностью «живой» текст — минимальная обработка
+            adjusted = max(5, int(base_intensity * 0.2))
+        elif ai_score <= 15:
+            # Почти «живой» текст — сильно ослабляем
+            adjusted = max(8, int(base_intensity * 0.35))
+        elif ai_score <= 25:
+            # Слабо «искусственный» — ослабляем
+            adjusted = max(10, int(base_intensity * 0.5))
+        else:
+            adjusted = base_intensity
+
+        if adjusted != base_intensity:
+            # Создаём копию опций с адаптированной интенсивностью
+            effective_options = HumanizeOptions(
+                lang=self.options.lang,
+                profile=self.options.profile,
+                intensity=adjusted,
+                preserve=dict(self.options.preserve),
+                constraints=dict(self.options.constraints),
+                seed=self.options.seed,
+            )
+            all_changes.append({
+                "type": "adaptive_intensity",
+                "description": (
+                    f"Адаптация: AI-скор={ai_score:.0f}%, "
+                    f"intensity {base_intensity}→{adjusted}"
+                ),
+            })
+
         # 1. Сегментация — защита неизменяемых блоков
         preserve_config = dict(self.options.preserve)
+
+        # ── Стилистический отпечаток ──────────────────────────
+        # Если задан target_style, анализируем текущий стиль
+        # и корректируем параметры для приближения к целевому
+        style_meta: dict = {}
+        target_fp = self.options.target_style
+        # Resolve preset name → StylisticFingerprint
+        if isinstance(target_fp, str):
+            from texthumanize.stylistic import STYLE_PRESETS
+            target_fp = STYLE_PRESETS.get(target_fp)
+        if target_fp is not None and isinstance(target_fp, StylisticFingerprint):
+            style_analyzer = StylisticAnalyzer(lang=lang)
+            source_fp = style_analyzer.extract(text)
+            style_similarity = source_fp.similarity(target_fp)
+            style_meta = {
+                "style_similarity_before": round(style_similarity, 3),
+                "target_sentence_mean": round(target_fp.sentence_length_mean, 1),
+                "source_sentence_mean": round(source_fp.sentence_length_mean, 1),
+            }
+            all_changes.append({
+                "type": "style_matching",
+                "description": (
+                    f"Стилистическое сходство: {style_similarity:.1%}. "
+                    f"Целевая длина предложений: {target_fp.sentence_length_mean:.0f} слов"
+                ),
+            })
         # Добавляем keep_keywords в protect
         keep_kw = self.options.constraints.get("keep_keywords", [])
         if keep_kw:
@@ -191,9 +388,9 @@ class Pipeline:
             text = self._run_plugins("debureaucratization", text, lang, is_before=True)
             debureaucratizer = Debureaucratizer(
                 lang=lang,
-                profile=self.options.profile,
-                intensity=self.options.intensity,
-                seed=self.options.seed,
+                profile=effective_options.profile,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
             )
             text = debureaucratizer.process(text)
             all_changes.extend(debureaucratizer.changes)
@@ -203,9 +400,9 @@ class Pipeline:
             text = self._run_plugins("structure", text, lang, is_before=True)
             structure = StructureDiversifier(
                 lang=lang,
-                profile=self.options.profile,
-                intensity=self.options.intensity,
-                seed=self.options.seed,
+                profile=effective_options.profile,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
             )
             text = structure.process(text)
             all_changes.extend(structure.changes)
@@ -215,9 +412,9 @@ class Pipeline:
             text = self._run_plugins("repetitions", text, lang, is_before=True)
             repetitions = RepetitionReducer(
                 lang=lang,
-                profile=self.options.profile,
-                intensity=self.options.intensity,
-                seed=self.options.seed,
+                profile=effective_options.profile,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
             )
             text = repetitions.process(text)
             all_changes.extend(repetitions.changes)
@@ -227,41 +424,57 @@ class Pipeline:
             text = self._run_plugins("liveliness", text, lang, is_before=True)
             liveliness = LivelinessInjector(
                 lang=lang,
-                profile=self.options.profile,
-                intensity=self.options.intensity,
-                seed=self.options.seed,
+                profile=effective_options.profile,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
             )
             text = liveliness.process(text)
             all_changes.extend(liveliness.changes)
             text = self._run_plugins("liveliness", text, lang, is_before=False)
 
-        # 7. Универсальная обработка (для ВСЕХ языков)
+        # 7. Семантическое перефразирование (для языков с полным словарём)
+        if has_deep_support(lang):
+            text = self._run_plugins("paraphrasing", text, lang, is_before=True)
+            paraphraser = SemanticParaphraser(
+                lang=lang,
+                intensity=effective_options.intensity / 100.0,
+                seed=effective_options.seed,
+            )
+            text = paraphraser.process(text)
+            all_changes.extend(
+                {"type": "paraphrasing", "kind": t.kind,
+                 "description": f"{t.kind}: {t.original[:60]}… → {t.transformed[:60]}…"}
+                for t in paraphraser.changes
+            )
+            text = self._run_plugins("paraphrasing", text, lang, is_before=False)
+
+        # 8. Универсальная обработка (для ВСЕХ языков)
         text = self._run_plugins("universal", text, lang, is_before=True)
         universal = UniversalProcessor(
-            profile=self.options.profile,
-            intensity=self.options.intensity,
-            seed=self.options.seed,
+            profile=effective_options.profile,
+            intensity=effective_options.intensity,
+            seed=effective_options.seed,
         )
         text = universal.process(text)
         all_changes.extend(universal.changes)
         text = self._run_plugins("universal", text, lang, is_before=False)
 
-        # 8. Натурализация стиля (КЛЮЧЕВОЙ ЭТАП — для ВСЕХ языков)
+        # 9. Натурализация стиля (КЛЮЧЕВОЙ ЭТАП — для ВСЕХ языков)
         text = self._run_plugins("naturalization", text, lang, is_before=True)
         naturalizer = TextNaturalizer(
             lang=lang,
-            profile=self.options.profile,
-            intensity=self.options.intensity,
-            seed=self.options.seed,
+            profile=effective_options.profile,
+            intensity=effective_options.intensity,
+            seed=effective_options.seed,
         )
         text = naturalizer.process(text)
         all_changes.extend(naturalizer.changes)
         text = self._run_plugins("naturalization", text, lang, is_before=False)
 
-        # 9. Восстановление защищённых сегментов
+        # 10. Восстановление защищённых сегментов
         text = segmented.restore(text)
 
-        # 10. Валидация
+        # 11. Валидация
         max_change = self.options.constraints.get("max_change_ratio", 0.4)
         validator = QualityValidator(
             lang=lang,
@@ -270,16 +483,28 @@ class Pipeline:
         )
         validation = validator.validate(original, text, metrics_before)
 
-        # Если валидация провалилась — откат
-        if validation.should_rollback and validation.errors:
+        # Откат только при критических ошибках (потеря ключевых слов,
+        # резкий рост AI-скора). Слишком высокий change_ratio не вызывает
+        # откат — graduated retry обработает это.
+        critical_errors = [e for e in validation.errors if "ключевое слово" in e.lower()
+                          or "искусственность" in e.lower()]
+        if critical_errors:
             text = original
             all_changes = [{
                 "type": "rollback",
-                "description": f"Откат: {'; '.join(validation.errors)}",
+                "description": f"Откат: {'; '.join(critical_errors)}",
             }]
 
         # Анализ после обработки
         metrics_after = analyzer.analyze(text)
+
+        # Стилистический анализ после обработки (если задан target)
+        if target_fp is not None and isinstance(target_fp, StylisticFingerprint):
+            style_analyzer_post = StylisticAnalyzer(lang=lang)
+            result_fp = style_analyzer_post.extract(text)
+            style_meta["style_similarity_after"] = round(
+                result_fp.similarity(target_fp), 3,
+            )
 
         return HumanizeResult(
             original=original,
@@ -295,6 +520,9 @@ class Pipeline:
                 "connector_ratio": metrics_before.connector_ratio,
                 "repetition_score": metrics_before.repetition_score,
                 "typography_score": metrics_before.typography_score,
+                "predictability_score": metrics_before.predictability_score,
+                "vocabulary_richness": metrics_before.vocabulary_richness,
+                **style_meta,
             },
             metrics_after={
                 "artificiality_score": metrics_after.artificiality_score,
@@ -303,5 +531,7 @@ class Pipeline:
                 "connector_ratio": metrics_after.connector_ratio,
                 "repetition_score": metrics_after.repetition_score,
                 "typography_score": metrics_after.typography_score,
+                "predictability_score": metrics_after.predictability_score,
+                "vocabulary_richness": metrics_after.vocabulary_richness,
             },
         )

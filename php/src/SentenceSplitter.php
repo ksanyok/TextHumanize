@@ -216,7 +216,7 @@ class SentenceSplitter
                     }
 
                     // Single-letter initial
-                    if ($wordBefore !== '' && mb_strlen($wordBefore) === 1 && ctype_alpha($wordBefore)) {
+                    if ($wordBefore !== '' && mb_strlen($wordBefore) === 1 && preg_match('/^\pL$/u', $wordBefore)) {
                         continue;
                     }
 
@@ -328,28 +328,14 @@ class SentenceSplitter
             return '';
         }
 
-        $end   = $dotPos;
-        $start = $end - 1;
+        $before = substr($text, 0, $dotPos);
 
-        while ($start > 0 && ctype_alpha($text[$start - 1])) {
-            $start--;
+        // Match the last word (Unicode-aware), possibly multi-dot abbreviation like т.д
+        if (preg_match('/(\pL+(?:\.\pL+)*)$/u', $before, $m)) {
+            return str_replace('.', '', $m[1]);
         }
 
-        $word = substr($text, $start, $end - $start);
-
-        // Check for multi-dot abbreviation (e.g. т.д.)
-        if ($start > 1 && $text[$start - 1] === '.' && $start > 2 && ctype_alpha($text[$start - 2])) {
-            $widerStart = $start - 2;
-            while ($widerStart > 0 && (ctype_alpha($text[$widerStart - 1]) || $text[$widerStart - 1] === '.')) {
-                $widerStart--;
-            }
-            $wider = substr($text, $widerStart, $end - $widerStart);
-            if (substr_count($wider, '.') >= 1) {
-                return str_replace('.', '', $wider);
-            }
-        }
-
-        return $word;
+        return '';
     }
 
     /**

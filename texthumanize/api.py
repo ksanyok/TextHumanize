@@ -66,7 +66,7 @@ def _read_json(handler: BaseHTTPRequestHandler) -> dict:
     if length == 0:
         return {}
     raw = handler.rfile.read(length)
-    return json.loads(raw.decode("utf-8"))
+    return dict(json.loads(raw.decode("utf-8")))
 
 
 def _require_text(data: dict) -> str:
@@ -74,7 +74,7 @@ def _require_text(data: dict) -> str:
     text = data.get("text")
     if not text or not isinstance(text, str):
         raise ValueError("Поле 'text' обязательно и должно быть строкой")
-    return text
+    return str(text)
 
 
 # ─── Route handlers ──────────────────────────────────────────

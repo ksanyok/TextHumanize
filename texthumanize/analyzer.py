@@ -6,6 +6,7 @@ import re
 from collections import Counter
 
 from texthumanize.lang import get_lang_pack
+from texthumanize.perplexity import PerplexityEstimator
 from texthumanize.utils import AnalysisReport
 
 
@@ -95,6 +96,13 @@ class TextAnalyzer:
 
         # 8. Общий балл искусственности
         report.artificiality_score = self._calc_artificiality_score(report)
+
+        # 9. N-gram перплексия (предсказуемость текста)
+        perplexity_est = PerplexityEstimator()
+        perp_report = perplexity_est.analyze(text)
+        report.predictability_score = perp_report.predictability_score
+        report.char_perplexity = perp_report.char_perplexity
+        report.vocabulary_richness = perp_report.vocabulary_richness
 
         # Детали
         report.details = {
@@ -255,6 +263,12 @@ class TextAnalyzer:
         elif report.burstiness_score < 0.5:
             score += 5
 
+        # 7. Предсказуемость (из n-gram перплексии)
+        if report.predictability_score > 60:
+            score += 10
+        elif report.predictability_score > 40:
+            score += 5
+
         return min(score, 100.0)
 
     def _calc_burstiness_score(self, sentence_lengths: list[int]) -> float:
@@ -274,7 +288,7 @@ class TextAnalyzer:
         cv = (variance ** 0.5) / mean
 
         # Нормализуем: cv=0.7+ это хорошо (человечески), cv<0.3 это плохо (AI)
-        return min(cv / 0.7, 1.0)
+        return float(min(cv / 0.7, 1.0))
 
     def _calc_burstiness_cv(self, sentence_lengths: list[int]) -> float:
         """Вычислить коэффициент вариации для длины предложений."""
@@ -284,7 +298,7 @@ class TextAnalyzer:
         if mean == 0:
             return 0.0
         variance = sum((sl - mean) ** 2 for sl in sentence_lengths) / len(sentence_lengths)
-        return (variance ** 0.5) / mean
+        return float((variance ** 0.5) / mean)
 
     def _find_bureaucratic_words(self, text: str) -> list[str]:
         """Найти все канцеляризмы в тексте."""
@@ -409,12 +423,10 @@ class TextAnalyzer:
         import math
         if not words or not sentences:
             return 0.0
-        polysyllables = sum(
+        polysyllables: float = sum(
             1 for w in words if self._count_syllables(w) >= 3
         )
         n_sentences = len(sentences)
-        if n_sentences == 0:
-            return 0.0
         # Adjust for small samples
         if n_sentences < 30:
             polysyllables = polysyllables * (30 / n_sentences)

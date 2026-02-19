@@ -29,7 +29,7 @@ class LivelinessInjector:
         self.profile = get_profile(profile)
         self.intensity = intensity
         self.rng = random.Random(seed)
-        self.changes: list[dict[str, str]] = []
+        self.changes: list[dict[str, str | int]] = []
 
     def process(self, text: str) -> str:
         """Добавить живость тексту.
@@ -47,13 +47,36 @@ class LivelinessInjector:
         if prob < 0.1:
             return text
 
-        # 1. Вставка разговорных маркеров (очень ограниченно)
-        text = self._inject_markers(text, prob)
+        # 1. Вставка разговорных маркеров (split_sentences + join →
+        #    обрабатываем построчно для сохранения структуры)
+        text = self._per_paragraph(text, self._inject_markers, prob)
 
-        # 2. Вариативность пунктуации
+        # 2. Вариативность пунктуации (regex — безопасно)
         text = self._vary_punctuation(text, prob)
 
         return text
+
+    # ─── Paragraph-safe wrapper ────────────────────────────────
+
+    def _per_paragraph(
+        self,
+        text: str,
+        fn: object,
+        *args: object,
+    ) -> str:
+        """Применить *fn* к каждой непустой строке независимо.
+
+        Сохраняет структуру абзацев/списков: строки, разделённые ``\\n``,
+        обрабатываются по отдельности и не склеиваются друг с другом.
+        """
+        lines = text.split('\n')
+        result: list[str] = []
+        for line in lines:
+            if line.strip():
+                result.append(fn(line, *args))  # type: ignore[operator]
+            else:
+                result.append(line)
+        return '\n'.join(result)
 
     def _inject_markers(self, text: str, prob: float) -> str:
         """Вставить разговорные маркеры в некоторые предложения."""
