@@ -3,6 +3,21 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.8.1] - 2026-02-19
+
+### Added
+- **Dual License** — replaced "Personal Use Only" with clear dual license: free for personal/academic/non-commercial use, commercial licenses from $99/year with 4 tiers (Indie, Startup, Business, Enterprise).
+- **COMMERCIAL.md** — dedicated commercial licensing page with pricing table, feature comparison, FAQ, and purchase instructions.
+- **Full benchmark suite** (`benchmarks/full_benchmark.py`) — reproducible benchmark covering processing speed, AI detection speed, predictability (determinism), memory usage, quality metrics, and change reports.
+- **"For Business & Enterprise" section** in README — corporate-focused block addressing predictability, privacy, auditability, processing modes, and integration options.
+- **Change Report section** in Performance & Benchmarks — demonstrates `explain()` audit trail with every `humanize()` call.
+- **Predictability section** with determinism guarantees and seed-based reproducibility proof.
+
+### Changed
+- **LICENSE** rewritten — now clearly states dual license with pricing tiers table, commercial use definitions, and contact information.
+- **README Performance section** — replaced estimated numbers with real benchmark data from `full_benchmark.py`.
+- **License references** updated in `pyproject.toml` to reflect dual license model.
+
 ## [0.8.0] - 2026-02-19
 
 ### Added

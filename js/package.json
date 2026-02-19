@@ -1,6 +1,6 @@
 {
   "name": "texthumanize",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Algorithmic text humanization — transforms AI-generated text into natural-sounding content",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

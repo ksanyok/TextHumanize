@@ -91,8 +91,9 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 - [Code Quality & Tooling](#code-quality--tooling)
 - [FAQ & Troubleshooting](#faq--troubleshooting)
 - [Contributing](#contributing)
+- [For Business & Enterprise](#for-business--enterprise)
 - [Support the Project](#support-the-project)
-- [License](#license)
+- [License & Pricing](#license--pricing)
 
 ---
 
@@ -118,6 +119,8 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 | 🎭 **Style presets** | Target a specific persona: student, copywriter, scientist, journalist, blogger |
 | 📚 **Multi-platform** | Python + TypeScript/JavaScript + PHP — one codebase, three ecosystems |
 | 🛡️ **Semantic guards** | Context-aware replacement with echo checks and negative collocations |
+| 📝 **Change report** | Every call returns what was changed, change ratio, quality score, similarity |
+| 🏢 **Enterprise-ready** | Dual license, 1,584 tests, 99% coverage, CI/CD, benchmarks, on-prem |
 
 ---
 
@@ -268,7 +271,7 @@ npm install
 
 ```python
 import texthumanize
-print(texthumanize.__version__)  # 0.8.0
+print(texthumanize.__version__)  # 0.8.1
 ```
 
 ### Updating to latest version
@@ -2001,50 +2004,82 @@ report = analyzer.analyze("Text to analyze.")
 
 ## Performance & Benchmarks
 
-All benchmarks on Apple Silicon (M1 Pro), Python 3.12, single thread.
+All benchmarks on Apple Silicon (M1 Pro), Python 3.12, single thread. Reproducible via `python3 benchmarks/full_benchmark.py`.
 
 ### Processing Speed
 
-| Text Size | Time | Speed |
-|-----------|------|-------|
-| 100 words | ~2ms | ~50,000 w/s |
-| 500 words | ~7ms | ~71,000 w/s |
-| 1,000 words | ~12ms | ~83,000 w/s |
-| 5,000 words | ~55ms | ~90,000 w/s |
-| 10,000 words | ~110ms | ~90,000 w/s |
-
-**Average throughput:** **56,000+ characters/second**
+| Text Size | Humanize Time | AI Detection Time | Throughput |
+|-----------|:-------------:|:-----------------:|:----------:|
+| 100 words (~900 chars) | ~24ms | ~2ms | ~38,000 chars/sec |
+| 500 words (~3,600 chars) | ~138ms | ~6ms | ~26,000 chars/sec |
+| 1,000 words (~6,000 chars) | ~213ms | ~9ms | ~28,000 chars/sec |
 
 ### Quality Benchmark
 
 Tested on 45 curated samples across 9 languages, multiple profiles, and edge cases:
 
 ```
-┌──────────────────────────────────────────────┐
-│        TextHumanize Quality Benchmark        │
-├──────────────────┬───────────────────────────┤
-│ Pass rate        │ 100% (45/45)              │
-│ Avg quality      │ 0.75                      │
-│ Avg speed        │ 56,134 chars/sec          │
-│ Issues found     │ 0                         │
-│ Languages tested │ 9                         │
-│ Profiles tested  │ 9                         │
-└──────────────────┴───────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│          TextHumanize Quality Benchmark           │
+├────────────────────┬─────────────────────────────┤
+│ Pass rate          │ 100% (45/45)                │
+│ Avg quality score  │ 0.75                        │
+│ Avg speed          │ 51,459 chars/sec            │
+│ Issues found       │ 0                           │
+│ Languages tested   │ 9                           │
+│ Profiles tested    │ 9                           │
+└────────────────────┴─────────────────────────────┘
 ```
 
-### AI Detection Speed
+### Predictability (Determinism)
 
-| Text Size | Time |
-|-----------|------|
-| 100 words | ~4ms |
-| 500 words | ~10ms |
-| 1,000 words | ~18ms |
+TextHumanize is fully deterministic — the core corporate requirement:
+
+```python
+result1 = humanize(text, seed=12345)
+result2 = humanize(text, seed=12345)
+assert result1.text == result2.text  # Always True
+```
+
+| Property | Value |
+|----------|:-----:|
+| Same seed → identical output | ✅ Always |
+| Different seed → different output | ✅ Always |
+| No network calls | ✅ |
+| No randomness from external sources | ✅ |
 
 ### Memory Usage
 
-- Base import: ~2MB
-- Per text processing: negligible overhead
-- No model files to load
+| Scenario | Memory |
+|----------|:------:|
+| Base import | ~2 MB |
+| Processing 30K chars | ~2.5 MB peak |
+| No model files to load | ✅ |
+
+### Change Report (explain)
+
+Every `humanize()` call returns a structured result with full audit trail:
+
+```python
+result = humanize(text, seed=42, profile="web")
+print(result.change_ratio)   # 0.15 — 15% of words changed
+print(result.quality_score)  # 0.85 — quality score 0..1
+print(result.similarity)     # 0.87 — Jaccard similarity with original
+
+# Full human-readable report
+print(explain(result))
+# === Report ===
+# Language: en | Profile: web | Intensity: 60
+# Change ratio: 15.0%
+# --- Metrics ---
+#   Artificiality: 57.2 → 46.1 ↓
+#   Bureaucratisms: 0.18 → 0.05 ↓
+#   AI connectors: 0.12 → 0.00 ↓
+# --- Changes (5) ---
+#   [debureaucratize] "implementation" → "setup"
+#   [debureaucratize] "utilization" → "use"
+#   ...
+```
 
 ---
 
@@ -2482,6 +2517,42 @@ pytest --cov=texthumanize
 
 ---
 
+## For Business & Enterprise
+
+TextHumanize is designed for production use in corporate environments:
+
+| Corporate Requirement | How TextHumanize Delivers |
+|:----------------------|:-------------------------|
+| **Predictability** | Seed-based PRNG — same input + seed = identical output. Always. |
+| **Privacy & Security** | 100% local processing. Zero network calls. No data leaves your server. |
+| **Auditability** | Every call returns `change_ratio`, `quality_score`, `similarity`, and a full `explain()` report of what was changed and why. |
+| **Modes** | `normalize` (typography only) · `style_soft` (mild humanization) · `rewrite` (full pipeline). Control via `intensity` (0–100) and `profile` (9 options). |
+| **Integration** | Python SDK · TypeScript/JavaScript SDK · PHP SDK · CLI · REST API. Drop into any pipeline. |
+| **Reliability** | 1,584 tests across 3 platforms, 99% code coverage, CI/CD with ruff + mypy. |
+| **No vendor lock-in** | Zero dependencies. Pure stdlib. No cloud APIs, no API keys, no rate limits. |
+| **Language coverage** | 9 full language packs + universal statistical processor for any language. |
+| **Licensing** | Clear dual license. [Commercial tiers from $99/year →](COMMERCIAL.md) |
+
+### Processing Modes
+
+```python
+# Mode 1: Typography only (normalize) — safest, no semantic changes
+result = humanize(text, intensity=5)  # Only fixes quotes, dashes, spaces
+
+# Mode 2: Soft style (style_soft) — light humanization
+result = humanize(text, intensity=30, profile="docs")
+
+# Mode 3: Full rewrite — maximum humanization
+result = humanize(text, intensity=80, profile="web")
+
+# Every mode returns an audit trail
+print(result.change_ratio)   # What % was changed
+print(result.quality_score)  # Quality metric
+print(explain(result))       # Detailed diff report
+```
+
+---
+
 ## Support the Project
 
 If you find TextHumanize useful, consider supporting the development:
@@ -2495,16 +2566,34 @@ If you find TextHumanize useful, consider supporting the development:
 
 ---
 
-## License
+## License & Pricing
 
-TextHumanize Personal Use License. See [LICENSE](LICENSE).
+TextHumanize uses a **dual license model**:
 
-This library is licensed for **personal, non-commercial use only**. Commercial use requires a separate license — contact the author for details.
+| Use Case | License | Cost |
+|:---------|:--------|:----:|
+| Personal projects | Free License | **Free** |
+| Academic / Research | Free License | **Free** |
+| Open-source (non-commercial) | Free License | **Free** |
+| Evaluation / Testing | Free License | **Free** |
+| Commercial — 1 dev, 1 project | Indie | **$99/year** |
+| Commercial — up to 5 devs | Startup | **$299/year** |
+| Commercial — up to 20 devs | Business | **$799/year** |
+| Enterprise / On-prem / SLA | Enterprise | [Contact us](mailto:ksanyok@me.com) |
+
+All commercial licenses include full source code, updates for 1 year, and email support.
+
+👉 **[Full licensing details & FAQ →](COMMERCIAL.md)**
+
+See [LICENSE](LICENSE) for the complete legal text.
+
+**Contact:** [ksanyok@me.com](mailto:ksanyok@me.com)
 
 ---
 
 <p align="center">
   <a href="https://github.com/ksanyok/TextHumanize">GitHub</a> ·
   <a href="https://github.com/ksanyok/TextHumanize/issues">Issues</a> ·
-  <a href="https://github.com/ksanyok/TextHumanize/discussions">Discussions</a>
+  <a href="https://github.com/ksanyok/TextHumanize/discussions">Discussions</a> ·
+  <a href="COMMERCIAL.md">Commercial License</a>
 </p>

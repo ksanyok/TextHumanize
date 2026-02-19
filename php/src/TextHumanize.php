@@ -21,7 +21,7 @@ use TextHumanize\Pipeline\Pipeline;
  */
 class TextHumanize
 {
-    public const VERSION = '0.8.0';
+    public const VERSION = '0.8.1';
 
     /**
      * Humanize text — the primary API method.

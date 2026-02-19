@@ -1,35 +1,85 @@
-TextHumanize Personal Use License
+TextHumanize — Dual License
 
-Copyright (c) 2025-2026 TextHumanize Contributors
+Copyright (c) 2025-2026 TextHumanize Contributors (ksanyok)
+
+This software is available under a dual license model:
+
+
+═══════════════════════════════════════════════════════════════
+ OPTION A — FREE LICENSE (Personal / Non-Commercial / Academic)
+═══════════════════════════════════════════════════════════════
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to use,
-copy, modify, and distribute the Software for personal, educational, and
-non-commercial purposes only, subject to the following conditions:
+copy, modify, and distribute the Software for:
 
-1. PERSONAL USE ONLY. The Software may be used for personal, academic,
-   research, and non-commercial purposes. You may integrate the Software
-   into personal projects that are not intended for commercial gain.
+  • Personal projects (not generating revenue)
+  • Academic and research purposes
+  • Educational use
+  • Open-source projects (non-commercial)
+  • Evaluation and testing
 
-2. COMMERCIAL USE PROHIBITED. Commercial use of the Software is strictly
-   prohibited without a separate commercial license agreement. Commercial
-   use includes, but is not limited to:
-   - Using the Software in a product or service that is sold or licensed
-     for a fee
-   - Using the Software to provide services to third parties for compensation
-   - Incorporating the Software into commercial products or platforms
-   - Using the Software in a business context to generate revenue
+Subject to the following conditions:
 
-3. For commercial licensing inquiries, please contact the copyright holders.
+1. The above copyright notice and this license shall be included in all
+   copies or substantial portions of the Software.
 
-4. The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
+2. You may NOT use the Software in any product, service, or internal tool
+   that generates revenue, directly or indirectly, without a Commercial
+   License (Option B below).
 
-5. REDISTRIBUTION. You may redistribute the Software in source or binary
-   form, provided that:
-   - This license is included with all copies
-   - The Software is not sold or bundled with commercial products
-   - Attribution to the original authors is maintained
+3. Attribution to the original project is required:
+   "Powered by TextHumanize — https://github.com/ksanyok/TextHumanize"
+
+
+═══════════════════════════════════════════════════════════════
+ OPTION B — COMMERCIAL LICENSE
+═══════════════════════════════════════════════════════════════
+
+Commercial use of the Software requires a paid license. A "Commercial License"
+grants you the right to use, modify, and integrate the Software into products,
+services, and internal tools that generate revenue.
+
+Commercial use includes, but is not limited to:
+  • SaaS platforms that process text using the Software
+  • Internal business tools (content pipelines, editorial systems)
+  • Products or services sold to customers
+  • Agencies or consultancies using the Software on behalf of clients
+  • Any use within a company with > 1 employee that benefits from the Software
+
+Commercial License tiers:
+
+  ┌─────────────────────┬─────────────┬──────────────────────────────────┐
+  │ Tier                │ Price/year  │ Includes                         │
+  ├─────────────────────┼─────────────┼──────────────────────────────────┤
+  │ Indie               │ $99/year    │ 1 project, 1 developer           │
+  │ Startup             │ $299/year   │ Up to 3 projects, up to 5 devs   │
+  │ Business            │ $799/year   │ Unlimited projects, up to 20 devs│
+  │ Enterprise          │ Contact us  │ On-prem, SLA, priority support   │
+  └─────────────────────┴─────────────┴──────────────────────────────────┘
+
+All commercial licenses include:
+  • Full source code access
+  • All future updates within the license period
+  • Email support (response within 48h for Startup+)
+  • Bug-fix priority for Business+
+  • License key for CI/CD verification (optional)
+
+Enterprise licenses additionally include:
+  • On-premises deployment support
+  • SLA with guaranteed response times
+  • Security audit documentation
+  • Custom integration assistance
+  • Dedicated support channel
+
+To purchase a commercial license or request a quote:
+  • Email: ksanyok@me.com
+  • GitHub: https://github.com/ksanyok/TextHumanize/issues (tag: "licensing")
+
+
+═══════════════════════════════════════════════════════════════
+ DISCLAIMER
+═══════════════════════════════════════════════════════════════
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
