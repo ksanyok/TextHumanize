@@ -12,7 +12,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?logo=typescript&logoColor=white)]()
 [![PHP 8.1+](https://img.shields.io/badge/php-8.1+-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
 &nbsp;&nbsp;
-[![Python Tests](https://img.shields.io/badge/tests-1333%20passed-2ea44f.svg?logo=pytest&logoColor=white)]()
+[![Python Tests](https://img.shields.io/badge/tests-1455%20passed-2ea44f.svg?logo=pytest&logoColor=white)]()
 [![PHP Tests](https://img.shields.io/badge/tests-223%20passed-2ea44f.svg?logo=php&logoColor=white)]()
 [![JS Tests](https://img.shields.io/badge/tests-28%20passed-2ea44f.svg?logo=vitest&logoColor=white)]()
 &nbsp;&nbsp;
@@ -254,7 +254,29 @@ cd TextHumanize
 pip install -e .
 ```
 
-### PHP
+### PHP (Composer)
+
+```bash
+composer require ksanyok/text-humanize
+```
+
+Если пакет ещё недоступен на Packagist, добавьте VCS-репозиторий в `composer.json` вашего проекта:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/ksanyok/TextHumanize"
+        }
+    ],
+    "require": {
+        "ksanyok/text-humanize": "^0.11"
+    }
+}
+```
+
+Или установите из исходников:
 
 ```bash
 cd php/
@@ -272,7 +294,7 @@ npm install
 
 ```python
 import texthumanize
-print(texthumanize.__version__)  # 0.9.0
+print(texthumanize.__version__)  # 0.11.0
 ```
 
 ### Updating to latest version
@@ -298,10 +320,14 @@ pip install -e .
 #### PHP
 
 ```bash
-# Via Composer (if published to Packagist)
-composer require ksanyok/text-humanize:^0.8
+# Via Composer
+composer require ksanyok/text-humanize
 
-# From source
+# Если пакет не на Packagist — добавьте VCS-репозиторий:
+composer config repositories.texthumanize vcs https://github.com/ksanyok/TextHumanize
+composer require ksanyok/text-humanize:^0.11
+
+# Или обновите из исходников
 cd php/
 git pull origin main
 composer install

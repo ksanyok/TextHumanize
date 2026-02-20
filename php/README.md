@@ -16,6 +16,13 @@ PHP port of the [TextHumanize](https://github.com/ksanyok/TextHumanize) Python l
 composer require ksanyok/text-humanize
 ```
 
+Если пакет ещё не опубликован на Packagist, добавьте VCS-репозиторий:
+
+```bash
+composer config repositories.texthumanize vcs https://github.com/ksanyok/TextHumanize
+composer require ksanyok/text-humanize:^0.11
+```
+
 ## Quick Start
 
 ```php
