@@ -47,6 +47,34 @@ LANG_PL = {
         "komplementarny": ["uzupełniający", "dodatkowy"],
         "adekwatny": ["odpowiedni", "stosowny", "właściwy"],
         "priorytetowy": ["najważniejszy", "główny", "pilny"],
+        # === v0.10.0 ===
+        "kontekstualizować": ["umieścić w kontekście", "osadzić", "usytuować"],
+        "operacjonalizować": ["wdrożyć", "zastosować", "uruchomić"],
+        "problematyzować": ["kwestionować", "podważać", "dyskutować"],
+        "dynamizować": ["ożywiać", "pobudzać", "stymulować"],
+        "racjonalizować": ["upraszczać", "porządkować", "reorganizować"],
+        "strukturyzować": ["organizować", "porządkować", "układać"],
+        "artykułować": ["wyrażać", "formułować", "komunikować"],
+        "waloryzować": ["doceniać", "podnosić wartość", "promować"],
+        "eksplicytować": ["wyjaśniać", "precyzować", "doprecyzować"],
+        "formalizować": ["oficjalizować", "kodyfikować", "normować"],
+        "mobilizować": ["angażować", "gromadzić", "aktywizować"],
+        "identyfikować": ["rozpoznawać", "znajdować", "określać"],
+        "syntetyzować": ["podsumowywać", "streszczać", "skracać"],
+        "proaktywny": ["wyprzedzający", "zapobiegawczy", "aktywny"],
+        "wielowymiarowy": ["różnorodny", "zróżnicowany", "wieloaspektowy"],
+        "substancjalny": ["istotny", "znaczny", "poważny"],
+        "inherentny": ["wrodzony", "właściwy", "nieodłączny"],
+        "pragmatyczny": ["praktyczny", "rzeczowy", "konkretny"],
+        "integracyjny": ["łączący", "scalający", "spajający"],
+        "paradygmatyczny": ["wzorcowy", "modelowy", "przykładowy"],
+        "kongruencyjny": ["spójny", "zgodny", "koherentny"],
+        "relewantny": ["istotny", "odpowiedni", "ważny"],
+        "eksponencjalny": ["gwałtowny", "szybki", "lawinowy"],
+        "systemowy": ["ogólny", "całościowy", "globalny"],
+        "interdyscyplinarny": ["wielodyscyplinarny", "przekrojowy"],
+        "transparentny": ["przejrzysty", "jawny", "otwarty"],
+        "holistyczny": ["całościowy", "pełny", "globalny"],
     },
 
     "bureaucratic_phrases": {
@@ -60,6 +88,23 @@ LANG_PL = {
         "odgrywa kluczową rolę": ["jest bardzo ważny", "ma duże znaczenie"],
         "ma fundamentalne znaczenie": ["jest bardzo ważne", "jest kluczowe"],
         "w istotny sposób": ["znacznie", "dużo", "bardzo"],
+        # === v0.10.0 ===
+        "wydaje się zasadnym": ["warto", "rozsądnie jest"],
+        "w świetle powyższego": ["biorąc to pod uwagę", "w związku z tym"],
+        "nie sposób pominąć": ["warto wspomnieć", "trzeba dodać"],
+        "z punktu widzenia": ["patrząc na", "od strony"],
+        "w kontekście": ["jeśli chodzi o", "w odniesieniu do"],
+        "ze szczególnym uwzględnieniem": ["zwłaszcza", "szczególnie"],
+        "po dokonaniu analizy": ["po przeanalizowaniu", "po sprawdzeniu"],
+        "jak wspomniano powyżej": ["jak już mówiono", "jak podano wyżej"],
+        "w ostatecznym rozrachunku": ["ostatecznie", "w końcu"],
+        "na marginesie": ["przy okazji", "nawiasem"],
+        "bez uszczerbku dla": ["nie naruszając", "zachowując"],
+        "w trybie priorytetowym": ["pilnie", "w pierwszej kolejności"],
+        "z uwzględnieniem specyfiki": ["biorąc pod uwagę", "pamiętając o"],
+        "w perspektywie długofalowej": ["w dłuższym terminie", "na dłuższą metę"],
+        "nie ulega wątpliwości": ["bez wątpienia", "jasne jest"],
+        "prowadzi to do konkluzji": ["z tego wynika", "stąd wniosek"],
     },
 
     "ai_connectors": {
@@ -75,6 +120,15 @@ LANG_PL = {
         "Mając powyższe na uwadze": ["Biorąc to pod uwagę", "W tym świetle"],
         "W kontekście": ["Jeśli chodzi o", "Co do"],
         "Tym samym": ["Więc", "Dlatego", "Stąd"],
+        # === v0.10.0 ===
+        "Bądź co bądź": ["Tak czy inaczej", "W każdym razie"],
+        "W każdym razie": ["Tak czy inaczej", "W każdym wypadku"],
+        "Równocześnie": ["Jednocześnie", "W tym samym czasie"],
+        "Co istotne": ["Co ważne", "Istotnie"],
+        "Analogicznie": ["Podobnie", "W ten sam sposób"],
+        "Niewątpliwie": ["Bez wątpienia", "Z pewnością"],
+        "Rzecz jasna": ["Oczywiście", "Naturalnie"],
+        "W istocie": ["W rzeczywistości", "De facto"],
     },
 
     "synonyms": {
@@ -96,6 +150,27 @@ LANG_PL = {
         "złożony": ["skomplikowany", "wielowarstwowy"],
         "nowoczesny": ["współczesny", "aktualny", "dzisiejszy"],
         "jakość": ["poziom", "standard", "klasa"],
+        # === v0.10.0 ===
+        "istotny": ["kluczowy", "ważny", "zasadniczy"],
+        "sytuacja": ["okoliczności", "przypadek", "scenariusz"],
+        "strategia": ["plan", "podejście", "taktyka"],
+        "koncepcja": ["idea", "pomysł", "zamysł"],
+        "struktura": ["budowa", "układ", "organizacja"],
+        "zdolność": ["umiejętność", "kompetencja", "potencjał"],
+        "wpływ": ["oddziaływanie", "efekt", "siła"],
+        "perspektywa": ["punkt widzenia", "wizja", "kąt"],
+        "dynamika": ["ruch", "zmiana", "tempo"],
+        "element": ["składnik", "część", "czynnik"],
+        "system": ["mechanizm", "układ", "całość"],
+        "zasób": ["środek", "narzędzie", "źródło"],
+        "wymiar": ["aspekt", "strona", "płaszczyzna"],
+        "kontekst": ["otoczenie", "tło", "okoliczności"],
+        "wyzwanie": ["próba", "test", "trudność"],
+        "ewolucja": ["zmiana", "postęp", "przeobrażenie"],
+        "wkład": ["udział", "dorobek", "pomoc"],
+        "doświadczenie": ["praktyka", "wiedza", "staż"],
+        "również": ["także", "też", "ponadto"],
+        "niezbędny": ["konieczny", "potrzebny", "wymagany"],
     },
 
     "sentence_starters": {
@@ -109,6 +184,12 @@ LANG_PL = {
         "W": ["Wewnątrz", "Podczas", "W trakcie"],
         "Dla": ["Aby", "W celu", "Na rzecz"],
         "Także": ["Również", "Oprócz tego", "Poza tym"],
+        # === v0.10.0 ===
+        "Jednakże": ["Ale", "Jednak", "Mimo to"],
+        "Ponadto": ["Co więcej", "Oprócz tego", "Poza tym"],
+        "Zatem": ["Więc", "Dlatego", "W związku z tym"],
+        "Choć": ["Mimo że", "Chociaż", "Pomimo"],
+        "Niemniej": ["Jednak", "Ale", "Mimo to"],
     },
 
     "colloquial_markers": [
@@ -118,6 +199,11 @@ LANG_PL = {
         "nomen omen", "co ciekawe", "nawiasem mówiąc",
         "jakby nie patrzeć", "koniec końców", "z całą pewnością",
         "jak by to powiedzieć",
+        # === v0.10.0 ===
+        "no cóż", "w sumie", "serio", "osobiście",
+        "bez owijania w bawełnę", "krótko mówiąc",
+        "żeby nie kłamać", "nie będę ukrywać", "no właśnie",
+        "a propos",
     ],
 
     "abbreviations": [
@@ -125,6 +211,9 @@ LANG_PL = {
         "wg", "zob.", "tzw.", "ok.", "mln", "mld",
         "ul.", "al.", "pl.", "ks.", "bp.", "abp.",
         "pkt", "str.", "rys.", "tab.", "rozdz.",
+        # === v0.10.0 ===
+        "ust.", "poz.", "dz.", "nr", "art.", "par.",
+        "red.", "przyp.", "wyd.", "oprac.", "tłum.",
     ],
 
     "perplexity_boosters": [
@@ -134,6 +223,11 @@ LANG_PL = {
         "poniekąd", "niejako", "do pewnego stopnia",
         "co prawda", "owszem", "jakkolwiek", "atoli",
         "wszelako", "niemniej jednak",
+        # === v0.10.0 ===
+        "nie da się ukryć", "jak wiadomo",
+        "trzeba przyznać", "obiektywnie rzecz biorąc",
+        "wbrew pozorom", "powiedzmy sobie szczerze",
+        "niezaprzeczalnie", "nade wszystko",
     ],
 
     "profile_targets": {
@@ -149,5 +243,8 @@ LANG_PL = {
     "split_conjunctions": [
         " i ", " ale ", " jednak ", " podczas gdy ",
         " chociaż ", " ponieważ ", " gdyż ",
+        # === v0.10.0 ===
+        " niemniej ", " mimo to ", " natomiast ",
+        " aczkolwiek ", " zatem ", " toteż ",
     ],
 }

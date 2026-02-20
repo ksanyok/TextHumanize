@@ -3,6 +3,27 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.0] - 2025-06-25
+
+### Added
+- **Grammar Checker** — `check_grammar(text, lang)` / `fix_grammar(text, lang)` — rule-based grammar checking for all 9 languages. Detects double words, capitalization errors, spacing issues, double punctuation, unclosed brackets, and common typos. Returns `GrammarReport` with per-issue detail, score 0-100. No ML or external API required.
+- **Uniqueness Score** — `uniqueness_score(text)` — n-gram fingerprinting uniqueness analysis. Returns `UniquenessReport` with 2/3/4-gram ratios, vocabulary richness, repetition score. `compare_texts(a, b)` computes Jaccard similarity. `text_fingerprint(text)` returns stable SHA-256 hash.
+- **Content Health Score** — `content_health(text, lang)` — composite quality metric combining readability, grammar, uniqueness, AI detection, and coherence. Returns `ContentHealthReport` with overall score (0-100), letter grade (A+/A/B/C/D/F), and per-component breakdown. Configurable component toggles.
+- **Semantic Similarity** — `semantic_similarity(original, processed)` — measures semantic preservation between original and humanized text via keyword, entity, content-word, and n-gram overlap. Returns `SemanticReport` with preservation score (0-1) and missing/added keyword lists.
+- **Sentence-level Readability** — `sentence_readability(text)` — per-sentence difficulty scoring (0-100) with grade assignment (easy/medium/hard/very_hard). Identifies hardest sentences in a document. Returns `SentenceReadabilityReport`.
+- **Custom Dictionary API** — `humanize(text, custom_dict={"word": "replacement"})` — user-supplied word/phrase replacement dictionary. Supports single replacement or list of variants (random selection). Applied during pipeline processing.
+- **82 new tests** across 6 test files for all v0.10.0 features.
+
+### Changed
+- **Language dictionaries massively expanded** — FR (281→397), ES (275→388), IT (272→379), PL (257→368), PT (256→367) entries. Added perplexity_boosters to EN, RU, UK. All 9 languages now balanced (367-439 entries).
+- **`humanize()` signature** — new `custom_dict` parameter for user-supplied replacements.
+- **17 new exports** in `__init__.py`: `check_grammar`, `fix_grammar`, `GrammarIssue`, `GrammarReport`, `uniqueness_score`, `compare_texts`, `text_fingerprint`, `UniquenessReport`, `SimilarityReport`, `content_health`, `ContentHealthReport`, `HealthComponent`, `semantic_similarity`, `SemanticReport`, `sentence_readability`, `SentenceReadabilityReport`, `SentenceScore`.
+
+### Fixed
+- Duplicate dictionary key in Italian language file (`imprescindibile`).
+- Duplicate dictionary key in Polish typo corpus (`wziąść`).
+- Short-text edge cases in `compare_texts()` and `text_fingerprint()` — now handle texts shorter than n-gram window correctly.
+
 ## [0.9.0] - 2025-06-24
 
 ### Added

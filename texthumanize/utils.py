@@ -34,6 +34,8 @@ class HumanizeOptions:
     seed: int | None = None
     # Целевой стилистический отпечаток для имитации авторского стиля
     target_style: Any | None = None  # StylisticFingerprint, preset name (str), or None
+    # Пользовательский словарь замен: {"слово": "замена"} или {"слово": ["вар1", "вар2"]}
+    custom_dict: dict[str, str | list[str]] | None = None
 
     def __post_init__(self):
         if self.intensity < 0:

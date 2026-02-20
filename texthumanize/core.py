@@ -78,6 +78,7 @@ def humanize(
     seed: int | None = None,
     target_style: object | str | None = None,
     only_flagged: bool = False,
+    custom_dict: dict[str, str | list[str]] | None = None,
 ) -> HumanizeResult:
     """Гуманизировать текст — сделать его более естественным.
 
@@ -118,6 +119,10 @@ def humanize(
         only_flagged: Если True, гуманизировать только предложения,
             которые detect_ai_sentences помечает как AI (ai_probability > 0.5).
             Предложения с label="human" остаются без изменений.
+        custom_dict: Пользовательский словарь замен.
+            Формат: {"слово": "замена"} или {"слово": ["вар1", "вар2"]}.
+            Замены применяются дополнительно к встроенным словарям.
+            При списке вариантов выбирается случайный.
 
     Returns:
         HumanizeResult с полями:
@@ -165,6 +170,7 @@ def humanize(
         intensity=intensity,
         seed=seed,
         target_style=target_style,
+        custom_dict=custom_dict,
     )
 
     if preserve:

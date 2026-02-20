@@ -56,6 +56,35 @@ LANG_ES = {
         "coyuntural": ["temporal", "pasajero", "momentáneo"],
         "subyacente": ["de fondo", "implícito", "oculto"],
         "preponderante": ["dominante", "principal", "mayor"],
+        # === v0.10.0 ===
+        "contextualizar": ["situar", "ubicar", "enmarcar"],
+        "operativizar": ["aplicar", "ejecutar", "poner en práctica"],
+        "problematizar": ["cuestionar", "plantear", "debatir"],
+        "dinamizar": ["activar", "impulsar", "estimular"],
+        "racionalizar": ["simplificar", "organizar", "agilizar"],
+        "vertebrar": ["estructurar", "organizar", "articular"],
+        "articular": ["organizar", "enlazar", "combinar"],
+        "vehicular": ["transmitir", "canalizar", "llevar"],
+        "visibilizar": ["mostrar", "destacar", "sacar a la luz"],
+        "empoderar": ["fortalecer", "capacitar", "habilitar"],
+        "consensuar": ["acordar", "pactar", "convenir"],
+        "interrelacionar": ["conectar", "vincular", "enlazar"],
+        "materializar": ["realizar", "concretar", "plasmar"],
+        "explicitar": ["aclarar", "precisar", "detallar"],
+        "sintetizar": ["resumir", "condensar", "abreviar"],
+        "reestructurar": ["reorganizar", "reformar", "recomponer"],
+        "retroalimentar": ["informar", "devolver", "dar respuesta"],
+        "sistematizar": ["ordenar", "clasificar", "organizar"],
+        "proactivo": ["anticipado", "previsor", "dinámico"],
+        "deterministico": ["fijo", "predecible", "establecido"],
+        "idiosincrásico": ["particular", "propio", "singular"],
+        "coadyuvante": ["auxiliar", "complementario", "de apoyo"],
+        "pluridimensional": ["variado", "múltiple", "diverso"],
+        "tangible": ["concreto", "real", "palpable"],
+        "intrínseco": ["interno", "propio", "natural"],
+        "consuetudinario": ["habitual", "acostumbrado", "usual"],
+        "preeminente": ["superior", "destacado", "sobresaliente"],
+        "pertinente": ["adecuado", "relevante", "oportuno"],
     },
 
     "bureaucratic_phrases": {
@@ -69,6 +98,23 @@ LANG_ES = {
         "desempeña un papel crucial": ["es muy importante", "es clave"],
         "reviste especial importancia": ["es importante", "importa mucho"],
         "resulta imprescindible": ["es necesario", "hace falta"],
+        # === v0.10.0 ===
+        "se hace patente que": ["se ve que", "es evidente"],
+        "a la luz de": ["según", "viendo", "dado"],
+        "en aras de": ["para", "por", "buscando"],
+        "habida cuenta de": ["dado que", "teniendo en cuenta"],
+        "sin perjuicio de": ["sin afectar", "aparte de"],
+        "por cuanto": ["porque", "dado que", "ya que"],
+        "a tenor de": ["según", "de acuerdo con"],
+        "en lo tocante a": ["sobre", "acerca de", "respecto a"],
+        "de conformidad con": ["según", "acorde a", "conforme a"],
+        "en el seno de": ["dentro de", "en", "en el interior de"],
+        "a la postre": ["al final", "en definitiva"],
+        "en el ámbito de": ["en", "dentro de", "en el campo de"],
+        "en virtud de lo expuesto": ["por lo dicho", "según esto"],
+        "de cara a": ["para", "con vistas a", "pensando en"],
+        "con miras a": ["para", "buscando", "con el objetivo de"],
+        "en línea con": ["acorde con", "según", "siguiendo"],
     },
 
     "ai_connectors": {
@@ -84,6 +130,15 @@ LANG_ES = {
         "Es preciso señalar": ["Hay que decir", "Cabe notar"],
         "A modo de conclusión": ["Para terminar", "En resumen"],
         "En este sentido": ["Así", "En esa línea", "Al respecto"],
+        # === v0.10.0 ===
+        "Dicho lo cual": ["Pero", "Aun así"],
+        "En cualquier caso": ["De todos modos", "Sea como sea"],
+        "Paralelamente": ["Al mismo tiempo", "Además"],
+        "Más aún": ["Incluso", "Es más", "Todavía más"],
+        "De igual forma": ["Igualmente", "Del mismo modo"],
+        "Análogamente": ["De modo similar", "Igual que"],
+        "Efectivamente": ["En efecto", "Así es", "Ciertamente"],
+        "Indudablemente": ["Sin duda", "Claramente", "Seguro"],
     },
 
     "synonyms": {
@@ -105,6 +160,27 @@ LANG_ES = {
         "complejo": ["complicado", "elaborado", "difícil"],
         "moderno": ["actual", "contemporáneo", "reciente"],
         "calidad": ["nivel", "estándar", "valor"],
+        # === v0.10.0 ===
+        "esencial": ["fundamental", "crucial", "vital"],
+        "situación": ["contexto", "caso", "escenario"],
+        "estrategia": ["plan", "táctica", "enfoque"],
+        "concepto": ["idea", "noción", "principio"],
+        "estructura": ["marco", "organización", "armazón"],
+        "capacidad": ["aptitud", "habilidad", "potencial"],
+        "influencia": ["impacto", "efecto", "peso"],
+        "perspectiva": ["visión", "punto de vista", "ángulo"],
+        "dinámica": ["movimiento", "impulso", "tendencia"],
+        "elemento": ["componente", "parte", "factor"],
+        "sistema": ["mecanismo", "aparato", "conjunto"],
+        "recurso": ["medio", "herramienta", "fuente"],
+        "dimensión": ["aspecto", "faceta", "lado"],
+        "contexto": ["entorno", "marco", "ambiente"],
+        "desafío": ["reto", "prueba", "dificultad"],
+        "evolución": ["cambio", "progreso", "transformación"],
+        "contribución": ["aporte", "participación", "ayuda"],
+        "experiencia": ["vivencia", "práctica", "conocimiento"],
+        "igualmente": ["también", "de igual modo", "asimismo"],
+        "necesario": ["preciso", "requerido", "imprescindible"],
     },
 
     "sentence_starters": {
@@ -119,6 +195,12 @@ LANG_ES = {
         "En": ["Dentro de", "Durante", "A lo largo de"],
         "Para": ["Con el fin de", "A fin de", "De cara a"],
         "También": ["Igualmente", "Asimismo", "Aparte"],
+        # === v0.10.0 ===
+        "Sin embargo": ["Pero", "No obstante", "Aun así"],
+        "Además": ["También", "Encima", "Aparte"],
+        "Así": ["De este modo", "En consecuencia"],
+        "Aunque": ["Si bien", "A pesar de que"],
+        "Por ello": ["Por eso", "En consecuencia", "Dado esto"],
     },
 
     "colloquial_markers": [
@@ -127,6 +209,10 @@ LANG_ES = {
         "en el fondo", "para ser honestos",
         "curiosamente", "sorprendentemente", "entre nosotros",
         "dicho sea de paso", "al fin y al cabo", "por cierto",
+        # === v0.10.0 ===
+        "vaya", "en fin", "mira", "personalmente",
+        "honestamente", "que quieres que te diga",
+        "total", "claro", "lo cierto es que", "siendo francos",
     ],
 
     "abbreviations": [
@@ -134,6 +220,9 @@ LANG_ES = {
         "vol.", "núm.", "pág.", "ed.", "fig.", "cap.",
         "Cía.", "S.A.", "S.L.", "avda.", "c/", "dpto.",
         "tel.", "máx.", "mín.", "aprox.", "ref.",
+        # === v0.10.0 ===
+        "N.B.", "P.D.", "Excmo.", "Ilmo.", "Ud.", "Uds.",
+        "admón.", "dir.", "gob.", "prov.", "supl.",
     ],
 
     "perplexity_boosters": [
@@ -143,6 +232,11 @@ LANG_ES = {
         "a fin de cuentas", "al cabo", "en resumidas cuentas",
         "dicho de otro modo", "más o menos", "en todo caso",
         "a todas luces", "bien mirado", "todo sea dicho",
+        # === v0.10.0 ===
+        "qué duda cabe", "a ciencia cierta",
+        "ni que decir tiene", "como quien dice",
+        "a lo sumo", "a la postre", "en puridad",
+        "valga la redundancia", "siendo estrictos",
     ],
 
     "profile_targets": {
@@ -158,5 +252,8 @@ LANG_ES = {
     "split_conjunctions": [
         " y ", " pero ", " sin embargo ", " mientras ",
         " aunque ", " porque ", " ya que ",
+        # === v0.10.0 ===
+        " no obstante ", " aun así ", " en cambio ",
+        " a pesar de que ", " por lo tanto ", " dado que ",
     ],
 }

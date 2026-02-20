@@ -57,6 +57,38 @@ LANG_FR = {
         "concomitant": ["simultané", "parallèle", "conjoint"],
         "holistique": ["global", "complet", "d'ensemble"],
         "paradigmatique": ["exemplaire", "typique", "modèle"],
+        # === v0.10.0 ===
+        "contextualiser": ["situer", "replacer", "mettre en contexte"],
+        "opérationnaliser": ["appliquer", "mettre en œuvre", "exécuter"],
+        "problématiser": ["questionner", "interroger", "remettre en cause"],
+        "dynamiser": ["relancer", "stimuler", "booster"],
+        "pérenniser": ["stabiliser", "ancrer", "maintenir"],
+        "rationnaliser": ["simplifier", "alléger", "réorganiser"],
+        "mutualiser": ["partager", "mettre en commun", "regrouper"],
+        "hiérarchiser": ["classer", "trier", "ordonner"],
+        "valoriser": ["mettre en valeur", "promouvoir", "souligner"],
+        "expliciter": ["préciser", "clarifier", "détailler"],
+        "formaliser": ["officialiser", "codifier", "structurer"],
+        "déployer": ["lancer", "étendre", "mettre en place"],
+        "mobiliser": ["rassembler", "engager", "impliquer"],
+        "identifier": ["repérer", "trouver", "reconnaître"],
+        "synthétiser": ["résumer", "condenser"],
+        "proactif": ["anticipé", "prévoyant", "dynamique"],
+        "transversal": ["commun", "partagé", "interdisciplinaire"],
+        "pluridisciplinaire": ["varié", "divers", "mixte"],
+        "incontournable": ["essentiel", "nécessaire", "indispensable"],
+        "prédominant": ["principal", "majeur", "dominant"],
+        "récurrent": ["fréquent", "répétitif", "habituel"],
+        "tangible": ["concret", "réel", "palpable"],
+        "notoire": ["connu", "reconnu", "évident"],
+        "prééminent": ["supérieur", "premier", "dominant"],
+        "susceptible": ["capable", "à même", "en mesure"],
+        "prégnant": ["fort", "marquant", "présent"],
+        "spécifique": ["précis", "particulier", "propre"],
+        "pertinent": ["adapté", "juste", "approprié"],
+        "performant": ["efficace", "puissant", "productif"],
+        "structurant": ["organisateur", "fondateur", "clé"],
+        "impactant": ["marquant", "fort", "frappant"],
     },
 
     "bureaucratic_phrases": {
@@ -71,6 +103,24 @@ LANG_FR = {
         "de manière significative": ["nettement", "clairement", "beaucoup"],
         "joue un rôle crucial": ["est très important", "compte beaucoup"],
         "revêt une importance": ["est important", "compte"],
+        # === v0.10.0 ===
+        "il apparaît que": ["on voit que", "visiblement"],
+        "il s'avère que": ["il se trouve que", "en fait"],
+        "il importe de": ["il faut", "on doit"],
+        "de prime abord": ["au premier regard", "d'emblée"],
+        "en l'occurrence": ["ici", "dans ce cas"],
+        "à cet effet": ["pour cela", "dans ce but"],
+        "compte tenu de": ["vu", "étant donné", "sachant"],
+        "en ce qui concerne": ["pour", "quant à", "au sujet de"],
+        "d'ores et déjà": ["déjà", "dès maintenant"],
+        "dans la mesure où": ["si", "tant que", "puisque"],
+        "sous réserve de": ["à condition de", "si"],
+        "en tout état de cause": ["quoi qu'il en soit", "dans tous les cas"],
+        "à l'instar de": ["comme", "à la manière de"],
+        "il est indéniable que": ["c'est sûr que", "sans doute"],
+        "il n'est pas sans importance": ["c'est important", "cela compte"],
+        "au demeurant": ["d'ailleurs", "par ailleurs", "du reste"],
+        "de facto": ["en fait", "concrètement", "vraiment"],
     },
 
     "ai_connectors": {
@@ -86,6 +136,15 @@ LANG_FR = {
         "À cet égard": ["À ce sujet", "Là-dessus"],
         "En somme": ["Bref", "En résumé", "Au fond"],
         "Subséquemment": ["Ensuite", "Puis", "Après"],
+        # === v0.10.0 ===
+        "Qui plus est": ["En plus", "D'autant plus", "De plus"],
+        "Cela étant dit": ["Mais", "Toutefois"],
+        "Parallèlement": ["En même temps", "Aussi"],
+        "Corrélativement": ["En lien", "Par rapport"],
+        "Effectivement": ["En effet", "Oui", "C'est vrai"],
+        "Fondamentalement": ["Au fond", "En fait", "En réalité"],
+        "Indubitablement": ["Sans aucun doute", "Clairement"],
+        "En l'espèce": ["Ici", "Dans ce cas précis"],
     },
 
     "synonyms": {
@@ -109,6 +168,27 @@ LANG_FR = {
         "moderne": ["actuel", "récent", "d'aujourd'hui"],
         "pertinent": ["adapté", "juste", "approprié"],
         "qualité": ["niveau", "valeur", "calibre"],
+        # === v0.10.0 ===
+        "essentiel": ["fondamental", "crucial", "vital"],
+        "situation": ["contexte", "cas", "scénario"],
+        "stratégie": ["plan", "tactique", "approche"],
+        "concept": ["idée", "notion", "principe"],
+        "structure": ["cadre", "organisation", "architecture"],
+        "capacité": ["aptitude", "compétence", "potentiel"],
+        "influence": ["impact", "effet", "poids"],
+        "perspective": ["vision", "point de vue", "angle"],
+        "dynamique": ["mouvement", "élan", "tendance"],
+        "élément": ["composant", "partie", "facteur"],
+        "système": ["dispositif", "mécanisme", "ensemble"],
+        "ressource": ["moyen", "atout", "outil"],
+        "dimension": ["aspect", "facette", "côté"],
+        "contexte": ["cadre", "environnement", "milieu"],
+        "enjeu": ["défi", "question", "problématique"],
+        "évolution": ["changement", "progrès", "transformation"],
+        "contribution": ["apport", "participation", "aide"],
+        "expérience": ["vécu", "pratique", "savoir-faire"],
+        "également": ["aussi", "de même", "pareillement"],
+        "nécessaire": ["indispensable", "requis", "obligatoire"],
     },
 
     "sentence_starters": {
@@ -123,6 +203,12 @@ LANG_FR = {
         "Dans": ["Au sein de", "En", "À travers"],
         "Pour": ["Afin de", "En vue de", "Quant à"],
         "En": ["Dans", "Au cours de", "Lors de"],
+        # === v0.10.0 ===
+        "Cependant": ["Mais", "Toutefois", "Par contre"],
+        "Toutefois": ["Néanmoins", "Mais", "Cependant"],
+        "Ainsi": ["De cette façon", "Donc", "Par conséquent"],
+        "Or": ["Mais", "Pourtant", "Cependant"],
+        "Bien que": ["Même si", "Quoique", "Malgré le fait que"],
     },
 
     "colloquial_markers": [
@@ -131,6 +217,10 @@ LANG_FR = {
         "pour tout dire", "à bien y réfléchir",
         "curieusement", "étonnamment", "tout bien considéré",
         "soit dit en passant", "au passage", "notons au passage",
+        # === v0.10.0 ===
+        "bref", "bon", "personnellement", "honnêtement",
+        "en clair", "je dirais que", "il faut bien dire que",
+        "chapeau bas", "carrément", "c'est un fait",
     ],
 
     "abbreviations": [
@@ -138,6 +228,9 @@ LANG_FR = {
         "c.-à-d.", "cf.", "vol.", "éd.", "fig.", "chap.",
         "Cie.", "Sté.", "av.", "bd.", "sq.", "réf.",
         "env.", "max.", "min.", "resp.", "tél.",
+        # === v0.10.0 ===
+        "N.B.", "P.S.", "no.", "dépt.", "supp.", "dir.",
+        "adj.", "adm.", "gouv.", "part.", "prov.",
     ],
 
     "perplexity_boosters": [
@@ -147,6 +240,11 @@ LANG_FR = {
         "autrement dit", "à tout prendre", "en l'occurrence",
         "il n'empêche que", "bon gré mal gré", "peu ou prou",
         "en quelque sorte", "pour ainsi dire", "à la rigueur",
+        # === v0.10.0 ===
+        "toujours est-il que", "quand bien même",
+        "force est d'admettre", "à l'évidence",
+        "c'est le moins qu'on puisse dire", "à bien des égards",
+        "n'en déplaise", "quoi qu'il en coûte",
     ],
 
     "profile_targets": {
@@ -162,5 +260,8 @@ LANG_FR = {
     "split_conjunctions": [
         " et ", " mais ", " cependant ", " tandis que ",
         " bien que ", " car ", " puisque ",
+        # === v0.10.0 ===
+        " néanmoins ", " toutefois ", " pourtant ",
+        " en revanche ", " par contre ", " quoique ",
     ],
 }

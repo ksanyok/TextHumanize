@@ -53,6 +53,31 @@ LANG_IT = {
         "concomitante": ["simultaneo", "parallelo", "congiunto"],
         "perenne": ["duraturo", "stabile", "continuo"],
         "trasversale": ["comune", "condiviso", "generale"],
+        # === v0.10.0 ===
+        "contestualizzare": ["situare", "inquadrare", "collocare"],
+        "operativizzare": ["applicare", "mettere in opera", "eseguire"],
+        "problematizzare": ["mettere in discussione", "questionare"],
+        "dinamizzare": ["attivare", "rilanciare", "stimolare"],
+        "razionalizzare": ["semplificare", "snellire", "riorganizzare"],
+        "strutturare": ["organizzare", "ordinare", "impostare"],
+        "veicolare": ["trasmettere", "diffondere", "portare"],
+        "valorizzare": ["dare valore", "promuovere", "esaltare"],
+        "esplicitare": ["chiarire", "precisare", "spiegare"],
+        "formalizzare": ["ufficializzare", "codificare", "definire"],
+        "dispiegare": ["schierare", "estendere", "distribuire"],
+        "mobilitare": ["coinvolgere", "impegnare", "radunare"],
+        "identificare": ["individuare", "riconoscere", "trovare"],
+        "sintetizzare": ["riassumere", "condensare", "raccogliere"],
+        "proattivo": ["anticipato", "previdente", "dinamico"],
+        "multidisciplinare": ["vario", "diverso", "misto"],
+        "ricorrente": ["frequente", "ripetuto", "abituale"],
+        "tangibile": ["concreto", "reale", "palpabile"],
+        "intrinseco": ["interno", "proprio", "naturale"],
+        "preminente": ["superiore", "primo", "dominante"],
+        "pertinente": ["adeguato", "appropriato", "rilevante"],
+        "performante": ["efficace", "potente", "produttivo"],
+        "strutturante": ["organizzativo", "fondativo", "chiave"],
+        "impattante": ["incisivo", "forte", "significativo"],
     },
 
     "bureaucratic_phrases": {
@@ -66,6 +91,23 @@ LANG_IT = {
         "assume un'importanza": ["è importante", "conta"],
         "risulta necessario": ["bisogna", "serve", "occorre"],
         "per quanto concerne": ["per quanto riguarda", "riguardo a"],
+        # === v0.10.0 ===
+        "appare evidente che": ["si vede che", "è chiaro che"],
+        "alla luce di": ["dato", "visto", "considerando"],
+        "ai fini di": ["per", "allo scopo di"],
+        "in primo luogo": ["prima di tutto", "anzitutto"],
+        "in ultima analisi": ["alla fine", "insomma"],
+        "a titolo esemplificativo": ["per esempio", "ad esempio"],
+        "tenuto conto di": ["dato", "considerando", "visto che"],
+        "con riferimento a": ["riguardo a", "in merito a", "su"],
+        "a prescindere da": ["a parte", "senza contare", "indipendentemente"],
+        "in virtù di": ["grazie a", "per", "in forza di"],
+        "ai sensi di": ["secondo", "in base a", "conformemente a"],
+        "nella fattispecie": ["in questo caso", "qui"],
+        "in ottemperanza a": ["secondo", "conformemente a", "rispettando"],
+        "a fronte di": ["davanti a", "rispetto a", "considerando"],
+        "per converso": ["al contrario", "d'altra parte", "invece"],
+        "fatto salvo": ["eccetto", "tranne", "a meno che"],
     },
 
     "ai_connectors": {
@@ -81,6 +123,15 @@ LANG_IT = {
         "In conclusione": ["Per concludere", "Alla fine"],
         "Pertanto": ["Quindi", "Perciò", "Dunque"],
         "Altresì": ["Anche", "Inoltre", "Pure"],
+        # === v0.10.0 ===
+        "Ciò premesso": ["Detto questo", "In ogni caso"],
+        "In ogni caso": ["Comunque", "Ad ogni modo"],
+        "Parallelamente": ["Allo stesso tempo", "Inoltre"],
+        "A maggior ragione": ["Tanto più", "Ancora di più"],
+        "Analogamente": ["In modo simile", "Allo stesso modo"],
+        "Effettivamente": ["In effetti", "Sì", "È vero"],
+        "Indubbiamente": ["Senza dubbio", "Certamente"],
+        "Nella fattispecie": ["In questo caso", "Qui"],
     },
 
     "synonyms": {
@@ -101,6 +152,27 @@ LANG_IT = {
         "complesso": ["complicato", "articolato", "elaborato"],
         "moderno": ["attuale", "contemporaneo", "odierno"],
         "qualità": ["livello", "standard", "valore"],
+        # === v0.10.0 ===
+        "essenziale": ["fondamentale", "cruciale", "vitale"],
+        "situazione": ["contesto", "caso", "scenario"],
+        "strategia": ["piano", "tattica", "approccio"],
+        "concetto": ["idea", "nozione", "principio"],
+        "struttura": ["quadro", "organizzazione", "impalcatura"],
+        "capacità": ["competenza", "abilità", "potenziale"],
+        "influenza": ["impatto", "effetto", "peso"],
+        "prospettiva": ["visione", "punto di vista", "angolo"],
+        "dinamica": ["movimento", "slancio", "tendenza"],
+        "elemento": ["componente", "parte", "fattore"],
+        "sistema": ["meccanismo", "apparato", "insieme"],
+        "risorsa": ["mezzo", "strumento", "fonte"],
+        "dimensione": ["aspetto", "sfaccettatura", "lato"],
+        "contesto": ["ambiente", "quadro", "sfondo"],
+        "sfida": ["prova", "ostacolo", "difficoltà"],
+        "evoluzione": ["cambiamento", "progresso", "trasformazione"],
+        "contributo": ["apporto", "partecipazione", "aiuto"],
+        "esperienza": ["vissuto", "pratica", "know-how"],
+        "inoltre": ["anche", "pure", "altresì"],
+        "necessario": ["indispensabile", "richiesto", "obbligatorio"],
     },
 
     "sentence_starters": {
@@ -115,6 +187,12 @@ LANG_IT = {
         "In": ["All'interno di", "Durante", "Nel corso di"],
         "Per": ["Al fine di", "Allo scopo di", "In vista di"],
         "Anche": ["Inoltre", "Ugualmente", "Pure"],
+        # === v0.10.0 ===
+        "Tuttavia": ["Ma", "Però", "Eppure"],
+        "Inoltre": ["In più", "Poi", "Per di più"],
+        "Così": ["In questo modo", "Quindi", "Pertanto"],
+        "Sebbene": ["Anche se", "Benché", "Nonostante"],
+        "Pertanto": ["Quindi", "Perciò", "Di conseguenza"],
     },
 
     "colloquial_markers": [
@@ -124,6 +202,10 @@ LANG_IT = {
         "curiosamente", "per la verità",
         "a ben vedere", "per così dire",
         "alla fin fine", "in fin dei conti", "a proposito",
+        # === v0.10.0 ===
+        "insomma", "beh", "mah", "personalmente",
+        "francamente", "va be'", "tanto per dire",
+        "senza giri di parole", "ad essere sinceri", "ora",
     ],
 
     "abbreviations": [
@@ -131,6 +213,9 @@ LANG_IT = {
         "es.", "vol.", "pag.", "ed.", "cap.", "fig.",
         "S.p.A.", "S.r.l.", "v.", "p.za", "tel.", "rif.",
         "max.", "min.", "ca.", "app.",
+        # === v0.10.0 ===
+        "N.B.", "P.S.", "n.", "dip.", "dir.",
+        "amm.", "gov.", "sez.", "suppl.", "agg.",
     ],
 
     "perplexity_boosters": [
@@ -141,6 +226,11 @@ LANG_IT = {
         "a conti fatti", "tutto sommato", "con riguardo a",
         "detto ciò", "sia come sia", "in ogni caso",
         "per quanto mi riguarda", "a dirla tutta",
+        # === v0.10.0 ===
+        "sta di fatto che", "comunque sia",
+        "per amor del vero", "a onor del vero",
+        "non c'è che dire", "a ben guardare",
+        "volente o nolente", "come che sia",
     ],
 
     "profile_targets": {
@@ -156,5 +246,8 @@ LANG_IT = {
     "split_conjunctions": [
         " e ", " ma ", " tuttavia ", " mentre ",
         " sebbene ", " perché ", " poiché ",
+        # === v0.10.0 ===
+        " ciononostante ", " eppure ", " bensì ",
+        " al contrario ", " pertanto ", " giacché ",
     ],
 }

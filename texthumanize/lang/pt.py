@@ -44,6 +44,35 @@ LANG_PT = {
         "exponencial": ["rápido", "acelerado"],
         "abrangente": ["completo", "amplo", "detalhado"],
         "contundente": ["forte", "decisivo", "claro"],
+        # === v0.10.0 ===
+        "contextualizar": ["situar", "enquadrar", "posicionar"],
+        "problematizar": ["questionar", "debater", "discutir"],
+        "dinamizar": ["ativar", "impulsionar", "estimular"],
+        "racionalizar": ["simplificar", "agilizar", "reorganizar"],
+        "estruturar": ["organizar", "ordenar", "montar"],
+        "veicular": ["transmitir", "difundir", "levar"],
+        "valorizar": ["dar valor", "promover", "destacar"],
+        "explicitar": ["esclarecer", "precisar", "detalhar"],
+        "formalizar": ["oficializar", "codificar", "definir"],
+        "mobilizar": ["envolver", "engajar", "reunir"],
+        "identificar": ["reconhecer", "encontrar", "localizar"],
+        "sintetizar": ["resumir", "condensar", "encurtar"],
+        "proativo": ["antecipado", "previdente", "dinâmico"],
+        "multidisciplinar": ["variado", "diverso", "misto"],
+        "imprescindível": ["indispensável", "necessário", "essencial"],
+        "recorrente": ["frequente", "repetitivo", "habitual"],
+        "tangível": ["concreto", "real", "palpável"],
+        "intrínseco": ["interno", "próprio", "natural"],
+        "preeminente": ["superior", "primeiro", "dominante"],
+        "pertinente": ["adequado", "relevante", "oportuno"],
+        "performante": ["eficaz", "potente", "produtivo"],
+        "estruturante": ["organizativo", "fundante", "chave"],
+        "holístico": ["global", "completo", "integral"],
+        "catalizar": ["estimular", "acelerar", "provocar"],
+        "corroborar": ["confirmar", "validar", "apoiar"],
+        "sistémico": ["global", "geral", "integral"],
+        "transversal": ["comum", "partilhado", "geral"],
+        "preponderante": ["dominante", "principal", "maior"],
     },
 
     "bureaucratic_phrases": {
@@ -57,6 +86,23 @@ LANG_PT = {
         "torna-se imprescindível": ["é preciso", "é necessário"],
         "no que diz respeito a": ["quanto a", "sobre"],
         "à luz de": ["dado", "considerando", "perante"],
+        # === v0.10.0 ===
+        "afigura-se necessário": ["é preciso", "parece necessário"],
+        "ao abrigo de": ["segundo", "conforme", "nos termos de"],
+        "em função de": ["dependendo de", "conforme"],
+        "tendo por base": ["com base em", "baseado em"],
+        "na medida em que": ["uma vez que", "porque", "já que"],
+        "em conformidade com": ["segundo", "de acordo com"],
+        "sem prejuízo de": ["sem afetar", "mantendo"],
+        "no seguimento de": ["após", "depois de", "na sequência de"],
+        "a título exemplificativo": ["por exemplo", "a título de exemplo"],
+        "com efeito": ["de facto", "efetivamente", "na verdade"],
+        "em face do exposto": ["perante isto", "dado o exposto"],
+        "por via de regra": ["geralmente", "normalmente", "via de regra"],
+        "ao nível de": ["em", "no plano de", "relativamente a"],
+        "mercê de": ["graças a", "devido a", "por causa de"],
+        "dado o acima referido": ["dado o exposto", "por isso"],
+        "não obstante o referido": ["apesar disso", "mesmo assim"],
     },
 
     "ai_connectors": {
@@ -72,6 +118,15 @@ LANG_PT = {
         "Em conclusão": ["Para concluir", "No final"],
         "Outrossim": ["Também", "Além disso"],
         "Destarte": ["Assim", "Dessa forma", "Então"],
+        # === v0.10.0 ===
+        "Posto isto": ["Dito isto", "Sendo assim"],
+        "Em todo o caso": ["De qualquer forma", "Seja como for"],
+        "Paralelamente": ["Ao mesmo tempo", "Também"],
+        "Tanto mais que": ["Ainda mais porque", "Sobretudo"],
+        "De igual modo": ["Igualmente", "Da mesma forma"],
+        "Analogamente": ["De modo semelhante", "Tal como"],
+        "Efetivamente": ["Na verdade", "De facto", "Sim"],
+        "Indubitavelmente": ["Sem dúvida", "Claramente"],
     },
 
     "synonyms": {
@@ -92,6 +147,27 @@ LANG_PT = {
         "complexo": ["complicado", "elaborado", "difícil"],
         "moderno": ["atual", "contemporâneo", "recente"],
         "qualidade": ["nível", "padrão", "valor"],
+        # === v0.10.0 ===
+        "essencial": ["fundamental", "crucial", "vital"],
+        "situação": ["contexto", "caso", "cenário"],
+        "estratégia": ["plano", "tática", "abordagem"],
+        "conceito": ["ideia", "noção", "princípio"],
+        "estrutura": ["quadro", "organização", "esquema"],
+        "capacidade": ["aptidão", "competência", "potencial"],
+        "influência": ["impacto", "efeito", "peso"],
+        "perspetiva": ["visão", "ponto de vista", "ângulo"],
+        "dinâmica": ["movimento", "impulso", "tendência"],
+        "elemento": ["componente", "parte", "fator"],
+        "sistema": ["mecanismo", "aparelho", "conjunto"],
+        "recurso": ["meio", "ferramenta", "fonte"],
+        "dimensão": ["aspeto", "faceta", "lado"],
+        "contexto": ["ambiente", "enquadramento", "meio"],
+        "desafio": ["prova", "teste", "dificuldade"],
+        "evolução": ["mudança", "progresso", "transformação"],
+        "contribuição": ["contributo", "participação", "ajuda"],
+        "experiência": ["vivência", "prática", "saber"],
+        "igualmente": ["também", "da mesma forma", "outrossim"],
+        "necessário": ["imprescindível", "preciso", "exigido"],
     },
 
     "sentence_starters": {
@@ -106,6 +182,12 @@ LANG_PT = {
         "Em": ["Dentro de", "Durante", "No âmbito de"],
         "Para": ["A fim de", "De modo a", "Com vista a"],
         "Também": ["Igualmente", "Da mesma forma", "Ademais"],
+        # === v0.10.0 ===
+        "No entanto": ["Mas", "Porém", "Contudo"],
+        "Além disso": ["Também", "Ademais", "Mais ainda"],
+        "Assim": ["Deste modo", "Portanto", "Consequentemente"],
+        "Embora": ["Ainda que", "Apesar de"],
+        "Portanto": ["Logo", "Assim", "Consequentemente"],
     },
 
     "colloquial_markers": [
@@ -115,6 +197,10 @@ LANG_PT = {
         "curiosamente", "para dizer a verdade",
         "bem vistas as coisas", "por assim dizer",
         "no fim das contas", "afinal de contas", "por falar nisso",
+        # === v0.10.0 ===
+        "enfim", "bom", "pessoalmente", "honestamente",
+        "francamente", "vá lá", "cá para nós",
+        "pronto", "olha", "sendo franco",
     ],
 
     "abbreviations": [
@@ -122,6 +208,9 @@ LANG_PT = {
         "vol.", "n.º", "pág.", "ed.", "fig.", "cap.",
         "Lda.", "S.A.", "av.", "r.", "tel.", "ref.",
         "máx.", "mín.", "aprox.", "dept.",
+        # === v0.10.0 ===
+        "N.B.", "P.S.", "Exmo.", "Ilmo.", "V. Exa.",
+        "admn.", "dir.", "gov.", "dist.", "supl.",
     ],
 
     "perplexity_boosters": [
@@ -131,6 +220,11 @@ LANG_PT = {
         "em boa verdade", "a rigor", "em bom rigor",
         "por sinal", "aliás", "entretanto",
         "de certa forma", "em certa medida", "a título de exemplo",
+        # === v0.10.0 ===
+        "com efeito", "seja como for",
+        "não há que negar", "em abono da verdade",
+        "por assim dizer", "a bem da verdade",
+        "mal ou bem", "quer queiramos quer não",
     ],
 
     "profile_targets": {
@@ -146,5 +240,8 @@ LANG_PT = {
     "split_conjunctions": [
         " e ", " mas ", " contudo ", " enquanto ",
         " embora ", " porque ", " visto que ",
+        # === v0.10.0 ===
+        " todavia ", " porém ", " no entanto ",
+        " apesar de ", " portanto ", " dado que ",
     ],
 }

@@ -151,6 +151,39 @@ class Pipeline:
             text = hook(text, lang)
         return text
 
+    def _apply_custom_dict(self, text: str) -> tuple[str, list[dict]]:
+        """Apply user-supplied custom_dict replacements.
+
+        Supports both ``{"word": "replacement"}`` and
+        ``{"word": ["var1", "var2"]}`` formats.  When a list is given,
+        a random variant is chosen (respecting the pipeline seed).
+
+        Returns:
+            Tuple of (modified text, list of change dicts).
+        """
+        import random as _rnd
+        import re as _re
+
+        changes: list[dict] = []
+        rng = _rnd.Random(self.options.seed)
+        for pattern, replacement in self.options.custom_dict.items():  # type: ignore[union-attr]
+            if isinstance(replacement, list):
+                if not replacement:
+                    continue
+                chosen = rng.choice(replacement)
+            else:
+                chosen = replacement
+            # Whole-word, case-insensitive match
+            escaped = _re.escape(pattern)
+            regex = _re.compile(rf"\b{escaped}\b", _re.IGNORECASE)
+            if regex.search(text):
+                text = regex.sub(chosen, text)
+                changes.append({
+                    "type": "custom_dict",
+                    "description": f"custom_dict: «{pattern}» → «{chosen}»",
+                })
+        return text, changes
+
     def run(self, text: str, lang: str) -> HumanizeResult:
         """Запустить пайплайн обработки.
 
@@ -380,6 +413,11 @@ class Pipeline:
         text = normalizer.normalize(text)
         all_changes.extend(normalizer.changes)
         text = self._run_plugins("typography", text, lang, is_before=False)
+
+        # 2b. Пользовательский словарь замен (custom_dict)
+        if self.options.custom_dict:
+            text, cd_changes = self._apply_custom_dict(text)
+            all_changes.extend(cd_changes)
 
         # Этапы 3-6: словарная обработка (только для языков с полным словарём)
         if has_deep_support(lang):

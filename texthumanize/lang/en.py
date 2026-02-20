@@ -245,6 +245,19 @@ LANG_EN = {
         "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ],
 
+    # Perplexity boosters (rare/unusual phrases to raise perplexity)
+    "perplexity_boosters": [
+        "as it were", "so to speak", "in a manner of speaking",
+        "for what it's worth", "all things considered",
+        "to put it mildly", "by and large", "more or less",
+        "paradoxically", "ironically", "curiously enough",
+        "oddly enough", "strangely", "interestingly enough",
+        "truth be told", "as a matter of fact", "in point of fact",
+        "to all intents and purposes", "when all is said and done",
+        "nolens volens", "de facto", "ipso facto",
+        "be that as it may", "notwithstanding",
+    ],
+
     # Profile metric targets
     "profile_targets": {
         "chat": {"avg_sentence_len": (6, 16), "max_sentence_len": 25},

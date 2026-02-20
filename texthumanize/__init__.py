@@ -19,6 +19,15 @@
     - ``analyze_coherence()`` — анализ когерентности
     - ``full_readability()``  — полная читабельность
 
+Новое в v0.10.0:
+    - ``check_grammar()``       — проверка грамматики (правила для 9 языков)
+    - ``fix_grammar()``         — автоисправление грамматики
+    - ``uniqueness_score()``    — уникальность текста (n-gram fingerprinting)
+    - ``compare_texts()``       — сравнение двух текстов
+    - ``content_health()``      — комплексная оценка качества
+    - ``semantic_similarity()`` — семантическое сходство оригинал/обработка
+    - ``sentence_readability()`` — читабельность на уровне предложений
+
 Использование:
     >>> from texthumanize import humanize, analyze, detect_ai
     >>> result = humanize("Данный текст является примером.", lang="ru")
@@ -27,7 +36,7 @@
     >>> print(ai["verdict"])
 """
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
@@ -63,13 +72,28 @@ from texthumanize.diff_report import (
     explain_json_patch,
     explain_side_by_side,
 )
+from texthumanize.grammar import GrammarIssue, GrammarReport, check_grammar, fix_grammar
+from texthumanize.health_score import ContentHealthReport, HealthComponent, content_health
 from texthumanize.pipeline import Pipeline
+from texthumanize.semantic import SemanticReport, semantic_similarity
+from texthumanize.sentence_readability import (
+    SentenceReadabilityReport,
+    SentenceScore,
+    sentence_readability,
+)
 from texthumanize.stylistic import (
     STYLE_PRESETS,
     AnonymizeResult,
     StylisticAnalyzer,
     StylisticFingerprint,
     StylometricAnonymizer,
+)
+from texthumanize.uniqueness import (
+    SimilarityReport,
+    UniquenessReport,
+    compare_texts,
+    text_fingerprint,
+    uniqueness_score,
 )
 from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
 
@@ -126,5 +150,27 @@ __all__ = [
     "StylisticAnalyzer",
     "STYLE_PRESETS",
     "AutoTuner",
+    # Grammar
+    "check_grammar",
+    "fix_grammar",
+    "GrammarIssue",
+    "GrammarReport",
+    # Uniqueness
+    "uniqueness_score",
+    "compare_texts",
+    "text_fingerprint",
+    "UniquenessReport",
+    "SimilarityReport",
+    # Content Health Score
+    "content_health",
+    "ContentHealthReport",
+    "HealthComponent",
+    # Semantic Similarity
+    "semantic_similarity",
+    "SemanticReport",
+    # Sentence Readability
+    "sentence_readability",
+    "SentenceReadabilityReport",
+    "SentenceScore",
     "__version__",
 ]
