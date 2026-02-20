@@ -276,7 +276,6 @@ LANG_FR = {
         "Certes": ["Bien sûr", "Évidemment", "Il est vrai"],
         "D'autant plus que": ["Surtout que", "D'autant que", "Vu que"],
         "En l'occurrence": ["Ici", "Dans ce cas", "En l'espèce"],
-        "En définitive": ["Finalement", "Au bout du compte", "En conclusion"],
         "Pour conclure": ["En conclusion", "Pour finir", "En bref"],
     },
 

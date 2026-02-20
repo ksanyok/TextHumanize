@@ -204,7 +204,6 @@ LANG_DE = {
         "visualisieren": ["veranschaulichen", "darstellen", "zeigen"],
         "zentralisieren": ["zusammenlegen", "bündeln"],
         # Additional adjectives
-        "adäquat": ["passend", "angemessen", "geeignet"],
         "ambivalent": ["zwiespältig", "zweideutig"],
         "dezidiert": ["entschieden", "bestimmt", "klar"],
         "divers": ["verschieden", "vielfältig", "unterschiedlich"],
