@@ -117,13 +117,14 @@ class TypographyNormalizer:
         return ''.join(result)
 
     def _normalize_ellipsis(self, text: str) -> str:
-        """Нормализовать многоточие."""
+        """Нормализовать многоточие (но не leader dots)."""
         target = self.profile["typography"]["ellipsis"]
 
         if target == "...":
-            text = text.replace('…', '...')
-        elif target == "…":
-            text = re.sub(r'\.{3,}', '…', text)
+            text = text.replace('\u2026', '...')
+        elif target == "\u2026":
+            # Только ровно 3 точки → многоточие; ≥4 подряд — это leader dots, не трогаем
+            text = re.sub(r'(?<!\.)\.{3}(?!\.)', '\u2026', text)
 
         return text
 
@@ -146,8 +147,10 @@ class TypographyNormalizer:
 
     def _fix_punctuation_spaces(self, text: str) -> str:
         """Исправить пробелы вокруг знаков препинания."""
-        # Убрать пробел перед , . : ; ! ?
-        text = re.sub(r'\s+([,.:;!?])', r'\1', text)
+        # Убрать пробел перед , . : ; ! ?  (но НЕ перед leader dots: 4+ точек подряд)
+        text = re.sub(r'\s+([,:;!?])', r'\1', text)
+        # Пробел перед одиночной точкой (но не перед .... leader dots)
+        text = re.sub(r'\s+(\.(?!\.{3}))', r'\1', text)
 
         # Добавить пробел после , . : ; ! ? если его нет (кроме конца строки)
         text = re.sub(r'([,.:;!?])(?=[A-Za-zА-Яа-яёЁіІїЇєЄґҐ])', r'\1 ', text)

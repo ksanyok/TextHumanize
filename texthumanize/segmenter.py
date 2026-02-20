@@ -53,6 +53,9 @@ _PATTERNS = {
     "markdown_heading": re.compile(r'^#{1,6}\s+', re.MULTILINE),
     "markdown_bold": re.compile(r'\*\*[^*]+?\*\*|__[^_]+?__'),
     "markdown_italic": re.compile(r'(?<!\*)\*[^*]+?\*(?!\*)|(?<!_)_[^_]+?_(?!_)'),
+    # Leader dots (TOC, оглавления): "Глава 1 .......... 5"
+    # Защищаем всю строку целиком, чтобы пайплайн не трогал содержание
+    "leader_dots": re.compile(r'^.*\.{4,}.*\d+\s*$', re.MULTILINE),
 }
 
 # Паттерн для чисел с единицами измерения
@@ -143,7 +146,10 @@ class Segmenter:
         if self.preserve.get("mentions", True):
             result = self._protect(result, "mention", segments)
 
-        # 10. Числа с единицами
+        # 10. Leader dots (оглавления, TOC)
+        result = self._protect(result, "leader_dots", segments)
+
+        # 11. Числа с единицами
         if self.preserve.get("numbers", False):
             result = self._protect_numbers(result, segments)
 

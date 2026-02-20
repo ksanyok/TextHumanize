@@ -1,24 +1,51 @@
 {
-    "name": "ksanyok/texthumanize",
-    "description": "Text style normalization & readability engine — zero-dependency, multi-language",
-    "type": "project",
+    "name": "ksanyok/text-humanize",
+    "version": "0.11.0",
+    "description": "Zero-dependency PHP library for algorithmic text humanization — transforms machine-generated text into natural prose",
+    "type": "library",
     "keywords": [
-        "text-processing", "nlp", "typography", "readability",
-        "style-normalization", "multilingual", "text-naturalization"
+        "text-humanization",
+        "text-processing",
+        "nlp",
+        "typography",
+        "readability",
+        "natural-language",
+        "multilingual",
+        "text-naturalization"
     ],
     "homepage": "https://github.com/ksanyok/TextHumanize",
     "license": "proprietary",
+    "authors": [
+        {
+            "name": "ksanyok",
+            "email": "ksanyok@me.com"
+        }
+    ],
     "require": {
-        "php": ">=8.1"
+        "php": ">=8.1",
+        "ext-mbstring": "*",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
     },
     "autoload": {
         "psr-4": {
             "TextHumanize\\": "php/src/"
+        },
+        "classmap": [
+            "php/src/"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TextHumanize\\Tests\\": "php/tests/"
         }
     },
     "scripts": {
         "test": "cd php && vendor/bin/phpunit"
     },
+    "minimum-stability": "stable",
     "funding": [
         {
             "type": "paypal",

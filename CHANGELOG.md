@@ -3,6 +3,25 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.11.0] - 2025-06-26
+
+### Added
+- **Massive dictionary expansion (3× total)** — all 9 language dictionaries expanded from 2,281 to 6,881 entries:
+  - **EN**: 257 → 1,391 (5.4×) — synonyms, bureaucratic pairs, AI connectors, sentence starters, colloquial markers, perplexity boosters, split conjunctions, abbreviations, bureaucratic phrases
+  - **RU**: 291 → 956 (3.3×) — full expansion across all 9 categories with inflected forms
+  - **UK**: 252 → 780 (3.1×) — synonyms with m/f forms, bureaucratic pairs, colloquial markers, perplexity boosters
+  - **DE**: 235 → 724 (3.1×) — bureaucratic words with Latin-origin forms, compound words, formal/informal markers
+  - **FR**: 263 → 599 (2.3×) — literary vocabulary, academic connectors, bureaucratic phrases
+  - **ES**: 255 → 613 (2.4×) — formal/informal synonyms, regional markers
+  - **IT**: 244 → 616 (2.5×) — bureaucratic and literary vocabulary
+  - **PL**: 244 → 617 (2.5×) — inflected forms, formal registers
+  - **PT**: 240 → 585 (2.4×) — Brazilian/European Portuguese markers
+- **1,455 Python tests** — up from 1,333 (100% pass rate).
+
+### Fixed
+- **Composer package name** — root `composer.json` had incorrect name `ksanyok/texthumanize` (no hyphen); fixed to `ksanyok/text-humanize` matching the actual package name on Packagist. Also changed `type` from `project` to `library` and added proper metadata (authors, extensions, autoload-dev, minimum-stability).
+- **TOC dots preservation** — table-of-contents leader dots (`..........`) no longer get collapsed into `…` (ellipsis) by the typography normalizer. Added `leader_dots` pattern to segmenter protection and fixed punctuation spacing logic.
+
 ## [0.10.0] - 2025-06-25
 
 ### Added

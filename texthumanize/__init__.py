@@ -36,7 +36,7 @@
     >>> print(ai["verdict"])
 """
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
