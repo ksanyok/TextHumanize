@@ -261,6 +261,313 @@ class StylisticAnalyzer:
 
 
 # ═══════════════════════════════════════════════════════════════
+#  STYLOMETRIC ANONYMIZER
+# ═══════════════════════════════════════════════════════════════
+
+
+class StylometricAnonymizer:
+    """Трансформирует текст, чтобы его стилистический отпечаток отличался от исходного.
+
+    Стратегия: отдаляем метрики текста от его «настоящего» отпечатка,
+    приближая к целевому (или генерируя случайный целевой, средний по корпусу).
+    Все трансформации rule-based — без ML.
+
+    Типичное применение — whistleblower protection, anonymous peer review,
+    academic authorship privacy.
+    """
+
+    def __init__(self, lang: str = "en", seed: int | None = None):
+        self.lang = lang
+        self._analyzer = StylisticAnalyzer(lang=lang)
+        import random as _random
+        self._rng = _random.Random(seed)
+
+    def anonymize(
+        self,
+        text: str,
+        target: StylisticFingerprint | str | None = None,
+    ) -> AnonymizeResult:
+        """Анонимизировать стиль текста.
+
+        Args:
+            text: Исходный текст.
+            target: Целевой отпечаток для «приближения».
+                Может быть ``StylisticFingerprint``, имя пресета (str),
+                или ``None`` (по умолчанию используется ``'journalist'``).
+
+        Returns:
+            ``AnonymizeResult`` с трансформированным текстом, сходствами
+            до/после и списком изменений.
+        """
+        if isinstance(target, str):
+            target = STYLE_PRESETS.get(target)
+        if target is None:
+            target = STYLE_PRESETS["journalist"]
+
+        source_fp = self._analyzer.extract(text)
+        source_sim = source_fp.similarity(target)
+
+        changes: list[dict] = []
+        result = text
+
+        # 1. Sentence length adjustment
+        result = self._adjust_sentence_lengths(result, source_fp, target, changes)
+
+        # 2. Punctuation transformation
+        result = self._adjust_punctuation(result, source_fp, target, changes)
+
+        # 3. Sentence starters diversity
+        result = self._adjust_starters(result, source_fp, target, changes)
+
+        # 4. Vocabulary adjustment (word length)
+        result = self._adjust_vocabulary(result, source_fp, target, changes)
+
+        result_fp = self._analyzer.extract(result)
+        result_sim = result_fp.similarity(target)
+
+        return AnonymizeResult(
+            text=result,
+            original=text,
+            target_preset=(
+                next(
+                    (k for k, v in STYLE_PRESETS.items() if v is target),
+                    "custom",
+                )
+            ),
+            similarity_before=round(source_sim, 4),
+            similarity_after=round(result_sim, 4),
+            changes=changes,
+        )
+
+    # ── Private transforms ────────────────────────────────────
+
+    def _sentences(self, text: str) -> list[str]:
+        return self._analyzer._split_sentences(text)
+
+    def _adjust_sentence_lengths(
+        self,
+        text: str,
+        src: StylisticFingerprint,
+        tgt: StylisticFingerprint,
+        changes: list[dict],
+    ) -> str:
+        """Split long / merge short sentences to match target mean."""
+        sentences = self._sentences(text)
+        if not sentences or len(sentences) < 2:
+            return text
+
+        diff = tgt.sentence_length_mean - src.sentence_length_mean
+
+        if abs(diff) < 3:
+            return text  # close enough
+
+        new_sentences: list[str] = []
+
+        if diff < -3:
+            # Target wants shorter sentences → split long ones
+            threshold = max(8, int(tgt.sentence_length_mean + 5))
+            for s in sentences:
+                words = s.split()
+                if len(words) > threshold and self._rng.random() < 0.6:
+                    mid = len(words) // 2
+                    # Find a comma near the middle
+                    best = mid
+                    for i in range(max(3, mid - 5), min(len(words) - 3, mid + 5)):
+                        if words[i].endswith(','):
+                            best = i + 1
+                            break
+                    part1 = ' '.join(words[:best]).rstrip(',') + '.'
+                    part2 = ' '.join(words[best:])
+                    # Capitalize second part
+                    if part2:
+                        part2 = part2[0].upper() + part2[1:]
+                    new_sentences.extend([part1, part2])
+                    changes.append({
+                        "type": "anon_split",
+                        "description": f"Split: {s[:50]}…",
+                    })
+                else:
+                    new_sentences.append(s)
+        else:
+            # Target wants longer sentences → merge short ones
+            threshold = max(5, int(tgt.sentence_length_mean * 0.5))
+            i = 0
+            while i < len(sentences):
+                s = sentences[i]
+                if (
+                    len(s.split()) < threshold
+                    and i + 1 < len(sentences)
+                    and len(sentences[i + 1].split()) < threshold
+                    and self._rng.random() < 0.5
+                ):
+                    base = s.rstrip('.!?\u2026')
+                    next_s = sentences[i + 1]
+                    merged = (
+                        base + ', '
+                        + next_s[0].lower() + next_s[1:]
+                    )
+                    new_sentences.append(merged)
+                    changes.append({
+                        "type": "anon_merge",
+                        "description": "Merged 2 short sentences",
+                    })
+                    i += 2
+                else:
+                    new_sentences.append(s)
+                    i += 1
+
+        return ' '.join(new_sentences)
+
+    def _adjust_punctuation(
+        self,
+        text: str,
+        src: StylisticFingerprint,
+        tgt: StylisticFingerprint,
+        changes: list[dict],
+    ) -> str:
+        """Shift punctuation frequencies toward target."""
+        # Semicolons <-> periods
+        if src.semicolons_per_k > tgt.semicolons_per_k + 1:
+            count = text.count(';')
+            remove = max(1, count // 2)
+            for _ in range(remove):
+                text = text.replace('; ', '. ', 1)
+            if remove:
+                changes.append({
+                    "type": "anon_punct",
+                    "description": f"Removed {remove} semicolons",
+                })
+        elif src.semicolons_per_k < tgt.semicolons_per_k - 1:
+            sents = text.split('. ')
+            additions = 0
+            rebuilt = []
+            for i, s in enumerate(sents):
+                if (
+                    additions < 3
+                    and i > 0
+                    and len(s.split()) > 5
+                    and self._rng.random() < 0.3
+                ):
+                    rebuilt.append(s)
+                    # Replace the preceding '. ' with '; '
+                    if rebuilt:
+                        prev = rebuilt[-2] if len(rebuilt) > 1 else ""
+                        if prev and not prev.endswith(('?', '!')):
+                            rebuilt[-2] = prev
+                            rebuilt[-1] = s[0].lower() + s[1:] if s else s
+                            # Mark join
+                            if len(rebuilt) >= 2:
+                                rebuilt[-2] = rebuilt[-2].rstrip('.') + ';'
+                            additions += 1
+                            continue
+                rebuilt.append(s)
+            if additions:
+                text = '. '.join(rebuilt)
+                changes.append({
+                    "type": "anon_punct",
+                    "description": f"Added {additions} semicolons",
+                })
+
+        # Dashes
+        if src.dashes_per_k > tgt.dashes_per_k + 2:
+            for old in ('— ', '– '):
+                if old in text:
+                    text = text.replace(old, ', ', 1)
+                    changes.append({
+                        "type": "anon_punct",
+                        "description": "Replaced dash with comma",
+                    })
+
+        return text
+
+    def _adjust_starters(
+        self,
+        text: str,
+        src: StylisticFingerprint,
+        tgt: StylisticFingerprint,
+        changes: list[dict],
+    ) -> str:
+        """Diversify or homogenize sentence starters."""
+        if abs(src.pronoun_start_ratio - tgt.pronoun_start_ratio) < 0.1:
+            return text
+
+        pronouns = _PRONOUNS.get(self.lang, _PRONOUNS["en"])
+        sentences = self._sentences(text)
+        if not sentences:
+            return text
+
+        new_sents: list[str] = []
+        mods = 0
+
+        for s in sentences:
+            words = s.split()
+            if not words:
+                new_sents.append(s)
+                continue
+
+            first = words[0].lower().rstrip('.,;')
+            if (
+                src.pronoun_start_ratio > tgt.pronoun_start_ratio + 0.1
+                and first in pronouns
+                and mods < 3
+                and self._rng.random() < 0.4
+            ):
+                # Remove pronoun start by restructuring
+                # Simple: prepend a filler
+                fillers = {
+                    "en": ["In fact,", "Actually,", "Indeed,"],
+                    "ru": ["На самом деле,", "По сути,", "Действительно,"],
+                    "uk": ["Насправді,", "По суті,", "Власне,"],
+                    "de": ["Tatsächlich,", "Im Grunde,", "Eigentlich,"],
+                    "fr": ["En fait,", "En réalité,", "D'ailleurs,"],
+                    "es": ["De hecho,", "En realidad,", "Realmente,"],
+                }
+                lang_fillers = fillers.get(self.lang, fillers["en"])
+                filler = self._rng.choice(lang_fillers)
+                rest = (
+                    ' ' + ' '.join(words[1:])
+                    if len(words) > 1 else ''
+                )
+                new_s = f"{filler} {words[0].lower()}{rest}"
+                new_sents.append(new_s)
+                mods += 1
+                changes.append({
+                    "type": "anon_starter",
+                    "description": "Diversified pronoun start",
+                })
+            else:
+                new_sents.append(s)
+
+        return ' '.join(new_sents)
+
+    def _adjust_vocabulary(
+        self,
+        text: str,
+        src: StylisticFingerprint,
+        tgt: StylisticFingerprint,
+        changes: list[dict],
+    ) -> str:
+        """Very light vocabulary shift — not deep, just structural."""
+        # Skip if close enough
+        if abs(src.avg_word_length - tgt.avg_word_length) < 0.5:
+            return text
+        # This is a placeholder for deeper vocabulary transformations
+        # that would require per-language synonym dictionaries
+        return text
+
+
+@dataclass
+class AnonymizeResult:
+    """Result of stylometric anonymization."""
+    text: str
+    original: str
+    target_preset: str = "custom"
+    similarity_before: float = 0.0
+    similarity_after: float = 0.0
+    changes: list[dict] = field(default_factory=list)
+
+
+# ═══════════════════════════════════════════════════════════════
 #  Предустановленные стилистические отпечатки
 # ═══════════════════════════════════════════════════════════════
 #

@@ -17,3 +17,13 @@ repos:
         args: [--fix]
       - id: ruff-format
         args: [--check]
+
+  - repo: local
+    hooks:
+      - id: texthumanize-quality-gate
+        name: TextHumanize Quality Gate
+        entry: python -m texthumanize.quality_gate --changed-only
+        language: python
+        types: [text]
+        pass_filenames: false
+        stages: [pre-commit]

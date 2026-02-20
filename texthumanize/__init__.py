@@ -27,7 +27,7 @@
     >>> print(ai["verdict"])
 """
 
-__version__ = "0.8.2"
+__version__ = "0.9.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
@@ -38,6 +38,7 @@ from texthumanize.core import (
     analyze,
     analyze_coherence,
     analyze_tone,
+    anonymize_style,
     build_author_profile,
     clean_watermarks,
     compare_fingerprint,
@@ -57,8 +58,19 @@ from texthumanize.core import (
     spin,
     spin_variants,
 )
+from texthumanize.diff_report import (
+    explain_html,
+    explain_json_patch,
+    explain_side_by_side,
+)
 from texthumanize.pipeline import Pipeline
-from texthumanize.stylistic import STYLE_PRESETS, StylisticAnalyzer, StylisticFingerprint
+from texthumanize.stylistic import (
+    STYLE_PRESETS,
+    AnonymizeResult,
+    StylisticAnalyzer,
+    StylisticFingerprint,
+    StylometricAnonymizer,
+)
 from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
 
 __all__ = [
@@ -82,6 +94,10 @@ __all__ = [
     "evasion_resistance",
     # Adversarial Calibration
     "adversarial_calibrate",
+    # Stylometric Anonymization
+    "anonymize_style",
+    "StylometricAnonymizer",
+    "AnonymizeResult",
     # Paraphrase
     "paraphrase",
     # Tone
@@ -97,6 +113,10 @@ __all__ = [
     "analyze_coherence",
     # Readability
     "full_readability",
+    # Diff Reports
+    "explain_html",
+    "explain_json_patch",
+    "explain_side_by_side",
     # Infrastructure
     "Pipeline",
     "HumanizeOptions",

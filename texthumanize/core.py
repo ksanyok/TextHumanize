@@ -77,6 +77,7 @@ def humanize(
     constraints: dict | None = None,
     seed: int | None = None,
     target_style: object | str | None = None,
+    only_flagged: bool = False,
 ) -> HumanizeResult:
     """Гуманизировать текст — сделать его более естественным.
 
@@ -114,6 +115,9 @@ def humanize(
         target_style: Целевой стилистический отпечаток.
             Может быть StylisticFingerprint или имя пресета (str):
             'student', 'copywriter', 'scientist', 'journalist', 'blogger'.
+        only_flagged: Если True, гуманизировать только предложения,
+            которые detect_ai_sentences помечает как AI (ai_probability > 0.5).
+            Предложения с label="human" остаются без изменений.
 
     Returns:
         HumanizeResult с полями:
@@ -170,9 +174,111 @@ def humanize(
 
     # Запускаем пайплайн
     pipeline = Pipeline(options=options)
+
+    # ── Selective humanization ────────────────────────────────
+    if only_flagged:
+        return _humanize_flagged_only(
+            text, detected_lang, pipeline, options,
+        )
+
     result = pipeline.run(text, detected_lang)
 
     return result
+
+
+def _humanize_flagged_only(
+    text: str,
+    lang: str,
+    pipeline: Pipeline,
+    options: HumanizeOptions,
+) -> HumanizeResult:
+    """Гуманизировать только предложения, помеченные как AI.
+
+    Разбивает текст на предложения, пропускает «человеческие» и
+    обрабатывает только те, где ``ai_probability > 0.5``.
+    """
+    sentences = detect_ai_sentences(text, lang=lang)
+    if not sentences:
+        return pipeline.run(text, lang)
+
+    parts: list[str] = []
+    all_changes: list[dict] = []
+    flagged_count = 0
+    skipped_count = 0
+
+    # Recover whitespace between sentences using original offsets
+    prev_end = 0
+    for sent in sentences:
+        start = sent.get("start", prev_end)
+        # Preserve inter-sentence whitespace
+        if start > prev_end:
+            parts.append(text[prev_end:start])
+
+        sent_text = sent["text"]
+        if sent.get("ai_probability", 0) > 0.5:
+            # Humanize this sentence individually
+            flagged_count += 1
+            sub = pipeline.run(sent_text, lang)
+            parts.append(sub.text)
+            all_changes.extend(sub.changes)
+        else:
+            # Keep untouched
+            skipped_count += 1
+            parts.append(sent_text)
+            all_changes.append({
+                "type": "selective_skip",
+                "description": (
+                    f"Пропущено (human, p={sent.get('ai_probability', 0):.2f}): "
+                    f"{sent_text[:60]}…"
+                    if len(sent_text) > 60 else
+                    f"Пропущено (human, p={sent.get('ai_probability', 0):.2f}): "
+                    f"{sent_text}"
+                ),
+            })
+        prev_end = sent.get("end", start + len(sent_text))
+
+    # Trailing text
+    if prev_end < len(text):
+        parts.append(text[prev_end:])
+
+    combined = "".join(parts)
+
+    # Analyze before/after
+    analyzer_obj = TextAnalyzer(lang=lang)
+    metrics_before = analyzer_obj.analyze(text)
+    metrics_after = analyzer_obj.analyze(combined)
+
+    all_changes.insert(0, {
+        "type": "selective_mode",
+        "description": (
+            f"Selective: {flagged_count} AI / {skipped_count} human sentences"
+        ),
+    })
+
+    return HumanizeResult(
+        original=text,
+        text=combined,
+        lang=lang,
+        profile=options.profile,
+        intensity=options.intensity,
+        changes=all_changes,
+        metrics_before={
+            "artificiality_score": metrics_before.artificiality_score,
+            "avg_sentence_length": metrics_before.avg_sentence_length,
+            "bureaucratic_ratio": metrics_before.bureaucratic_ratio,
+            "connector_ratio": metrics_before.connector_ratio,
+            "repetition_score": metrics_before.repetition_score,
+            "typography_score": metrics_before.typography_score,
+        },
+        metrics_after={
+            "artificiality_score": metrics_after.artificiality_score,
+            "avg_sentence_length": metrics_after.avg_sentence_length,
+            "bureaucratic_ratio": metrics_after.bureaucratic_ratio,
+            "connector_ratio": metrics_after.connector_ratio,
+            "repetition_score": metrics_after.repetition_score,
+            "typography_score": metrics_after.typography_score,
+        },
+    )
 
 
 def analyze(text: str, lang: str = "auto") -> AnalysisReport:
@@ -208,14 +314,21 @@ def analyze(text: str, lang: str = "auto") -> AnalysisReport:
     return analyzer.analyze(text)
 
 
-def explain(result: HumanizeResult) -> str:
-    """Объяснить что было изменено — человекочитаемый отчёт.
+def explain(
+    result: HumanizeResult,
+    fmt: str = "text",
+    **kwargs,
+) -> str:
+    """Объяснить что было изменено — в нескольких форматах.
 
     Args:
         result: Результат humanize().
+        fmt: Формат вывода: ``"text"`` (default), ``"html"``,
+            ``"json"`` (RFC 6902 patch), ``"diff"`` (unified diff).
+        **kwargs: Передаются в соответствующий рендерер.
 
     Returns:
-        Текстовый отчёт с перечислением изменений.
+        Отчёт об изменениях в выбранном формате.
 
     Examples:
         >>> result = humanize("Данный текст является примером.")
@@ -223,7 +336,18 @@ def explain(result: HumanizeResult) -> str:
         === Отчёт TextHumanize ===
         Язык: ru | Профиль: web | Интенсивность: 60
         ...
+        >>> html = explain(result, fmt="html")
+        >>> json_str = explain(result, fmt="json")
     """
+    if fmt == "html":
+        from texthumanize.diff_report import explain_html
+        return explain_html(result, **kwargs)
+    if fmt == "json":
+        from texthumanize.diff_report import explain_json_patch
+        return explain_json_patch(result, **kwargs)
+    if fmt == "diff":
+        from texthumanize.diff_report import explain_side_by_side
+        return explain_side_by_side(result, **kwargs)
     lines = [
         "=== Отчёт TextHumanize ===",
         f"Язык: {result.lang} | Профиль: {result.profile} "
@@ -1052,5 +1176,53 @@ def adversarial_calibrate(
         "target_reached": final["score"] <= target_score,
         "score_history": score_history,
         "final_text": current_text,
+    }
+
+
+def anonymize_style(
+    text: str,
+    lang: str = "auto",
+    target: object | str | None = None,
+    seed: int | None = None,
+) -> dict:
+    """Анонимизировать стилистический отпечаток текста.
+
+    Трансформирует текст так, чтобы его стилистика отличалась от
+    оригинального авторского стиля. Применимо для whistleblower
+    protection, anonymous peer review, authorship privacy.
+
+    Args:
+        text: Текст для анонимизации.
+        lang: Код языка (или ``"auto"``).
+        target: Целевой стиль — ``StylisticFingerprint``, имя пресета
+            (``'student'``, ``'copywriter'``, ``'scientist'``,
+            ``'journalist'``, ``'blogger'``) или ``None`` (default
+            = ``'journalist'``).
+        seed: Сид для воспроизводимости.
+
+    Returns:
+        dict с ключами: ``text``, ``original``, ``target_preset``,
+        ``similarity_before``, ``similarity_after``, ``changes``.
+
+    Examples:
+        >>> result = anonymize_style("My very recognizable text...", target="blogger")
+        >>> print(result["similarity_before"], "→", result["similarity_after"])
+    """
+    from texthumanize.stylistic import StylometricAnonymizer
+
+    detected_lang = lang
+    if lang == "auto":
+        detected_lang = detect_language(text)
+
+    anonymizer = StylometricAnonymizer(lang=detected_lang, seed=seed)
+    result = anonymizer.anonymize(text, target=target)
+
+    return {
+        "text": result.text,
+        "original": result.original,
+        "target_preset": result.target_preset,
+        "similarity_before": result.similarity_before,
+        "similarity_after": result.similarity_after,
+        "changes": result.changes,
     }
 

@@ -272,7 +272,7 @@ npm install
 
 ```python
 import texthumanize
-print(texthumanize.__version__)  # 0.8.2
+print(texthumanize.__version__)  # 0.9.0
 ```
 
 ### Updating to latest version

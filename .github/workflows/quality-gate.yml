@@ -1,0 +1,52 @@
+name: Quality Gate
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '**.md'
+      - '**.txt'
+      - '**.rst'
+      - 'docs/**'
+      - 'content/**'
+
+  workflow_dispatch:
+    inputs:
+      ai_threshold:
+        description: 'Max allowed AI score (0-100)'
+        required: false
+        default: '25'
+      readability_threshold:
+        description: 'Min readability score (0-100)'
+        required: false
+        default: '40'
+
+jobs:
+  quality-gate:
+    name: Content Quality Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install TextHumanize
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run Quality Gate
+        env:
+          AI_THRESHOLD: ${{ github.event.inputs.ai_threshold || '25' }}
+          READABILITY_THRESHOLD: ${{ github.event.inputs.readability_threshold || '40' }}
+        run: |
+          python -m texthumanize.quality_gate \
+            --ai-threshold "$AI_THRESHOLD" \
+            --readability-threshold "$READABILITY_THRESHOLD" \
+            --changed-only

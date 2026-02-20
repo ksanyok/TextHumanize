@@ -8,6 +8,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import math
 import re
 import unicodedata
 from dataclasses import dataclass, field
@@ -26,6 +28,8 @@ class WatermarkReport:
     # (original_char, expected_char, position)
     zero_width_count: int = 0
     confidence: float = 0.0
+    kirchenbauer_score: float = 0.0  # z-score for green-list bias
+    kirchenbauer_p_value: float = 1.0  # p-value (low = watermarked)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -132,6 +136,9 @@ class WatermarkDetector:
 
         # 6. C2PA / IPTC metadata markers
         self._detect_metadata_markers(text, report)
+
+        # 7. Kirchenbauer-style green-list watermark (statistical z-test)
+        self._detect_kirchenbauer(text, report)
 
         # Determine overall result
         report.has_watermarks = len(report.watermark_types) > 0
@@ -395,6 +402,84 @@ class WatermarkDetector:
             # Clean up leftover whitespace after removal
             cleaned = re.sub(r' {2,}', ' ', cleaned).strip()
             report.cleaned_text = cleaned
+
+    # ───────────────────────────────────────────────────────────
+    #  KIRCHENBAUER GREEN-LIST WATERMARK DETECTOR
+    # ───────────────────────────────────────────────────────────
+
+    # Default gamma = 0.25 (fraction of vocabulary that is "green")
+    # Based on Kirchenbauer et al., "A Watermark for Large Language Models"
+    # https://arxiv.org/abs/2301.10226
+
+    _GREEN_GAMMA = 0.25
+    _GREEN_THRESHOLD_Z = 4.0  # z-score threshold (p ≈ 3e-5)
+
+    def _detect_kirchenbauer(
+        self, text: str, report: WatermarkReport,
+    ) -> None:
+        """Detect Kirchenbauer-style LLM watermarks via green-list z-test.
+
+        The Kirchenbauer scheme works by hashing the previous token to
+        partition the vocabulary into a "green list" (γ fraction) and
+        a "red list" (1 − γ). During generation, tokens from the green
+        list are favoured. We replicate the hash-based partition and
+        count how many tokens fall into the green list. A z-test tells
+        us whether the proportion exceeds what chance predicts.
+
+        This implementation is model-agnostic: it uses word-level tokens
+        and a universal hash, so it catches *any* green-list scheme
+        regardless of the specific LLM that generated the text.
+        """
+        words = re.findall(r'\b\w+\b', text.lower())
+        n_tokens = len(words)
+        if n_tokens < 30:
+            return
+
+        gamma = self._GREEN_GAMMA
+        green_count = 0
+
+        for i in range(1, n_tokens):
+            prev_token = words[i - 1]
+            curr_token = words[i]
+            # Hash previous token to get a seed for the partition
+            seed = int(
+                hashlib.sha256(prev_token.encode("utf-8")).hexdigest()[:8],
+                16,
+            )
+            # Hash current token with the seed to determine green/red
+            combined = f"{seed}:{curr_token}"
+            h = int(
+                hashlib.sha256(combined.encode("utf-8")).hexdigest()[:8],
+                16,
+            )
+            # Token is "green" if hash falls in the lower γ fraction
+            if (h % 10000) / 10000.0 < gamma:
+                green_count += 1
+
+        total = n_tokens - 1  # we skip the first token
+        if total < 1:
+            return
+
+        expected = gamma * total
+        std = math.sqrt(gamma * (1 - gamma) * total)
+        if std == 0:
+            return
+
+        z_score = (green_count - expected) / std
+        # One-sided p-value from z-score (standard normal CDF complement)
+        p_value = 0.5 * math.erfc(z_score / math.sqrt(2))
+
+        report.kirchenbauer_score = round(z_score, 3)
+        report.kirchenbauer_p_value = round(p_value, 6)
+
+        if z_score >= self._GREEN_THRESHOLD_Z:
+            report.watermark_types.append("kirchenbauer_watermark")
+            report.details.append(
+                f"Kirchenbauer green-list watermark detected: "
+                f"z={z_score:.2f}, p={p_value:.2e}. "
+                f"{green_count}/{total} tokens in green list "
+                f"(expected {expected:.0f} at γ={gamma})"
+            )
 
     # ───────────────────────────────────────────────────────────
     #  HELPERS

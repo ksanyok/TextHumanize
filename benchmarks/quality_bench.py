@@ -354,7 +354,7 @@ def main():
     parser.add_argument("--json", action="store_true", help="Output JSON")
     args = parser.parse_args()
 
-    print("TextHumanize Quality Benchmark v0.8.2")
+    print("TextHumanize Quality Benchmark v0.9.0")
     print("-" * 40)
 
     results = run_benchmarks(

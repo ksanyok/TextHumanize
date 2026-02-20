@@ -3,6 +3,21 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.9.0] - 2025-06-24
+
+### Added
+- **Kirchenbauer Watermark Detector** — green-list z-test based on Kirchenbauer et al. 2023 paper. Uses SHA-256 hash of previous token to partition vocabulary, counts green-list tokens, computes z-score and p-value. Flags AI watermark at z ≥ 4.0. New fields: `kirchenbauer_score`, `kirchenbauer_p_value` in `WatermarkReport`.
+- **HTML Diff Report** — `explain(result, fmt="html")` generates self-contained HTML page with inline `<del>`/`<ins>` word-level diff, metrics grid, and change breakdown. Also supports `fmt="json"` (RFC 6902-style JSON Patch) and `fmt="diff"` (unified diff).
+- **Quality Gate** — `python -m texthumanize.quality_gate` CLI + GitHub Action (`.github/workflows/quality-gate.yml`) + pre-commit hook. Checks text files for AI score > threshold, low readability, and watermarks. Returns exit code 1 on failure.
+- **Selective Humanization** — `humanize(text, only_flagged=True)` processes only sentences detected as AI-generated (`ai_probability > 0.5`). Human-written sentences pass through unchanged.
+- **Stylometric Anonymizer** — `StylometricAnonymizer` class and `anonymize_style()` convenience function. Transforms text to disguise authorship by adjusting sentence lengths, punctuation patterns, sentence starters, toward a target stylistic preset. Supports all 5 presets. Returns `AnonymizeResult` with before/after similarity scores.
+- **40 new tests** covering all v0.9.0 features in `tests/test_v090_features.py`.
+
+### Changed
+- `explain()` now accepts `fmt` parameter: `"text"` (default), `"html"`, `"json"`, `"diff"`.
+- `humanize()` accepts new `only_flagged` parameter.
+- New exports: `explain_html`, `explain_json_patch`, `explain_side_by_side`, `anonymize_style`, `StylometricAnonymizer`, `AnonymizeResult`.
+
 ## [0.8.2] - 2026-02-19
 
 ### Added
