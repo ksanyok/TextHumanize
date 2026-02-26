@@ -146,7 +146,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 
 | Category | Feature | Python | TS/JS | PHP |
 |:---------|:--------|:------:|:-----:|:---:|
-| **Core** | `humanize()` — 11-stage pipeline | ✅ | ✅ | ✅ |
+| **Core** | `humanize()` — 12-stage pipeline | ✅ | ✅ | ✅ |
 | | `humanize_batch()` — parallel processing | ✅ | — | ✅ |
 | | `humanize_chunked()` — large text support | ✅ | — | ✅ |
 | | `analyze()` — artificiality scoring | ✅ | ✅ | ✅ |
@@ -169,7 +169,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 | | Plugin system | ✅ | — | ✅ |
 | | REST API server (12 endpoints) | ✅ | — | — |
 | | CLI (15+ commands) | ✅ | — | — |
-| **Languages** | Full dictionary support | 9 | 2 | 9 |
+| **Languages** | Full dictionary support | 14 | 2 | 14 |
 | | Universal processor | ✅ | ✅ | ✅ |
 
 ---
@@ -1030,8 +1030,8 @@ Pipeline.clear_plugins()
 ### Available Stage Names
 
 ```
-segmentation → typography → debureaucratization → structure → repetitions →
-liveliness → universal → naturalization → validation → restore
+watermark → segmentation → typography → debureaucratization → structure →
+repetitions → liveliness → universal → naturalization → validation → restore
 ```
 
 You can attach plugins `before` or `after` any of these stages.
@@ -1237,10 +1237,12 @@ All responses include `_elapsed_ms` field with processing time in milliseconds.
 
 ## Processing Pipeline
 
-TextHumanize uses an **11-stage pipeline** with adaptive intensity:
+TextHumanize uses a **12-stage pipeline** with adaptive intensity:
 
 ```
 Input Text
+  │
+  ├─ 0.  Watermark Cleaning   ─ remove zero-width chars, homoglyphs    [auto]
   │
   ├─ 1.  Segmentation        ─ protect code blocks, URLs, emails, brands
   │
@@ -1452,7 +1454,7 @@ print(f"Verdict: {result['verdict']}")   # → "human_written"
 | Works offline | ✅ | ❌ | ❌ |
 | Free | ✅ | Freemium | $14.95/mo |
 | API key required | ❌ | ✅ | ✅ |
-| Languages | 9 | ~5 | English-focused |
+| Languages | 14 | ~5 | English-focused |
 | Metrics | 13 | Undisclosed | Undisclosed |
 | Per-sentence breakdown | ✅ | ✅ | ❌ |
 | Batch detection | ✅ | ✅ | ✅ |
@@ -2188,7 +2190,7 @@ texthumanize/                   # 44 Python modules, 16,820 lines
 ├── core.py                     # Facade: humanize(), analyze(), detect_ai(), etc.
 ├── api.py                      # REST API: zero-dependency HTTP server, 12 endpoints
 ├── cli.py                      # CLI: 15+ commands
-├── pipeline.py                 # 11-stage pipeline + adaptive intensity + graduated retry
+├── pipeline.py                 # 12-stage pipeline + adaptive intensity + graduated retry
 │
 ├── analyzer.py                 # Artificiality scoring + 6 readability metrics
 ├── tokenizer.py                # Paragraph/sentence/word tokenization
@@ -2230,7 +2232,12 @@ texthumanize/                   # 44 Python modules, 16,820 lines
     ├── es.py                   # Spanish
     ├── pl.py                   # Polish
     ├── pt.py                   # Portuguese
-    └── it.py                   # Italian
+    ├── it.py                   # Italian
+    ├── ar.py                   # Arabic (81 bureaucratic, 80 synonyms)
+    ├── zh.py                   # Chinese Simplified (80 bureaucratic, 80 synonyms)
+    ├── ja.py                   # Japanese (keigo→casual register)
+    ├── ko.py                   # Korean (honorific→casual register)
+    └── tr.py                   # Turkish (Ottoman→modern Turkish)
 ```
 
 ### Design Principles
