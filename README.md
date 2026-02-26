@@ -12,7 +12,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?logo=typescript&logoColor=white)]()
 [![PHP 8.1+](https://img.shields.io/badge/php-8.1+-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
 &nbsp;&nbsp;
-[![Python Tests](https://img.shields.io/badge/tests-1560%20passed-2ea44f.svg?logo=pytest&logoColor=white)]()
+[![Python Tests](https://img.shields.io/badge/tests-1604%20passed-2ea44f.svg?logo=pytest&logoColor=white)]()
 [![PHP Tests](https://img.shields.io/badge/tests-223%20passed-2ea44f.svg?logo=php&logoColor=white)]()
 [![JS Tests](https://img.shields.io/badge/tests-28%20passed-2ea44f.svg?logo=vitest&logoColor=white)]()
 &nbsp;&nbsp;
@@ -40,7 +40,7 @@ TextHumanize is a **pure-algorithmic text processing engine** that normalizes st
 It normalizes typography, simplifies bureaucratic language, diversifies sentence structure, increases burstiness and perplexity, replaces formulaic phrases, and applies context-aware synonym substitution — all while preserving semantic meaning.
 
 ### Built-in AI toolkit:
-**AI Detection** · **Paraphrasing** · **Tone Analysis & Adjustment** · **Watermark Detection & Cleaning** · **Content Spinning** · **Coherence Analysis** · **Readability Scoring** · **Stylistic Fingerprinting** · **Auto-Tuner**
+**AI Detection** · **Paraphrasing** · **Tone Analysis & Adjustment** · **Watermark Detection & Cleaning** · **Content Spinning** · **Coherence Analysis** · **Readability Scoring** · **Stylistic Fingerprinting** · **Auto-Tuner** · **Perplexity Analysis** · **Plagiarism Detection** · **Dictionary Training** · **Streaming & Variants**
 
 ### Available for:
 **Python** (full) · **TypeScript/JavaScript** (core pipeline) · **PHP** (full)
@@ -79,6 +79,12 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 - [Coherence Analysis](#coherence-analysis)
 - [Morphological Engine](#morphological-engine)
 - [Smart Sentence Splitter](#smart-sentence-splitter)
+- [Perplexity Analysis](#perplexity-analysis)
+- [Plagiarism Detection](#plagiarism-detection)
+- [Dictionary Training](#dictionary-training)
+- [Sentence-Level Humanization](#sentence-level-humanization)
+- [Multi-Variant Output](#multi-variant-output)
+- [Streaming API](#streaming-api)
 - [Context-Aware Synonyms](#context-aware-synonyms)
 - [Stylistic Fingerprinting](#stylistic-fingerprinting)
 - [Using Individual Modules](#using-individual-modules)
@@ -1856,6 +1862,152 @@ print(sents)  # ['Dr. Smith arrived at 3 p.m.', 'He brought the report.']
 ```
 
 The smart splitter is integrated into all pipeline stages that need sentence-level processing.
+
+---
+
+## Perplexity Analysis
+
+Character-level trigram cross-entropy model for measuring text naturalness — fully offline, no ML dependencies.
+
+```python
+from texthumanize import perplexity_score, cross_entropy
+
+# Quick cross-entropy measurement
+ce = cross_entropy("The quick brown fox jumps over the lazy dog.", lang="en")
+print(f"Cross-entropy: {ce:.2f} bits")
+
+# Full analysis with naturalness score and verdict
+result = perplexity_score(
+    "It is important to note that AI-generated text tends to be uniform.",
+    lang="en",
+)
+print(f"Naturalness: {result['naturalness']}/100")
+print(f"Verdict: {result['verdict']}")  # "human", "mixed", or "ai"
+print(f"Burstiness: {result['burstiness_score']:.2f}")
+```
+
+| Return Field | Description |
+|---|---|
+| `cross_entropy` | Bits per character against language model |
+| `perplexity` | 2^cross_entropy — lower = more predictable |
+| `local_variance` | Entropy variance across text windows |
+| `burstiness_score` | Human-like variability (higher = more natural) |
+| `naturalness` | Score 0–100 (100 = fully natural) |
+| `verdict` | `"human"`, `"mixed"`, `"ai"`, or `"unknown"` |
+
+---
+
+## Plagiarism Detection
+
+Offline originality analysis via n-gram fingerprinting and self-similarity scoring.
+
+```python
+from texthumanize import check_originality, compare_originality
+
+# Check text originality (self-repetition analysis)
+report = check_originality(
+    "Your text here...",
+    reference_texts=["Optional reference corpus..."],
+)
+print(f"Originality: {report.originality_score}%")
+print(f"Verdict: {report.verdict}")  # "original", "moderate_overlap", "high_overlap"
+print(f"Fingerprint: {report.fingerprint_hash}")
+
+# Compare humanized output against original
+divergence = compare_originality(
+    "The humanized version of the text.",
+    "The original AI-generated text.",
+)
+print(f"Divergence: {divergence['divergence']:.1%}")
+print(f"Sufficiently different: {divergence['is_sufficiently_different']}")
+```
+
+---
+
+## Dictionary Training
+
+Analyze a corpus to detect overused AI phrases and build custom replacement dictionaries.
+
+```python
+from texthumanize import train_from_corpus, export_custom_dict
+
+# Analyze your text corpus
+texts = [
+    "Furthermore, it is important to note that...",
+    "Moreover, the results clearly demonstrate...",
+    # ... more texts
+]
+result = train_from_corpus(texts, lang="en", min_frequency=2)
+
+print(f"Overused phrases: {result.overused_phrases}")
+print(f"AI patterns found: {len(result.repeated_patterns)}")
+print(f"Type-token ratio: {result.vocabulary_stats['type_token_ratio']:.2f}")
+
+# Export as custom dictionary for humanize()
+custom_dict = export_custom_dict(result)
+from texthumanize import humanize
+r = humanize("Your text...", custom_dict=custom_dict)
+```
+
+---
+
+## Sentence-Level Humanization
+
+Process text at sentence granularity — only rewrite sentences that score above an AI probability threshold.
+
+```python
+from texthumanize import humanize_sentences
+
+result = humanize_sentences(
+    "Human-written intro. AI-generated middle part. Another natural sentence.",
+    lang="en",
+    ai_threshold=0.6,    # Only process sentences with >60% AI probability
+    intensity=70,
+)
+
+print(f"Kept human: {result['human_kept']} sentences")
+print(f"Processed AI: {result['ai_processed']} sentences")
+for s in result["sentences"]:
+    print(f"  [{s['action']}] {s['original'][:50]}... → AI: {s['ai_probability']:.0%}")
+```
+
+---
+
+## Multi-Variant Output
+
+Generate multiple humanization variants and pick the best one.
+
+```python
+from texthumanize import humanize_variants
+
+variants = humanize_variants(
+    "AI-generated text to humanize.",
+    lang="en",
+    variants=5,     # Generate 5 different versions
+    seed=42,        # Reproducible base seed
+)
+
+# Results sorted by quality (best first)
+for v in variants:
+    print(f"Variant {v['variant_id']}: score={v['ai_score']:.2f}, "
+          f"changes={v['change_ratio']:.0%}")
+    print(f"  {v['text'][:80]}...")
+```
+
+---
+
+## Streaming API
+
+Process large texts chunk-by-chunk with progress tracking.
+
+```python
+from texthumanize import humanize_stream
+
+for chunk in humanize_stream("Very long text...", lang="en"):
+    print(f"[{chunk['progress']:.0%}] {chunk['chunk'][:60]}...")
+    if chunk["is_last"]:
+        print("Done!")
+```
 
 ---
 

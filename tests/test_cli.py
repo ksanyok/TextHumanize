@@ -22,7 +22,7 @@ class TestCLIVersion:
             run_cli('--version')
         assert exc.value.code == 0
         out = capsys.readouterr().out
-        assert '0.13.0' in out
+        assert '0.14.0' in out
 
 
 class TestCLIHumanize:

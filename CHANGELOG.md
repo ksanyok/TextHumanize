@@ -3,6 +3,35 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.14.0] - 2025-06-27
+
+### Added
+- **3 new API functions** for advanced text processing:
+  - `humanize_sentences()` — per-sentence AI scoring with graduated intensity; only processes sentences above a configurable AI probability threshold.
+  - `humanize_variants()` — generates 1–10 humanization variants with different random seeds, sorted by quality (change ratio × AI score reduction).
+  - `humanize_stream()` — generator that yields humanized text chunk-by-chunk (paragraph-by-paragraph) with progress tracking.
+- **3 new analysis modules** (zero-dependency, fully offline):
+  - `perplexity_v2` — character-level trigram cross-entropy model with background language models for EN/RU. Functions: `cross_entropy()`, `perplexity_score()` with naturalness score (0–100) and verdict.
+  - `dict_trainer` — corpus analysis for custom dictionary building. Detects overused AI phrases, vocabulary stats, and generates replacement suggestions. Functions: `train_from_corpus()`, `export_custom_dict()`.
+  - `plagiarism` — offline originality detection via n-gram fingerprinting and self-similarity analysis. Functions: `check_originality()`, `compare_originality()`.
+- **Pipeline error isolation** (H1) — each processing stage wrapped in `_safe_stage()` with try/except; failing stages are skipped gracefully with logging instead of crashing the entire pipeline.
+- **Partial rollback** (H4) — pipeline records checkpoints after each stage; on validation failure, rolls back stage-by-stage from the end to find the last valid state.
+- **Pipeline profiling** (H6) — `time.perf_counter()` timing for every stage; `stage_timings` dict and `total_time` included in `metrics_after`.
+- **Input sanitization** (H5) — `humanize()` now validates input: `TypeError` for non-str, early return for empty/whitespace, `ValueError` for texts exceeding 500K characters.
+- **Thread-safe lazy loading** (M2) — double-checked locking with `threading.Lock()` on all 6 `_get_*()` module loaders; safe for concurrent use.
+- **Instance-level plugins** (M3) — plugins are now copied per-instance in `Pipeline.__init__()`, preventing cross-instance interference.
+- **44 new tests** for all v0.14.0 features — perplexity v2, dict trainer, plagiarism detection, sentence-level humanize, multi-variant output, streaming API, error isolation, profiling, input sanitization, thread safety, instance plugins.
+
+### Fixed
+- **`adversarial_calibrate` intensity bug** (H3) — parameter changed from `float` (0.0–1.0) to `int` (0–100) to match the rest of the API; internal calculations corrected.
+- **`humanize_sentences` crash** — `detect_ai_sentences()` returns a list, not a dict; fixed `.get("sentences", [])` calls.
+- **`test_none_text` assertion** — updated to expect `TypeError` after input sanitization was added.
+- **All ruff lint errors** — resolved E501, F401, I001 across all source and new test files.
+
+### Changed
+- **1,604 Python tests** — up from 1,560 (100% pass rate).
+- **Pipeline reliability** — 11 stages now have error isolation; pipeline continues even if individual stages fail.
+
 ## [0.13.0] - 2026-02-26
 
 ### Added

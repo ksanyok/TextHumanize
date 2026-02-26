@@ -36,7 +36,7 @@
     >>> print(ai["verdict"])
 """
 
-__version__ = "0.13.0"
+__version__ = "0.14.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
@@ -63,10 +63,14 @@ from texthumanize.core import (
     humanize,
     humanize_batch,
     humanize_chunked,
+    humanize_sentences,
+    humanize_stream,
+    humanize_variants,
     paraphrase,
     spin,
     spin_variants,
 )
+from texthumanize.dict_trainer import TrainingResult, export_custom_dict, train_from_corpus
 from texthumanize.diff_report import (
     explain_html,
     explain_json_patch,
@@ -74,7 +78,9 @@ from texthumanize.diff_report import (
 )
 from texthumanize.grammar import GrammarIssue, GrammarReport, check_grammar, fix_grammar
 from texthumanize.health_score import ContentHealthReport, HealthComponent, content_health
+from texthumanize.perplexity_v2 import cross_entropy, perplexity_score
 from texthumanize.pipeline import Pipeline
+from texthumanize.plagiarism import PlagiarismReport, check_originality, compare_originality
 from texthumanize.semantic import SemanticReport, semantic_similarity
 from texthumanize.sentence_readability import (
     SentenceReadabilityReport,
@@ -102,6 +108,9 @@ __all__ = [
     "humanize",
     "humanize_batch",
     "humanize_chunked",
+    "humanize_sentences",
+    "humanize_stream",
+    "humanize_variants",
     "analyze",
     "explain",
     # AI Detection
@@ -172,5 +181,16 @@ __all__ = [
     "sentence_readability",
     "SentenceReadabilityReport",
     "SentenceScore",
+    # Perplexity v2
+    "perplexity_score",
+    "cross_entropy",
+    # Dictionary Training
+    "train_from_corpus",
+    "export_custom_dict",
+    "TrainingResult",
+    # Plagiarism Detection
+    "check_originality",
+    "compare_originality",
+    "PlagiarismReport",
     "__version__",
 ]

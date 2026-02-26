@@ -256,9 +256,9 @@ class TestHumanizeEdgeCases:
         assert r.text == "   "
 
     def test_none_text(self):
-        # None is falsy, should return empty result
-        r = humanize(None)
-        assert r.text is None
+        # None should raise TypeError with input sanitization
+        with pytest.raises(TypeError):
+            humanize(None)
 
     def test_auto_lang_en(self):
         r = humanize("This is an English text.", lang="auto")

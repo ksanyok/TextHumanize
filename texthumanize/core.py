@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -18,53 +19,66 @@ _tone = None
 _watermark = None
 _spinner = None
 _coherence = None
+_lazy_lock = threading.Lock()
 
 
 def _get_detectors():
     global _detectors
     if _detectors is None:
-        import texthumanize.detectors as _d
-        _detectors = _d
+        with _lazy_lock:
+            if _detectors is None:
+                import texthumanize.detectors as _d
+                _detectors = _d
     return _detectors
 
 
 def _get_paraphrase():
     global _paraphrase
     if _paraphrase is None:
-        import texthumanize.paraphrase as _p
-        _paraphrase = _p
+        with _lazy_lock:
+            if _paraphrase is None:
+                import texthumanize.paraphrase as _p
+                _paraphrase = _p
     return _paraphrase
 
 
 def _get_tone():
     global _tone
     if _tone is None:
-        import texthumanize.tone as _t
-        _tone = _t
+        with _lazy_lock:
+            if _tone is None:
+                import texthumanize.tone as _t
+                _tone = _t
     return _tone
 
 
 def _get_watermark():
     global _watermark
     if _watermark is None:
-        import texthumanize.watermark as _w
-        _watermark = _w
+        with _lazy_lock:
+            if _watermark is None:
+                import texthumanize.watermark as _w
+                _watermark = _w
     return _watermark
 
 
 def _get_spinner():
     global _spinner
     if _spinner is None:
-        import texthumanize.spinner as _s
-        _spinner = _s
+        with _lazy_lock:
+            if _spinner is None:
+                import texthumanize.spinner as _s
+                _spinner = _s
     return _spinner
 
 
 def _get_coherence():
     global _coherence
     if _coherence is None:
-        import texthumanize.coherence as _c
-        _coherence = _c
+        with _lazy_lock:
+            if _coherence is None:
+                import texthumanize.coherence as _c
+                _coherence = _c
     return _coherence
 
 
@@ -149,13 +163,20 @@ def humanize(
         >>> print(result.text)
         Обрабатываем текст.
     """
+    # Input sanitization
+    if not isinstance(text, str):
+        raise TypeError(f"Expected str, got {type(text).__name__}")
     if not text or not text.strip():
         return HumanizeResult(
-            original=text,
-            text=text,
-            lang=lang if lang != "auto" else "en",
-            profile=profile,
-            intensity=intensity,
+            original=text, text=text, lang=lang or "en",
+            profile=profile, intensity=intensity,
+            changes=[], metrics_before={}, metrics_after={},
+        )
+    MAX_TEXT_LENGTH = 500_000  # 500KB safety limit
+    if len(text) > MAX_TEXT_LENGTH:
+        raise ValueError(
+            f"Text too long ({len(text)} chars). "
+            f"Max {MAX_TEXT_LENGTH}. Use humanize_chunked() for large texts."
         )
 
     # Определяем язык
@@ -1126,7 +1147,7 @@ def adversarial_calibrate(
     *,
     max_rounds: int = 5,
     target_score: float = 0.35,
-    intensity: float = 0.5,
+    intensity: int = 50,
 ) -> dict:
     """Run humanize → detect loop until target score is reached.
 
@@ -1165,11 +1186,11 @@ def adversarial_calibrate(
         current_text = humanize(
             current_text,
             lang=lang,
-            intensity=min(intensity, 1.0),
+            intensity=min(intensity, 100),
         )
 
         # Increase intensity slightly for next round
-        intensity = min(intensity + 0.1, 1.0)
+        intensity = min(intensity + 10, 100)
 
     # Final check
     final = detect_ai(current_text, lang=lang)
@@ -1183,6 +1204,256 @@ def adversarial_calibrate(
         "score_history": score_history,
         "final_text": current_text,
     }
+
+
+def humanize_sentences(
+    text: str,
+    lang: str = "auto",
+    *,
+    profile: str = "web",
+    intensity: int = 60,
+    ai_threshold: float = 0.5,
+    preserve: dict | None = None,
+    seed: int | None = None,
+) -> dict:
+    """Humanize only sentences flagged as AI-generated.
+
+    Unlike humanize(only_flagged=True) which uses a binary flag,
+    this function applies graduated intensity per sentence based
+    on individual AI probability scores.
+
+    Args:
+        text: Input text.
+        lang: Language code.
+        profile: Processing profile.
+        intensity: Base intensity (0-100).
+        ai_threshold: Minimum AI probability to trigger processing.
+        preserve: Preservation settings.
+        seed: Random seed.
+
+    Returns:
+        Dict with: text, original, sentences (list of per-sentence results),
+        human_kept, ai_processed, avg_ai_before, avg_ai_after.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    # Score each sentence
+    sentences_data = detect_ai_sentences(text, lang=lang)
+
+    result_sentences = []
+    processed_parts = []
+    human_count = 0
+    ai_count = 0
+    scores_before = []
+    scores_after = []
+
+    for sent_info in sentences_data:
+        sent_text = sent_info.get("sentence", sent_info.get("text", ""))
+        ai_prob = sent_info.get("ai_probability", 0.0)
+        scores_before.append(ai_prob)
+
+        if ai_prob >= ai_threshold and len(sent_text.split()) >= 3:
+            # Apply graduated intensity based on AI score
+            grad_intensity = min(100, int(intensity * (ai_prob / 0.8)))
+            result = humanize(
+                sent_text,
+                lang=lang,
+                profile=profile,
+                intensity=grad_intensity,
+                preserve=preserve,
+                seed=seed,
+            )
+            processed_parts.append(result.text)
+            result_sentences.append({
+                "original": sent_text,
+                "processed": result.text,
+                "ai_probability": ai_prob,
+                "intensity_applied": grad_intensity,
+                "action": "humanized",
+            })
+            ai_count += 1
+            # Re-score after humanization
+            re_sents = detect_ai_sentences(result.text, lang=lang)
+            scores_after.append(
+                re_sents[0].get("ai_probability", ai_prob) if re_sents else ai_prob
+            )
+        else:
+            processed_parts.append(sent_text)
+            result_sentences.append({
+                "original": sent_text,
+                "processed": sent_text,
+                "ai_probability": ai_prob,
+                "intensity_applied": 0,
+                "action": "kept",
+            })
+            human_count += 1
+            scores_after.append(ai_prob)
+
+    final_text = " ".join(processed_parts)
+
+    return {
+        "text": final_text,
+        "original": text,
+        "lang": lang,
+        "sentences": result_sentences,
+        "human_kept": human_count,
+        "ai_processed": ai_count,
+        "avg_ai_before": sum(scores_before) / len(scores_before) if scores_before else 0.0,
+        "avg_ai_after": sum(scores_after) / len(scores_after) if scores_after else 0.0,
+    }
+
+
+def humanize_variants(
+    text: str,
+    lang: str = "auto",
+    *,
+    variants: int = 3,
+    profile: str = "web",
+    intensity: int = 60,
+    preserve: dict | None = None,
+    seed: int | None = None,
+) -> list[dict]:
+    """Generate multiple humanization variants for comparison.
+
+    Each variant uses a different random seed derived from the base seed,
+    producing different but valid humanizations. Results are sorted
+    by quality score (best first).
+
+    Args:
+        text: Input text.
+        lang: Language code.
+        variants: Number of variants to generate (1-10).
+        profile: Processing profile.
+        intensity: Processing intensity (0-100).
+        preserve: Preservation settings.
+        seed: Base seed (variants derive from this).
+
+    Returns:
+        List of dicts sorted by quality, each with: text, variant_id,
+        seed_used, change_ratio, quality_score, ai_score, changes_count.
+    """
+    import random as _rnd
+
+    variants = max(1, min(variants, 10))
+
+    if lang == "auto":
+        lang = detect_language(text)
+
+    base_seed = seed if seed is not None else _rnd.randint(0, 2**31)
+    results = []
+
+    for i in range(variants):
+        variant_seed = base_seed + i * 7919  # prime offset
+        result = humanize(
+            text,
+            lang=lang,
+            profile=profile,
+            intensity=intensity,
+            preserve=preserve,
+            seed=variant_seed,
+        )
+
+        # Score the variant
+        ai_check = detect_ai(result.text, lang=lang)
+
+        results.append({
+            "text": result.text,
+            "variant_id": i + 1,
+            "seed_used": variant_seed,
+            "change_ratio": round(result.change_ratio, 4),
+            "quality_score": round(result.quality_score, 4),
+            "ai_score": round(ai_check.get("score", 0.0), 4),
+            "changes_count": len(result.changes),
+            "metrics_after": result.metrics_after,
+        })
+
+    # Sort by quality: low AI score + high quality score
+    results.sort(key=lambda r: (r["ai_score"], -r["quality_score"]))
+
+    return results
+
+
+def humanize_stream(
+    text: str,
+    lang: str = "auto",
+    *,
+    profile: str = "web",
+    intensity: int = 60,
+    preserve: dict | None = None,
+    seed: int | None = None,
+    chunk_size: int = 500,
+):
+    """Stream humanized text in chunks (generator).
+
+    Processes text paragraph-by-paragraph and yields results
+    incrementally. Useful for real-time UIs and chat integrations.
+
+    Args:
+        text: Input text.
+        lang: Language code.
+        profile: Processing profile.
+        intensity: Processing intensity (0-100).
+        preserve: Preservation settings.
+        seed: Random seed.
+        chunk_size: Approximate characters per chunk.
+
+    Yields:
+        Dict with: chunk, chunk_index, is_last, progress (0.0-1.0),
+        original_chunk.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    # Split into paragraphs
+    paragraphs = re.split(r'\n\s*\n', text)
+    if not paragraphs:
+        return
+
+    total_chars = len(text)
+    processed_chars = 0
+    chunk_index = 0
+
+    # Group paragraphs into chunks of approximate size
+    current_chunk = []
+    current_size = 0
+    chunks = []
+
+    for para in paragraphs:
+        current_chunk.append(para)
+        current_size += len(para)
+        if current_size >= chunk_size:
+            chunks.append("\n\n".join(current_chunk))
+            current_chunk = []
+            current_size = 0
+
+    if current_chunk:
+        chunks.append("\n\n".join(current_chunk))
+
+    total_chunks = len(chunks)
+
+    for i, chunk in enumerate(chunks):
+        result = humanize(
+            chunk,
+            lang=lang,
+            profile=profile,
+            intensity=intensity,
+            preserve=preserve,
+            seed=seed + i if seed is not None else None,
+        )
+
+        processed_chars += len(chunk)
+        chunk_index = i
+
+        yield {
+            "chunk": result.text,
+            "chunk_index": chunk_index,
+            "total_chunks": total_chunks,
+            "is_last": i == total_chunks - 1,
+            "progress": min(1.0, processed_chars / total_chars) if total_chars > 0 else 1.0,
+            "original_chunk": chunk,
+            "change_ratio": round(result.change_ratio, 4),
+        }
 
 
 def anonymize_style(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from difflib import SequenceMatcher
 from typing import Callable, Protocol
 
@@ -63,11 +64,11 @@ class Pipeline:
     any built-in stage via register_plugin().
     """
 
-    # Class-level plugin registry (shared across instances)
-    _plugins_before: dict[str, list[StagePlugin]] = {}
-    _plugins_after: dict[str, list[StagePlugin]] = {}
-    _hooks_before: dict[str, list[HookFn]] = {}
-    _hooks_after: dict[str, list[HookFn]] = {}
+    # Class-level default plugin registry
+    _class_plugins_before: dict[str, list[StagePlugin]] = {}
+    _class_plugins_after: dict[str, list[StagePlugin]] = {}
+    _class_hooks_before: dict[str, list[HookFn]] = {}
+    _class_hooks_after: dict[str, list[HookFn]] = {}
 
     STAGE_NAMES = (
         "watermark", "segmentation", "typography", "debureaucratization",
@@ -79,6 +80,11 @@ class Pipeline:
 
     def __init__(self, options: HumanizeOptions | None = None):
         self.options = options or HumanizeOptions()
+        # Instance-level copies of class plugins (isolation between instances)
+        self._plugins_before = {k: list(v) for k, v in self._class_plugins_before.items()}
+        self._plugins_after = {k: list(v) for k, v in self._class_plugins_after.items()}
+        self._hooks_before = {k: list(v) for k, v in self._class_hooks_before.items()}
+        self._hooks_after = {k: list(v) for k, v in self._class_hooks_after.items()}
 
     # ─── Plugin API ───────────────────────────────────────────
 
@@ -110,9 +116,9 @@ class Pipeline:
                 f"Unknown stage: {target}. Valid stages: {cls.STAGE_NAMES}"
             )
         if before:
-            cls._plugins_before.setdefault(before, []).append(plugin)
+            cls._class_plugins_before.setdefault(before, []).append(plugin)
         else:
-            cls._plugins_after.setdefault(after, []).append(plugin)  # type: ignore[arg-type]
+            cls._class_plugins_after.setdefault(after, []).append(plugin)  # type: ignore[arg-type]
 
     @classmethod
     def register_hook(
@@ -137,17 +143,17 @@ class Pipeline:
                 f"Unknown stage: {target}. Valid stages: {cls.STAGE_NAMES}"
             )
         if before:
-            cls._hooks_before.setdefault(before, []).append(hook)
+            cls._class_hooks_before.setdefault(before, []).append(hook)
         else:
-            cls._hooks_after.setdefault(after, []).append(hook)  # type: ignore[arg-type]
+            cls._class_hooks_after.setdefault(after, []).append(hook)  # type: ignore[arg-type]
 
     @classmethod
     def clear_plugins(cls) -> None:
         """Remove all registered plugins and hooks."""
-        cls._plugins_before.clear()
-        cls._plugins_after.clear()
-        cls._hooks_before.clear()
-        cls._hooks_after.clear()
+        cls._class_plugins_before.clear()
+        cls._class_plugins_after.clear()
+        cls._class_hooks_before.clear()
+        cls._class_hooks_after.clear()
 
     def _run_plugins(self, stage: str, text: str, lang: str, *, is_before: bool) -> str:
         """Run registered plugins/hooks for a stage."""
@@ -320,6 +326,35 @@ class Pipeline:
             },
         )
 
+    def _safe_stage(
+        self,
+        stage_name: str,
+        text: str,
+        lang: str,
+        fn: Callable[[], tuple[str, list[dict]]],
+        stage_timings: dict[str, float],
+    ) -> tuple[str, list[dict]]:
+        """Execute a pipeline stage with error isolation and profiling.
+
+        If the stage raises an exception, returns the original text
+        unchanged and records a skip change.
+        """
+        import logging
+        t0 = time.perf_counter()
+        try:
+            new_text, changes = fn()
+            stage_timings[stage_name] = time.perf_counter() - t0
+            return new_text, changes
+        except Exception as exc:
+            stage_timings[stage_name] = time.perf_counter() - t0
+            logging.getLogger("texthumanize").warning(
+                "Stage '%s' failed: %s — skipping", stage_name, exc,
+            )
+            return text, [{
+                "type": "stage_skipped",
+                "description": f"Этап «{stage_name}» пропущен из-за ошибки: {exc}",
+            }]
+
     def _run_pipeline(
         self, text: str, lang: str, *, intensity_factor: float = 1.0,
     ) -> HumanizeResult:
@@ -332,6 +367,8 @@ class Pipeline:
         """
         original = text
         all_changes: list[dict] = []
+        stage_timings: dict[str, float] = {}
+        checkpoints: list[tuple[str, str]] = []  # (stage_name, text_after_stage)
 
         # Анализ до обработки
         analyzer = TextAnalyzer(lang=lang)
@@ -394,6 +431,7 @@ class Pipeline:
         preserve_config = dict(self.options.preserve)
 
         # ── 0. Очистка водяных знаков ─────────────────────────
+        _t0 = time.perf_counter()
         text = self._run_plugins("watermark", text, lang, is_before=True)
         wm_detector = WatermarkDetector(lang=lang)
         wm_report = wm_detector.detect(text)
@@ -408,6 +446,7 @@ class Pipeline:
                 ),
             })
         text = self._run_plugins("watermark", text, lang, is_before=False)
+        stage_timings["watermark"] = time.perf_counter() - _t0
 
         # ── Стилистический отпечаток ──────────────────────────
         # Если задан target_style, анализируем текущий стиль
@@ -440,11 +479,14 @@ class Pipeline:
             preserve_config.setdefault("keep_keywords", [])
             preserve_config["keep_keywords"] = keep_kw
 
+        _t0 = time.perf_counter()
         segmenter = Segmenter(preserve=preserve_config)
         segmented = segmenter.segment(text)
         text = segmented.text
+        stage_timings["segmentation"] = time.perf_counter() - _t0
 
         # 2. Нормализация типографики
+        _t0 = time.perf_counter()
         text = self._run_plugins("typography", text, lang, is_before=True)
         normalizer = TypographyNormalizer(
             profile=self.options.profile,
@@ -458,148 +500,206 @@ class Pipeline:
         if self.options.custom_dict:
             text, cd_changes = self._apply_custom_dict(text)
             all_changes.extend(cd_changes)
+        stage_timings["typography"] = time.perf_counter() - _t0
 
         # Этапы 3-6: словарная обработка (только для языков с полным словарём)
         if has_deep_support(lang):
             # 3. Деканцеляризация
             text = self._run_plugins("debureaucratization", text, lang, is_before=True)
-            debureaucratizer = Debureaucratizer(
-                lang=lang,
-                profile=effective_options.profile,
-                intensity=effective_options.intensity,
-                seed=effective_options.seed,
+            def _run_debureau():
+                d = Debureaucratizer(
+                    lang=lang,
+                    profile=effective_options.profile,
+                    intensity=effective_options.intensity,
+                    seed=effective_options.seed,
+                )
+                t = d.process(text)
+                return t, d.changes
+            text, _ch = self._safe_stage(
+                "debureaucratization", text, lang,
+                _run_debureau, stage_timings,
             )
-            text = debureaucratizer.process(text)
-            all_changes.extend(debureaucratizer.changes)
+            all_changes.extend(_ch)
+            checkpoints.append(("debureaucratization", text))
             text = self._run_plugins("debureaucratization", text, lang, is_before=False)
 
             # 4. Разнообразие структуры
             text = self._run_plugins("structure", text, lang, is_before=True)
-            structure = StructureDiversifier(
-                lang=lang,
-                profile=effective_options.profile,
-                intensity=effective_options.intensity,
-                seed=effective_options.seed,
-            )
-            text = structure.process(text)
-            all_changes.extend(structure.changes)
+            def _run_structure():
+                s = StructureDiversifier(
+                    lang=lang,
+                    profile=effective_options.profile,
+                    intensity=effective_options.intensity,
+                    seed=effective_options.seed,
+                )
+                t = s.process(text)
+                return t, s.changes
+            text, _ch = self._safe_stage("structure", text, lang, _run_structure, stage_timings)
+            all_changes.extend(_ch)
+            checkpoints.append(("structure", text))
             text = self._run_plugins("structure", text, lang, is_before=False)
 
             # 5. Уменьшение повторов
             text = self._run_plugins("repetitions", text, lang, is_before=True)
-            repetitions = RepetitionReducer(
-                lang=lang,
-                profile=effective_options.profile,
-                intensity=effective_options.intensity,
-                seed=effective_options.seed,
-            )
-            text = repetitions.process(text)
-            all_changes.extend(repetitions.changes)
+            def _run_repetitions():
+                r = RepetitionReducer(
+                    lang=lang,
+                    profile=effective_options.profile,
+                    intensity=effective_options.intensity,
+                    seed=effective_options.seed,
+                )
+                t = r.process(text)
+                return t, r.changes
+            text, _ch = self._safe_stage("repetitions", text, lang, _run_repetitions, stage_timings)
+            all_changes.extend(_ch)
+            checkpoints.append(("repetitions", text))
             text = self._run_plugins("repetitions", text, lang, is_before=False)
 
             # 6. Инъекция «живости»
             text = self._run_plugins("liveliness", text, lang, is_before=True)
-            liveliness = LivelinessInjector(
-                lang=lang,
-                profile=effective_options.profile,
-                intensity=effective_options.intensity,
-                seed=effective_options.seed,
-            )
-            text = liveliness.process(text)
-            all_changes.extend(liveliness.changes)
+            def _run_liveliness():
+                li = LivelinessInjector(
+                    lang=lang,
+                    profile=effective_options.profile,
+                    intensity=effective_options.intensity,
+                    seed=effective_options.seed,
+                )
+                t = li.process(text)
+                return t, li.changes
+            text, _ch = self._safe_stage("liveliness", text, lang, _run_liveliness, stage_timings)
+            all_changes.extend(_ch)
+            checkpoints.append(("liveliness", text))
             text = self._run_plugins("liveliness", text, lang, is_before=False)
 
         # 7. Семантическое перефразирование (для языков с полным словарём)
         if has_deep_support(lang):
             text = self._run_plugins("paraphrasing", text, lang, is_before=True)
-            paraphraser = SemanticParaphraser(
-                lang=lang,
-                intensity=effective_options.intensity / 100.0,
-                seed=effective_options.seed,
+            def _run_paraphrasing():
+                p = SemanticParaphraser(
+                    lang=lang,
+                    intensity=effective_options.intensity / 100.0,
+                    seed=effective_options.seed,
+                )
+                t = p.process(text)
+                changes = [
+                    {"type": "paraphrasing", "kind": c.kind,
+                     "description": f"{c.kind}: {c.original[:60]}… → {c.transformed[:60]}…"}
+                    for c in p.changes
+                ]
+                return t, changes
+            text, _ch = self._safe_stage(
+                "paraphrasing", text, lang,
+                _run_paraphrasing, stage_timings,
             )
-            text = paraphraser.process(text)
-            all_changes.extend(
-                {"type": "paraphrasing", "kind": t.kind,
-                 "description": f"{t.kind}: {t.original[:60]}… → {t.transformed[:60]}…"}
-                for t in paraphraser.changes
-            )
+            all_changes.extend(_ch)
+            checkpoints.append(("paraphrasing", text))
             text = self._run_plugins("paraphrasing", text, lang, is_before=False)
 
         # 8. Гармонизация тона (для ВСЕХ языков)
         text = self._run_plugins("tone", text, lang, is_before=True)
-        tone_harmonizer = ToneHarmonizer(
-            lang=lang,
-            profile=effective_options.profile,
-            intensity=effective_options.intensity,
-            seed=effective_options.seed,
-        )
-        text = tone_harmonizer.process(text)
-        all_changes.extend(tone_harmonizer.changes)
+        def _run_tone():
+            th = ToneHarmonizer(
+                lang=lang,
+                profile=effective_options.profile,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
+            )
+            t = th.process(text)
+            return t, th.changes
+        text, _ch = self._safe_stage("tone", text, lang, _run_tone, stage_timings)
+        all_changes.extend(_ch)
+        checkpoints.append(("tone", text))
         text = self._run_plugins("tone", text, lang, is_before=False)
 
         # 9. Универсальная обработка (для ВСЕХ языков)
         text = self._run_plugins("universal", text, lang, is_before=True)
-        universal = UniversalProcessor(
-            profile=effective_options.profile,
-            intensity=effective_options.intensity,
-            seed=effective_options.seed,
-        )
-        text = universal.process(text)
-        all_changes.extend(universal.changes)
+        def _run_universal():
+            u = UniversalProcessor(
+                profile=effective_options.profile,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
+            )
+            t = u.process(text)
+            return t, u.changes
+        text, _ch = self._safe_stage("universal", text, lang, _run_universal, stage_timings)
+        all_changes.extend(_ch)
+        checkpoints.append(("universal", text))
         text = self._run_plugins("universal", text, lang, is_before=False)
 
-        # 9. Натурализация стиля (КЛЮЧЕВОЙ ЭТАП — для ВСЕХ языков)
+        # 10. Натурализация стиля (КЛЮЧЕВОЙ ЭТАП — для ВСЕХ языков)
         text = self._run_plugins("naturalization", text, lang, is_before=True)
-        naturalizer = TextNaturalizer(
-            lang=lang,
-            profile=effective_options.profile,
-            intensity=effective_options.intensity,
-            seed=effective_options.seed,
+        def _run_naturalization():
+            n = TextNaturalizer(
+                lang=lang,
+                profile=effective_options.profile,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
+            )
+            t = n.process(text)
+            return t, n.changes
+        text, _ch = self._safe_stage(
+            "naturalization", text, lang,
+            _run_naturalization, stage_timings,
         )
-        text = naturalizer.process(text)
-        all_changes.extend(naturalizer.changes)
+        all_changes.extend(_ch)
+        checkpoints.append(("naturalization", text))
         text = self._run_plugins("naturalization", text, lang, is_before=False)
 
         # 11. Оптимизация читаемости (для ВСЕХ языков)
         text = self._run_plugins("readability", text, lang, is_before=True)
-        readability = ReadabilityOptimizer(
-            lang=lang,
-            profile=effective_options.profile,
-            intensity=effective_options.intensity,
-            seed=effective_options.seed,
-        )
-        text = readability.process(text)
-        all_changes.extend(readability.changes)
+        def _run_readability():
+            ro = ReadabilityOptimizer(
+                lang=lang,
+                profile=effective_options.profile,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
+            )
+            t = ro.process(text)
+            return t, ro.changes
+        text, _ch = self._safe_stage("readability", text, lang, _run_readability, stage_timings)
+        all_changes.extend(_ch)
+        checkpoints.append(("readability", text))
         text = self._run_plugins("readability", text, lang, is_before=False)
 
         # 12. Грамматическая коррекция (для ВСЕХ языков — финальная полировка)
         text = self._run_plugins("grammar", text, lang, is_before=True)
-        grammar = GrammarCorrector(
-            lang=lang,
-            profile=effective_options.profile,
-            intensity=effective_options.intensity,
-            seed=effective_options.seed,
-        )
-        text = grammar.process(text)
-        all_changes.extend(grammar.changes)
+        def _run_grammar():
+            g = GrammarCorrector(
+                lang=lang,
+                profile=effective_options.profile,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
+            )
+            t = g.process(text)
+            return t, g.changes
+        text, _ch = self._safe_stage("grammar", text, lang, _run_grammar, stage_timings)
+        all_changes.extend(_ch)
+        checkpoints.append(("grammar", text))
         text = self._run_plugins("grammar", text, lang, is_before=False)
 
         # 13. Коррекция когерентности (для ВСЕХ языков)
         text = self._run_plugins("coherence", text, lang, is_before=True)
-        coherence = CoherenceRepairer(
-            lang=lang,
-            profile=effective_options.profile,
-            intensity=effective_options.intensity,
-            seed=effective_options.seed,
-        )
-        text = coherence.process(text)
-        all_changes.extend(coherence.changes)
+        def _run_coherence():
+            c = CoherenceRepairer(
+                lang=lang,
+                profile=effective_options.profile,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
+            )
+            t = c.process(text)
+            return t, c.changes
+        text, _ch = self._safe_stage("coherence", text, lang, _run_coherence, stage_timings)
+        all_changes.extend(_ch)
+        checkpoints.append(("coherence", text))
         text = self._run_plugins("coherence", text, lang, is_before=False)
 
         # 14. Восстановление защищённых сегментов
+        _t0 = time.perf_counter()
         text = segmented.restore(text)
+        stage_timings["restore"] = time.perf_counter() - _t0
 
         # 15. Валидация
+        _t0 = time.perf_counter()
         max_change = self.options.constraints.get("max_change_ratio", 0.4)
         validator = QualityValidator(
             lang=lang,
@@ -614,11 +714,27 @@ class Pipeline:
         critical_errors = [e for e in validation.errors if "ключевое слово" in e.lower()
                           or "искусственность" in e.lower()]
         if critical_errors:
-            text = original
-            all_changes = [{
-                "type": "rollback",
-                "description": f"Откат: {'; '.join(critical_errors)}",
-            }]
+            # Try partial rollback — remove stages from the end
+            for cp_name, cp_text in reversed(checkpoints):
+                restored_cp = segmented.restore(cp_text)
+                cp_valid = validator.validate(original, restored_cp, metrics_before)
+                cp_critical = [e for e in cp_valid.errors if "ключевое слово" in e.lower()
+                              or "искусственность" in e.lower()]
+                if not cp_critical:
+                    text = restored_cp
+                    all_changes.append({
+                        "type": "partial_rollback",
+                        "description": f"Частичный откат до этапа «{cp_name}»",
+                    })
+                    break
+            else:
+                # Full rollback if no checkpoint is clean
+                text = original
+                all_changes = [{
+                    "type": "rollback",
+                    "description": f"Полный откат: {'; '.join(critical_errors)}",
+                }]
+        stage_timings["validation"] = time.perf_counter() - _t0
 
         # Анализ после обработки
         metrics_after = analyzer.analyze(text)
@@ -658,5 +774,7 @@ class Pipeline:
                 "typography_score": metrics_after.typography_score,
                 "predictability_score": metrics_after.predictability_score,
                 "vocabulary_richness": metrics_after.vocabulary_richness,
+                "stage_timings": stage_timings,
+                "total_time": sum(stage_timings.values()),
             },
         )
