@@ -14,9 +14,8 @@ import random
 import re
 
 from texthumanize.coherence import CoherenceAnalyzer
-from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
+from texthumanize.segmenter import skip_placeholder_sentence
 from texthumanize.sentence_split import split_sentences
-
 
 # Переходные слова для вставки между абзацами (по языкам и категориям)
 _TRANSITION_INSERTIONS: dict[str, dict[str, list[str]]] = {

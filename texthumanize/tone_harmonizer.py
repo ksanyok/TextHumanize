@@ -11,9 +11,7 @@
 
 from __future__ import annotations
 
-from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 from texthumanize.tone import ToneAdjuster, ToneAnalyzer, ToneLevel
-
 
 # Маппинг профилей на целевой тон
 _PROFILE_TONE_MAP: dict[str, ToneLevel] = {

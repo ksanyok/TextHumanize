@@ -16,7 +16,6 @@ import re
 from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 from texthumanize.sentence_readability import sentence_readability
 
-
 # Конъюнкции/места для разбивки по языкам
 _SPLIT_CONJUNCTIONS: dict[str, list[str]] = {
     "en": [

@@ -257,16 +257,32 @@ def detect_language(text: str) -> str:
 
     # ── Script-based fast detection ───────────────────────────
     # Arabic script detection
-    arabic_count = sum(1 for c in text if '\u0600' <= c <= '\u06FF' or '\u0750' <= c <= '\u077F' or '\uFB50' <= c <= '\uFDFF' or '\uFE70' <= c <= '\uFEFF')
+    arabic_count = sum(
+        1 for c in text
+        if '\u0600' <= c <= '\u06FF'
+        or '\u0750' <= c <= '\u077F'
+        or '\uFB50' <= c <= '\uFDFF'
+        or '\uFE70' <= c <= '\uFEFF'
+    )
     alpha_count = sum(1 for c in text if c.isalpha()) or 1
     if arabic_count / alpha_count > 0.3:
         return "ar"
 
     # CJK detection (Chinese / Japanese / Korean)
-    cjk_count = sum(1 for c in text if '\u4E00' <= c <= '\u9FFF' or '\u3400' <= c <= '\u4DBF' or '\uF900' <= c <= '\uFAFF')
+    cjk_count = sum(
+        1 for c in text
+        if '\u4E00' <= c <= '\u9FFF'
+        or '\u3400' <= c <= '\u4DBF'
+        or '\uF900' <= c <= '\uFAFF'
+    )
     hiragana_count = sum(1 for c in text if '\u3040' <= c <= '\u309F')
     katakana_count = sum(1 for c in text if '\u30A0' <= c <= '\u30FF')
-    hangul_count = sum(1 for c in text if '\uAC00' <= c <= '\uD7AF' or '\u1100' <= c <= '\u11FF' or '\u3130' <= c <= '\u318F')
+    hangul_count = sum(
+        1 for c in text
+        if '\uAC00' <= c <= '\uD7AF'
+        or '\u1100' <= c <= '\u11FF'
+        or '\u3130' <= c <= '\u318F'
+    )
 
     if hangul_count / alpha_count > 0.3:
         return "ko"

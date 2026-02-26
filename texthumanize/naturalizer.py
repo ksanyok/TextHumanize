@@ -971,7 +971,10 @@ class TextNaturalizer:
         discourse = self._boosters.get("discourse_markers", [])
         if discourse and self.rng.random() < prob * 0.5:
             # Выбираем случайное предложение (не первое и не последнее)
-            candidates = [c for c in range(2, len(result) - 1) if not skip_placeholder_sentence(result[c])]
+            candidates = [
+                c for c in range(2, len(result) - 1)
+                if not skip_placeholder_sentence(result[c])
+            ]
             if candidates:
                 idx = self.rng.choice(candidates)
                 marker = self.rng.choice(discourse)
@@ -992,7 +995,10 @@ class TextNaturalizer:
         # Стратегия 2: Вставить хеджинг
         hedges = self._boosters.get("hedges", [])
         if hedges and insertions < max_insertions and self.rng.random() < prob * 0.4:
-            candidates = [c for c in range(3, len(result) - 1) if not skip_placeholder_sentence(result[c])]
+            candidates = [
+                c for c in range(3, len(result) - 1)
+                if not skip_placeholder_sentence(result[c])
+            ]
             if candidates:
                 idx = self.rng.choice(candidates)
                 hedge = self.rng.choice(hedges)
@@ -1016,7 +1022,10 @@ class TextNaturalizer:
         inserts = fragments + questions
 
         if inserts and insertions < max_insertions and self.rng.random() < prob * 0.3:
-            candidates = [c for c in range(3, len(result)) if not skip_placeholder_sentence(result[c])]
+            candidates = [
+                c for c in range(3, len(result))
+                if not skip_placeholder_sentence(result[c])
+            ]
             if candidates:
                 idx = self.rng.choice(candidates)
                 insert = self.rng.choice(inserts)
@@ -1031,7 +1040,10 @@ class TextNaturalizer:
         # Стратегия 4: Вводная конструкция в скобках
         parens = self._boosters.get("parenthetical", [])
         if parens and insertions < max_insertions and self.rng.random() < prob * 0.25:
-            candidates = [c for c in range(2, len(result) - 1) if not skip_placeholder_sentence(result[c])]
+            candidates = [
+                c for c in range(2, len(result) - 1)
+                if not skip_placeholder_sentence(result[c])
+            ]
             if candidates:
                 idx = self.rng.choice(candidates)
                 paren = self.rng.choice(parens)

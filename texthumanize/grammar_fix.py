@@ -12,7 +12,6 @@
 from __future__ import annotations
 
 from texthumanize.grammar import check_grammar, fix_grammar
-from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 
 
 class GrammarCorrector:
