@@ -12,7 +12,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?logo=typescript&logoColor=white)]()
 [![PHP 8.1+](https://img.shields.io/badge/php-8.1+-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
 &nbsp;&nbsp;
-[![Python Tests](https://img.shields.io/badge/tests-1509%20passed-2ea44f.svg?logo=pytest&logoColor=white)]()
+[![Python Tests](https://img.shields.io/badge/tests-1560%20passed-2ea44f.svg?logo=pytest&logoColor=white)]()
 [![PHP Tests](https://img.shields.io/badge/tests-223%20passed-2ea44f.svg?logo=php&logoColor=white)]()
 [![JS Tests](https://img.shields.io/badge/tests-28%20passed-2ea44f.svg?logo=vitest&logoColor=white)]()
 &nbsp;&nbsp;
@@ -27,7 +27,7 @@
 
 <br/>
 
-**27,000+ lines of code** · **44 Python modules** · **12-stage pipeline** · **14 languages + universal**
+**27,000+ lines of code** · **44 Python modules** · **16-stage pipeline** · **14 languages + universal**
 
 [Quick Start](#quick-start) · [API Reference](#api-reference) · [AI Detection](#ai-detection--how-it-works) · [Cookbook](docs/COOKBOOK.md)
 
@@ -146,7 +146,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 
 | Category | Feature | Python | TS/JS | PHP |
 |:---------|:--------|:------:|:-----:|:---:|
-| **Core** | `humanize()` — 12-stage pipeline | ✅ | ✅ | ✅ |
+| **Core** | `humanize()` — 16-stage pipeline | ✅ | ✅ | ✅ |
 | | `humanize_batch()` — parallel processing | ✅ | — | ✅ |
 | | `humanize_chunked()` — large text support | ✅ | — | ✅ |
 | | `analyze()` — artificiality scoring | ✅ | ✅ | ✅ |
@@ -1237,34 +1237,42 @@ All responses include `_elapsed_ms` field with processing time in milliseconds.
 
 ## Processing Pipeline
 
-TextHumanize uses a **12-stage pipeline** with adaptive intensity:
+TextHumanize uses a **16-stage pipeline** with adaptive intensity:
 
 ```
 Input Text
   │
-  ├─ 0.  Watermark Cleaning   ─ remove zero-width chars, homoglyphs    [auto]
+  ├─ 0.  Watermark Cleaning       ─ remove zero-width chars, homoglyphs    [auto]
   │
-  ├─ 1.  Segmentation        ─ protect code blocks, URLs, emails, brands
+  ├─ 1.  Segmentation             ─ protect code blocks, URLs, emails, brands
   │
-  ├─ 2.  Typography           ─ normalize dashes, quotes, ellipses, punctuation
+  ├─ 2.  Typography               ─ normalize dashes, quotes, ellipses, punctuation
   │
-  ├─ 3.  Debureaucratization  ─ replace bureaucratic/formal words     [dictionary, 15% budget]
+  ├─ 3.  Debureaucratization      ─ replace bureaucratic/formal words     [dictionary, 15% budget]
   │
-  ├─ 4.  Structure            ─ diversify sentence openings            [dictionary]
+  ├─ 4.  Structure                ─ diversify sentence openings            [dictionary]
   │
-  ├─ 5.  Repetitions          ─ reduce word/phrase repetitions          [dictionary + context + morphology]
+  ├─ 5.  Repetitions              ─ reduce word/phrase repetitions          [dictionary + context + morphology]
   │
-  ├─ 6.  Liveliness           ─ inject natural phrasing                [dictionary]
+  ├─ 6.  Liveliness               ─ inject natural phrasing                [dictionary]
   │
-  ├─ 7.  Universal            ─ statistical processing                 [any language]
+  ├─ 7.  Universal                ─ statistical processing                 [any language]
   │
-  ├─ 8.  Naturalization       ─ burstiness, perplexity, rhythm         [KEY STAGE]
+  ├─ 8.  Tone Harmonization       ─ align tone consistency                 [context-aware]
   │
-  ├─ 9.  Stylistic Alignment  ─ match target fingerprint/preset        [optional]
+  ├─ 9.  Naturalization           ─ burstiness, perplexity, rhythm         [KEY STAGE]
   │
-  ├─ 10. Validation           ─ quality check, graduated retry
+  ├─ 10. Stylistic Alignment      ─ match target fingerprint/preset        [optional]
   │
-  └─ 11. Restore              ─ restore protected segments
+  ├─ 11. Readability Optimization ─ improve sentence readability           [adaptive]
+  │
+  ├─ 12. Grammar Correction       ─ fix grammar issues                     [rule-based]
+  │
+  ├─ 13. Coherence Repair         ─ repair paragraph flow & transitions    [context-aware]
+  │
+  ├─ 14. Validation               ─ quality check, graduated retry
+  │
+  └─ 15. Restore                  ─ restore protected segments
   │
 Output Text
 ```
@@ -1286,8 +1294,8 @@ The pipeline automatically adjusts processing based on how "AI-like" the input i
 If processing exceeds `max_change_ratio`, the pipeline automatically retries at lower intensity (×0.4, then ×0.15) instead of discarding all changes. This ensures maximum quality within constraints.
 
 **Stages 3–6** require full dictionary support (14 languages).
-**Stages 2, 7–8** work for any language, including those without dictionaries.
-**Stage 10** validates quality and retries if needed (configurable via `max_change_ratio`).
+**Stages 2, 7–9** work for any language, including those without dictionaries.
+**Stage 14** validates quality and retries if needed (configurable via `max_change_ratio`).
 
 ---
 
@@ -2190,7 +2198,7 @@ texthumanize/                   # 44 Python modules, 16,820 lines
 ├── core.py                     # Facade: humanize(), analyze(), detect_ai(), etc.
 ├── api.py                      # REST API: zero-dependency HTTP server, 12 endpoints
 ├── cli.py                      # CLI: 15+ commands
-├── pipeline.py                 # 12-stage pipeline + adaptive intensity + graduated retry
+├── pipeline.py                 # 16-stage pipeline + adaptive intensity + graduated retry
 │
 ├── analyzer.py                 # Artificiality scoring + 6 readability metrics
 ├── tokenizer.py                # Paragraph/sentence/word tokenization
@@ -2203,9 +2211,13 @@ texthumanize/                   # 44 Python modules, 16,820 lines
 ├── repetitions.py              # Repetition reduction + morphology (stage 5)
 ├── liveliness.py               # Natural phrasing injection (stage 6)
 ├── universal.py                # Universal processor — any language (stage 7)
-├── naturalizer.py              # Key stage: burstiness, perplexity, rhythm (stage 8)
-├── stylistic.py                # Stylistic fingerprinting + presets (stage 9)
-├── validator.py                # Quality validation + graduated retry (stage 10)
+├── tone_harmonizer.py          # Tone harmonization (stage 8)
+├── naturalizer.py              # Key stage: burstiness, perplexity, rhythm (stage 9)
+├── stylistic.py                # Stylistic fingerprinting + presets (stage 10)
+├── readability_opt.py          # Readability optimization (stage 11)
+├── grammar_fix.py              # Grammar correction (stage 12)
+├── coherence_repair.py         # Coherence repair (stage 13)
+├── validator.py                # Quality validation + graduated retry (stage 14)
 │
 ├── detectors.py                # AI detector: 13 metrics + ensemble boosting
 ├── paraphrase.py               # Syntactic paraphrasing engine

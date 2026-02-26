@@ -3,6 +3,28 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.13.0] - 2026-02-26
+
+### Added
+- **4 new pipeline stages** — pipeline expanded from 12 to **16 stages** for deeper text polishing:
+  - **Tone harmonization** (stage 8) — matches text tone to the selected profile (academic→formal, blog→friendly, seo→professional). Supports en/ru/uk/de/fr/es with tone replacement dictionaries.
+  - **Readability optimization** (stage 11) — splits overly complex sentences at conjunctions, joins very short sentences. Covers all 14 languages with language-specific conjunction lists.
+  - **Grammar correction** (stage 12) — auto-fixes doubled words, capitalization, spacing before punctuation, common typos (9 language-specific typo dictionaries). Final polish before output.
+  - **Coherence repair** (stage 13) — adds transition words between paragraphs, diversifies repetitive sentence openings. 14-language transition word database.
+- **Massive dictionary expansion** — ~3,600 new entries across all 14 languages:
+  - **English**: +475 entries (bureaucratic +225, synonyms +101, AI connectors +52, starters +23, colloquial +35, boosters +39)
+  - **Russian**: +430 entries (bureaucratic +182, phrases +43, connectors +40, synonyms +77, starters +20, colloquial +30, boosters +38)
+  - **Ukrainian**: +337 entries (bureaucratic +122, synonyms +80, connectors +32, colloquial +25, boosters +30, starters +16, phrases +32)
+  - **DE/ES/FR/IT/PL/PT**: ~235 entries each (bureaucratic +80, synonyms +50, connectors +25, phrases +25, starters +15, colloquial +20, boosters +20)
+  - **AR/ZH/JA/KO/TR**: ~205 entries each (bureaucratic +60, synonyms +50, connectors +20, phrases +20, starters +15, colloquial +20, boosters +20)
+- **New modules**: `grammar_fix.py`, `tone_harmonizer.py`, `readability_opt.py`, `coherence_repair.py`
+- **51 new tests** for v0.13.0 features — pipeline stages, grammar correction, tone harmonization, readability optimization, coherence repair, dictionary expansion, end-to-end quality
+
+### Changed
+- **Pipeline stages** — now **16 stages** (was 12): watermark → segmentation → typography → debureaucratization → structure → repetitions → liveliness → paraphrasing → **tone** → universal → naturalization → **readability** → **grammar** → **coherence** → validation → restore.
+- **Total dictionary entries** — ~13,800 (up from ~10,200)
+- **1,560 Python tests** — up from 1,509 (100% pass rate)
+
 ## [0.12.0] - 2025-06-27
 
 ### Added

@@ -6,16 +6,20 @@ from difflib import SequenceMatcher
 from typing import Callable, Protocol
 
 from texthumanize.analyzer import TextAnalyzer
+from texthumanize.coherence_repair import CoherenceRepairer
 from texthumanize.decancel import Debureaucratizer
+from texthumanize.grammar_fix import GrammarCorrector
 from texthumanize.lang import has_deep_support
 from texthumanize.liveliness import LivelinessInjector
 from texthumanize.naturalizer import TextNaturalizer
 from texthumanize.normalizer import TypographyNormalizer
 from texthumanize.paraphraser_ext import SemanticParaphraser
+from texthumanize.readability_opt import ReadabilityOptimizer
 from texthumanize.repetitions import RepetitionReducer
 from texthumanize.segmenter import Segmenter
 from texthumanize.structure import StructureDiversifier
 from texthumanize.stylistic import StylisticAnalyzer, StylisticFingerprint
+from texthumanize.tone_harmonizer import ToneHarmonizer
 from texthumanize.universal import UniversalProcessor
 from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
 from texthumanize.validator import QualityValidator
@@ -46,10 +50,14 @@ class Pipeline:
     5. Уменьшение повторов (для языков с полным словарём)
     6. Инъекция «живости» (для языков с полным словарём)
     7. Семантическое перефразирование (синтаксические трансформации)
-    8. Универсальная обработка (для ВСЕХ языков)
-    9. Натурализация стиля (для ВСЕХ языков — КЛЮЧЕВОЙ ЭТАП)
-    10. Валидация качества
-    11. Восстановление защищённых сегментов
+    8. Гармонизация тона (приведение к стилю профиля)
+    9. Универсальная обработка (для ВСЕХ языков)
+    10. Натурализация стиля (для ВСЕХ языков — КЛЮЧЕВОЙ ЭТАП)
+    11. Оптимизация читаемости (разбивка/объединение предложений)
+    12. Грамматическая коррекция (финальная полировка)
+    13. Коррекция когерентности (связность абзацев)
+    14. Валидация качества
+    15. Восстановление защищённых сегментов
 
     Supports custom plugins that can be inserted before or after
     any built-in stage via register_plugin().
@@ -64,7 +72,8 @@ class Pipeline:
     STAGE_NAMES = (
         "watermark", "segmentation", "typography", "debureaucratization",
         "structure", "repetitions", "liveliness",
-        "paraphrasing", "universal", "naturalization",
+        "paraphrasing", "tone", "universal", "naturalization",
+        "readability", "grammar", "coherence",
         "validation", "restore",
     )
 
@@ -516,7 +525,19 @@ class Pipeline:
             )
             text = self._run_plugins("paraphrasing", text, lang, is_before=False)
 
-        # 8. Универсальная обработка (для ВСЕХ языков)
+        # 8. Гармонизация тона (для ВСЕХ языков)
+        text = self._run_plugins("tone", text, lang, is_before=True)
+        tone_harmonizer = ToneHarmonizer(
+            lang=lang,
+            profile=effective_options.profile,
+            intensity=effective_options.intensity,
+            seed=effective_options.seed,
+        )
+        text = tone_harmonizer.process(text)
+        all_changes.extend(tone_harmonizer.changes)
+        text = self._run_plugins("tone", text, lang, is_before=False)
+
+        # 9. Универсальная обработка (для ВСЕХ языков)
         text = self._run_plugins("universal", text, lang, is_before=True)
         universal = UniversalProcessor(
             profile=effective_options.profile,
@@ -539,10 +560,46 @@ class Pipeline:
         all_changes.extend(naturalizer.changes)
         text = self._run_plugins("naturalization", text, lang, is_before=False)
 
-        # 10. Восстановление защищённых сегментов
+        # 11. Оптимизация читаемости (для ВСЕХ языков)
+        text = self._run_plugins("readability", text, lang, is_before=True)
+        readability = ReadabilityOptimizer(
+            lang=lang,
+            profile=effective_options.profile,
+            intensity=effective_options.intensity,
+            seed=effective_options.seed,
+        )
+        text = readability.process(text)
+        all_changes.extend(readability.changes)
+        text = self._run_plugins("readability", text, lang, is_before=False)
+
+        # 12. Грамматическая коррекция (для ВСЕХ языков — финальная полировка)
+        text = self._run_plugins("grammar", text, lang, is_before=True)
+        grammar = GrammarCorrector(
+            lang=lang,
+            profile=effective_options.profile,
+            intensity=effective_options.intensity,
+            seed=effective_options.seed,
+        )
+        text = grammar.process(text)
+        all_changes.extend(grammar.changes)
+        text = self._run_plugins("grammar", text, lang, is_before=False)
+
+        # 13. Коррекция когерентности (для ВСЕХ языков)
+        text = self._run_plugins("coherence", text, lang, is_before=True)
+        coherence = CoherenceRepairer(
+            lang=lang,
+            profile=effective_options.profile,
+            intensity=effective_options.intensity,
+            seed=effective_options.seed,
+        )
+        text = coherence.process(text)
+        all_changes.extend(coherence.changes)
+        text = self._run_plugins("coherence", text, lang, is_before=False)
+
+        # 14. Восстановление защищённых сегментов
         text = segmented.restore(text)
 
-        # 11. Валидация
+        # 15. Валидация
         max_change = self.options.constraints.get("max_change_ratio", 0.4)
         validator = QualityValidator(
             lang=lang,
