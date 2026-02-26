@@ -456,7 +456,16 @@ class AIDetector:
         raw_probability = self._ensemble_aggregate(scores, adaptive_weights)
 
         # Калибровка: sigmoidal transform для лучшего разделения
-        result.ai_probability = self._calibrate(raw_probability)
+        calibrated = self._calibrate(raw_probability)
+
+        # Демпфирование для коротких текстов (< 50 слов):
+        # короткие тексты ненадёжны, двигаем score к 0.5
+        n_words = len(words)
+        if n_words < 50:
+            damping = n_words / 50.0
+            calibrated = 0.5 + (calibrated - 0.5) * damping
+
+        result.ai_probability = calibrated
 
         # Уверенность зависит от длины текста, согласия метрик
         # и экстремальности итогового скора
@@ -490,14 +499,14 @@ class AIDetector:
                        "entity", "grammar", "opening", "discourse"]
         n_ai_leaning = sum(1 for m in key_metrics if scores.get(m, 0.5) > 0.55)
 
-        if result.ai_probability > 0.65:
+        if result.ai_probability > 0.60:
             result.verdict = "ai"
-        elif result.ai_probability > 0.45 and n_ai_leaning >= 4:
+        elif result.ai_probability > 0.42 and n_ai_leaning >= 4:
             result.verdict = "ai"
-        elif result.ai_probability > 0.42 and n_ai_leaning >= 5:
+        elif result.ai_probability > 0.38 and n_ai_leaning >= 5:
             # Higher agreement needed for lower scores
             result.verdict = "ai"
-        elif result.ai_probability > 0.40:
+        elif result.ai_probability > 0.32:
             result.verdict = "mixed"
         else:
             result.verdict = "human"
@@ -879,8 +888,8 @@ class AIDetector:
             if len(w.strip('.,;:!?"\'()[]{}')) > 0
         ]
 
-        # Zipf unreliable for texts shorter than 150 words
-        if len(clean_words) < 150:
+        # Zipf unreliable for very short texts
+        if len(clean_words) < 80:
             return 0.5
 
         freq = Counter(clean_words)
@@ -1087,20 +1096,50 @@ class AIDetector:
         # 5. Impersonal / hedging constructions (very strong AI signal)
         hedging_patterns = [
             r"\bit is (?:important|essential|crucial|worth"
-            r"|necessary|imperative|critical)",
+            r"|necessary|imperative|critical|noteworthy|undeniable"
+            r"|evident|clear|apparent|undeniable|widely recognized)",
             r"\bit (?:should be|must be|can be|could be) "
-            r"(?:noted|mentioned|emphasized|highlighted|stressed)",
+            r"(?:noted|mentioned|emphasized|highlighted|stressed"
+            r"|acknowledged|recognized|understood|argued)",
             r"\bthis (?:approach|method|strategy|technique"
-            r"|framework|analysis) (?:has|enables|ensures|provides|facilitates)",
+            r"|framework|analysis|study|research|paper|article"
+            r"|investigation) (?:has|enables|ensures|provides|facilitates"
+            r"|demonstrates|highlights|reveals|examines|explores"
+            r"|investigates|addresses|aims|seeks)",
             r"\bplays? (?:a |an )?(?:crucial|important|vital"
-            r"|significant|key|essential|fundamental|pivotal) role",
+            r"|significant|key|essential|fundamental|pivotal"
+            r"|indispensable|central|integral) role",
             r"\bin (?:today's|the modern|the current|the contemporary|an increasingly) ",
-            r"\bone of the most (?:important|significant|pressing|critical|challenging)",
-            r"\bthe (?:importance|significance|impact|role) of\b",
-            r"\bgaining (?:traction|momentum|popularity|significance)",
+            r"\bone of the most (?:important|significant|pressing|critical|challenging"
+            r"|notable|prominent|influential|impactful)",
+            r"\bthe (?:importance|significance|impact|role|influence"
+            r"|implications|consequences|relevance) of\b",
+            r"\bgaining (?:traction|momentum|popularity|significance|attention)",
             r"\bboth .{5,40} and .{5,40}(?: alike)?[.]",
-            r"\brepresents? (?:a |an )?(?:significant|important|major|critical|key)",
-            # Russian
+            r"\brepresents? (?:a |an )?(?:significant|important|major|critical|key"
+            r"|fundamental|notable|promising|paradigm)",
+            # Фразы-клише AI (EN)
+            r"\bin (?:terms of|light of|the context of|the realm of|the field of)\b",
+            r"\bwith (?:regard to|respect to|a focus on)\b",
+            r"\bas (?:a result|such|mentioned|noted|previously stated)\b",
+            r"\bon the other hand\b",
+            r"\bin conclusion\b",
+            r"\bto (?:sum up|summarize|conclude|recap)\b",
+            r"\bit is (?:widely|generally|commonly) (?:known|accepted|believed|recognized)\b",
+            r"\b(?:comprehensive|thorough|in-depth|extensive|holistic) (?:analysis|review"
+            r"|examination|study|overview|understanding|approach|assessment)\b",
+            r"\b(?:significant|substantial|considerable|remarkable|notable) (?:impact"
+            r"|progress|improvement|advancement|growth|increase|benefits|advantages)\b",
+            r"\bthe (?:utilization|implementation|optimization|integration"
+            r"|facilitation|enhancement) of\b",
+            r"\b(?:delve|delves|delving) (?:into|deeper)\b",
+            r"\b(?:navigate|navigating|navigates) (?:the|this|these) (?:complex"
+            r"|challenging|intricate|evolving|dynamic)\b",
+            r"\b(?:landscape|paradigm|ecosystem|synergy|synergies)\b",
+            r"\bleverage(?:s|d|ing)?\b",
+            r"\bfoster(?:s|ed|ing)? (?:a |an )?(?:sense|culture|environment"
+            r"|community|atmosphere|spirit|innovation|collaboration|growth)\b",
+            # Русские паттерны
             r"\bявляется (?:одним|ключевым|важным|важнейшим|неотъемлемым|основ)",
             r"\bиграет (?:важную|ключевую|существенную|значительную) роль",
             r"\bпредставляет собой\b",
@@ -1110,6 +1149,18 @@ class AIDetector:
             r"\bследует (?:отметить|подчеркнуть|учитывать)",
             r"\bважно (?:отметить|подчеркнуть|учитывать)",
             r"\bв (?:рамках|контексте|условиях|сфере) данн",
+            r"\bданн(?:ый|ая|ое|ые) (?:подход|метод|исследование|анализ"
+            r"|работа|статья|факт|фактор|явление|процесс|результат)",
+            r"\bв (?:данном|настоящем|современном) (?:контексте|исследовании"
+            r"|мире|обществе|этапе)",
+            r"\b(?:комплексный|всесторонний|тщательный|глубокий|детальный"
+            r"|систематический) (?:анализ|подход|обзор|исследование|изучение)\b",
+            r"\b(?:значительн|существенн|замет|ощутим)(?:ый|ая|ое|ые|о|ого)"
+            r" (?:вклад|прогресс|рост|влияние|улучшение)\b",
+            r"\bспособствует (?:оптимизации|улучшению|развитию|повышению"
+            r"|укреплению|формированию|росту)\b",
+            r"\bобеспечивает (?:повышение|улучшение|оптимизацию|эффективн"
+            r"|надёжн|устойчив|комплексн)\b",
         ]
         hedge_count = 0
         for pat in hedging_patterns:
@@ -1139,12 +1190,12 @@ class AIDetector:
                     symmetry_score = max(0, 1.0 - cv * 2)  # Low CV = symmetric = AI-like
 
         score = (
-            density_score * 0.25
-            + connector_score * 0.15
+            density_score * 0.20
+            + connector_score * 0.12
             + formal_score * 0.15
-            + hedge_score * 0.25
+            + hedge_score * 0.30
             + enum_score * 0.10
-            + symmetry_score * 0.10
+            + symmetry_score * 0.13
         )
 
         return max(0.0, min(1.0, score))
@@ -2074,13 +2125,16 @@ class AIDetector:
         # 2. Strong signal detector
         # Если ключевые «сильные» метрики все высокие/низкие —
         # это сильный сигнал независимо от остальных
-        strong_metrics = ["pattern", "burstiness", "opening", "stylometry", "discourse"]
+        strong_metrics = [
+            "pattern", "burstiness", "opening", "stylometry",
+            "discourse", "voice", "grammar",
+        ]
         strong_vals = [scores.get(m, 0.5) for m in strong_metrics]
         strong_avg = statistics.mean(strong_vals)
 
-        # Нелинейное усиление: если сильные метрики все > 0.7 → boost up
-        if strong_avg > 0.65:
-            strong_score = 0.5 + (strong_avg - 0.5) * 1.5
+        # Нелинейное усиление: если сильные метрики все > 0.55 → boost up
+        if strong_avg > 0.55:
+            strong_score = 0.5 + (strong_avg - 0.5) * 1.8
         elif strong_avg < 0.35:
             strong_score = 0.5 + (strong_avg - 0.5) * 1.5
         else:
@@ -2106,8 +2160,8 @@ class AIDetector:
 
         # Ensemble: взвешенная комбинация трёх классификаторов
         ensemble = (
-            base_score * 0.50      # Base weighted sum
-            + strong_score * 0.30  # Strong signal detector
+            base_score * 0.40      # Base weighted sum
+            + strong_score * 0.40  # Strong signal detector
             + vote_score * 0.20    # Majority voting
         )
 
@@ -2118,11 +2172,14 @@ class AIDetector:
     def _calibrate(self, raw: float) -> float:
         """Sigmoidal calibration для лучшего разделения.
 
-        Усиливает разницу в средней зоне (0.3–0.7).
+        Усиливает разницу в средней зоне (0.25–0.70).
         """
-        # Logistic function centered at 0.40 (сдвиг: human обычно < 0.35)
-        k = 10.0  # steepness
-        return 1.0 / (1.0 + math.exp(-k * (raw - 0.40)))
+        # Logistic function — смягчённая (center=0.35, k=8)
+        # Не давит средние raw so агрессивно, позволяя
+        # текстам с raw=0.30-0.40 получить заметный score.
+        k = 8.0  # steepness (was 10)
+        center = 0.35  # center (was 0.40)
+        return 1.0 / (1.0 + math.exp(-k * (raw - center)))
 
     def _generate_explanations(
         self,

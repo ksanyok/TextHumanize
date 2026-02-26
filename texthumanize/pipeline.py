@@ -68,7 +68,8 @@ class Pipeline:
     any built-in stage via register_plugin().
     """
 
-    # Class-level default plugin registry
+    # Class-level default plugin registry (guarded by _cls_lock)
+    _cls_lock = __import__('threading').Lock()
     _class_plugins_before: dict[str, list[StagePlugin]] = {}
     _class_plugins_after: dict[str, list[StagePlugin]] = {}
     _class_hooks_before: dict[str, list[HookFn]] = {}
@@ -119,10 +120,11 @@ class Pipeline:
             raise ValueError(
                 f"Unknown stage: {target}. Valid stages: {cls.STAGE_NAMES}"
             )
-        if before:
-            cls._class_plugins_before.setdefault(before, []).append(plugin)
-        else:
-            cls._class_plugins_after.setdefault(after, []).append(plugin)  # type: ignore[arg-type]
+        with cls._cls_lock:
+            if before:
+                cls._class_plugins_before.setdefault(before, []).append(plugin)
+            else:
+                cls._class_plugins_after.setdefault(after, []).append(plugin)  # type: ignore[arg-type]
 
     @classmethod
     def register_hook(
@@ -154,10 +156,11 @@ class Pipeline:
     @classmethod
     def clear_plugins(cls) -> None:
         """Remove all registered plugins and hooks."""
-        cls._class_plugins_before.clear()
-        cls._class_plugins_after.clear()
-        cls._class_hooks_before.clear()
-        cls._class_hooks_after.clear()
+        with cls._cls_lock:
+            cls._class_plugins_before.clear()
+            cls._class_plugins_after.clear()
+            cls._class_hooks_before.clear()
+            cls._class_hooks_after.clear()
 
     def _run_plugins(self, stage: str, text: str, lang: str, *, is_before: bool) -> str:
         """Run registered plugins/hooks for a stage."""
@@ -714,34 +717,22 @@ class Pipeline:
         checkpoints.append(("naturalization", text))
         text = self._run_plugins("naturalization", text, lang, is_before=False)
 
-        # 10b. Word LM quality gate — ensure naturalization didn't make
-        # text MORE predictable (lower perplexity = more AI-like).
-        # Roll back naturalization if perplexity dropped significantly.
+        # 10b. Word LM quality gate — advisory perplexity monitoring.
+        # Reports perplexity change but does NOT roll back — perplexity
+        # values are advisory until language model data is expanded.
         _t0 = time.perf_counter()
         try:
             _wlm = WordLanguageModel(lang=lang)
             _pp_before = _wlm.perplexity(checkpoints[-2][1] if len(checkpoints) >= 2 else original)
             _pp_after = _wlm.perplexity(text)
             if _pp_before > 0 and _pp_after > 0:
-                # If perplexity dropped by >30%, naturalization made text
-                # more predictable — partial rollback
-                if _pp_after < _pp_before * 0.7:
-                    _prev_text = checkpoints[-2][1] if len(checkpoints) >= 2 else original
-                    text = _prev_text
-                    all_changes.append({
-                        "type": "quality_gate_rollback",
-                        "description": (
-                            f"Word LM: перплексия упала {_pp_before:.1f}→{_pp_after:.1f}, "
-                            "откат натурализации"
-                        ),
-                    })
-                else:
-                    all_changes.append({
-                        "type": "quality_gate_pass",
-                        "description": (
-                            f"Word LM: перплексия {_pp_before:.1f}→{_pp_after:.1f} (OK)"
-                        ),
-                    })
+                _pp_delta = "↓" if _pp_after < _pp_before else "↑"
+                all_changes.append({
+                    "type": "quality_gate_advisory",
+                    "description": (
+                        f"Word LM: перплексия {_pp_before:.1f}→{_pp_after:.1f} ({_pp_delta})"
+                    ),
+                })
         except Exception:
             pass  # Word LM is advisory, never blocks pipeline
         stage_timings["word_lm_gate"] = time.perf_counter() - _t0

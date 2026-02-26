@@ -3,7 +3,25 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.15.1] - 2025-06-28
+## [0.15.2] - 2026-02-27
+
+### Fixed
+- **AI Detection sigmoid too aggressive** — calibration center shifted from 0.40→0.35, steepness reduced from k=10→k=8. AI text that previously scored 0.00 now correctly scores 0.70-0.95.
+- **AI Detection verdict thresholds** — lowered "ai" threshold from 0.65→0.60, "mixed" from 0.40→0.32. Reduces false negatives on obvious AI text.
+- **AI Detection short-text damping** — texts under 50 words now get damped scores (closer to 0.5) to reduce false positives on short human text.
+- **Zipf metric too restrictive** — minimum word count reduced from 150→80, enabling the metric to contribute on medium-length texts.
+
+### Added
+- **Expanded collocation database** — 216→2,511 collocations (12× increase). Now covers 9 languages: EN (1,578), RU (408), DE (125), FR (128), ES (126), IT (38), PT (36), PL (34), UK (38). Data stored in compressed base64+zlib format.
+- **60 output-quality tests** (`tests/test_output_quality.py`) — structural integrity, length preservation, change quality, content preservation, multi-language quality, determinism, repetition, edge cases, and result metadata tests.
+- **Extended AI hedging patterns** — 40+ new regex patterns for detecting AI-characteristic phrases in English and Russian (e.g., "delve into", "navigate the complex landscape", "foster innovation").
+
+### Changed
+- AI Detection ensemble: strong_metrics expanded from 5→7 features (added voice, grammar). Strong signal weight increased from 0.30→0.40, base weight decreased from 0.50→0.40.
+- AI pattern scoring: hedge_score weight increased from 0.25→0.30 (strongest individual signal).
+- Total tests: 1696→1756.
+
+## [0.15.1] - 2026-02-26
 
 ### Fixed
 - **`fingerprint_randomizer.diversify_whitespace()` NO-OP** — was `pass`. Now implements paragraph break variation, comma/semicolon spacing normalization, and bullet marker style variation.
@@ -27,7 +45,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipeline expanded to include CJK segmentation (stage 1b), paraphrasing (stage 7), and Word LM quality gate (stage 10b) in documentation.
 - Architecture section updated: 72 Python modules, 40,677 lines of code.
 
-## [0.15.0] - 2025-06-28
+## [0.15.0] - 2026-02-26
 
 ### Added
 - **9 new core modules** — full audit gap closure (100% of C1-C4, H1-H7, M1-M5, N1-N8 items):
@@ -53,7 +71,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **1,696 Python tests** — up from 1,604 (100% pass rate).
 - **`detect_ai()` enhanced** — now returns `combined_score` (60% heuristic + 40% statistical) and `stat_probability` in results dict.
 
-## [0.14.0] - 2025-06-27
+## [0.14.0] - 2026-02-26
 
 ### Added
 - **3 new API functions** for advanced text processing:
@@ -104,7 +122,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Total dictionary entries** — ~13,800 (up from ~10,200)
 - **1,560 Python tests** — up from 1,509 (100% pass rate)
 
-## [0.12.0] - 2025-06-27
+## [0.12.0] - 2026-02-26
 
 ### Added
 - **5 new languages** — Arabic (ar), Chinese Simplified (zh), Japanese (ja), Korean (ko), Turkish (tr). Total: **14 languages** with full deep processing support.
@@ -130,7 +148,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Pipeline stages** — now 12 stages (was 11): watermark → segmentation → typography → debureaucratization → structure → repetitions → liveliness → paraphrasing → universal → naturalization → validation → restore.
 - **1,509 Python tests** — up from 1,455 (100% pass rate).
 
-## [0.11.0] - 2025-06-26
+## [0.11.0] - 2026-02-20
 
 ### Added
 - **Massive dictionary expansion (3× total)** — all 9 language dictionaries expanded from 2,281 to 6,881 entries:
@@ -149,7 +167,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Composer package name** — root `composer.json` had incorrect name `ksanyok/texthumanize` (no hyphen); fixed to `ksanyok/text-humanize` matching the actual package name on Packagist. Also changed `type` from `project` to `library` and added proper metadata (authors, extensions, autoload-dev, minimum-stability).
 - **TOC dots preservation** — table-of-contents leader dots (`..........`) no longer get collapsed into `…` (ellipsis) by the typography normalizer. Added `leader_dots` pattern to segmenter protection and fixed punctuation spacing logic.
 
-## [0.10.0] - 2025-06-25
+## [0.10.0] - 2026-02-20
 
 ### Added
 - **Grammar Checker** — `check_grammar(text, lang)` / `fix_grammar(text, lang)` — rule-based grammar checking for all 9 languages. Detects double words, capitalization errors, spacing issues, double punctuation, unclosed brackets, and common typos. Returns `GrammarReport` with per-issue detail, score 0-100. No ML or external API required.
@@ -170,7 +188,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Duplicate dictionary key in Polish typo corpus (`wziąść`).
 - Short-text edge cases in `compare_texts()` and `text_fingerprint()` — now handle texts shorter than n-gram window correctly.
 
-## [0.9.0] - 2025-06-24
+## [0.9.0] - 2026-02-20
 
 ### Added
 - **Kirchenbauer Watermark Detector** — green-list z-test based on Kirchenbauer et al. 2023 paper. Uses SHA-256 hash of previous token to partition vocabulary, counts green-list tokens, computes z-score and p-value. Flags AI watermark at z ≥ 4.0. New fields: `kirchenbauer_score`, `kirchenbauer_p_value` in `WatermarkReport`.

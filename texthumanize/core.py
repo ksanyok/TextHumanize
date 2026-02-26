@@ -255,16 +255,23 @@ def humanize_ai(
         lang = detect_language(text)
 
     ab = _get_ai_backend()
-    # Cache key to reuse backend instances (preserves circuit breaker state)
+    # LRU cache for backend instances (preserves circuit breaker state,
+    # bounded to 16 entries to prevent memory leaks in server contexts)
     _cache_key = (openai_api_key, openai_model, enable_oss)
     if not hasattr(humanize_ai, '_instances'):
-        humanize_ai._instances = {}
+        humanize_ai._instances: dict = {}
+        humanize_ai._order: list = []
     if _cache_key not in humanize_ai._instances:
+        _MAX_CACHE = 16
+        if len(humanize_ai._order) >= _MAX_CACHE:
+            _evict = humanize_ai._order.pop(0)
+            humanize_ai._instances.pop(_evict, None)
         humanize_ai._instances[_cache_key] = ab.AIBackend(
             openai_api_key=openai_api_key,
             openai_model=openai_model,
             enable_oss=enable_oss,
         )
+        humanize_ai._order.append(_cache_key)
     backend = humanize_ai._instances[_cache_key]
     result_text = backend.paraphrase(text, lang=lang, style=profile)
 
@@ -535,8 +542,8 @@ def humanize_chunked(
             preserve=preserve, constraints=constraints, seed=seed,
         )
 
-    # Split into paragraph-based chunks
-    chunks = _split_into_chunks(text, chunk_size)
+    # Split into paragraph-based chunks (overlap applied between adjacent chunks)
+    chunks = _split_into_chunks(text, chunk_size, overlap=overlap)
 
     detected_lang = lang
     if lang == "auto":
@@ -662,8 +669,12 @@ def humanize_batch(
     return [results_map[i] for i in range(total)]
 
 
-def _split_into_chunks(text: str, chunk_size: int) -> list[str]:
-    """Split text at paragraph boundaries, respecting chunk_size."""
+def _split_into_chunks(text: str, chunk_size: int, overlap: int = 0) -> list[str]:
+    """Split text at paragraph boundaries, respecting chunk_size.
+
+    When *overlap* > 0, the last `overlap` characters of each chunk
+    are prepended to the next chunk to preserve cross-boundary context.
+    """
     paragraphs = re.split(r'\n\s*\n', text)
     chunks: list[str] = []
     current: list[str] = []
@@ -677,8 +688,14 @@ def _split_into_chunks(text: str, chunk_size: int) -> list[str]:
 
         if current_len + para_len > chunk_size and current:
             chunks.append("\n\n".join(current))
-            current = []
-            current_len = 0
+            # Overlap: carry trailing characters into next chunk
+            if overlap > 0:
+                tail = chunks[-1][-overlap:]
+                current = [tail]
+                current_len = len(tail)
+            else:
+                current = []
+                current_len = 0
 
         current.append(para)
         current_len += para_len

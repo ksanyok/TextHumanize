@@ -320,8 +320,12 @@ class FingerprintRandomizer:
                 if abbr in result.lower():
                     idx = result.lower().find(abbr)
                     orig = result[idx:idx + len(abbr)]
+                    # Preserve capitalization at sentence start
+                    repl = expanded
+                    if orig[0].isupper():
+                        repl = repl[0].upper() + repl[1:]
                     result = (
-                        result[:idx] + expanded + result[idx + len(orig):]
+                        result[:idx] + repl + result[idx + len(orig):]
                     )
                     break
 
