@@ -228,38 +228,74 @@ class UniversalProcessor:
         return None
 
     def _reduce_adjacent_repeats(self, text: str, prob: float) -> str:
-        """Убрать повторы слов без словаря (простая дедупликация)."""
+        """Убрать повторы слов без словаря (простая дедупликация).
+
+        Удаляет избыточные повторы содержательных слов
+        в пределах скользящего окна. Сохраняет структуру абзацев.
+        """
         if prob < 0.2:
             return text
 
-        words = text.split()
+        # Split keeping whitespace tokens to preserve paragraph breaks
+        tokens = re.split(r'(\s+)', text)
+        # tokens: [word, ws, word, ws, ...]
+        # Extract just the words (even indices)
+        words = [tokens[i] for i in range(0, len(tokens), 2)]
         if len(words) < 10:
             return text
 
-        # Ищем случаи "слово ... слово" в пределах 5 слов
-        # и убираем второе вхождение (заменяем на "" или пропускаем)
-        # Это грубый подход, аккуратнее с контекстом
         seen_content: dict[str, int] = {}
         window = 8
+        removed_indices: set[int] = set()
+        _skip_before = {
+            "the", "a", "an", "this", "that", "these", "those",
+            "его", "её", "их", "этот", "эта", "это", "эти",
+            "der", "die", "das", "ein", "eine", "le", "la",
+            "el", "los", "las", "un", "una",
+        }
 
         for i, word in enumerate(words):
             if has_placeholder(word):
                 continue
             clean = re.sub(r'[.,;:!?\'"()\[\]{}]', '', word).lower()
-            if len(clean) < 4:  # Пропускаем короткие слова
+            if len(clean) < 4:
                 continue
 
             if clean in seen_content:
                 last_pos = seen_content[clean]
-                # Если то же слово встретилось в пределах окна
-                if i - last_pos <= window and self.rng.random() < prob * 0.3:
-                    # Пробуем удалить прилагательное/наречие перед повтором
-                    # (простая эвристика — не заменяем, а отмечаем)
-                    pass  # Не удаляем без синонима — рискованно
+                if i - last_pos <= window and self.rng.random() < prob * 0.5:
+                    removed_indices.add(i)
+                    if i > 0:
+                        prev_clean = re.sub(
+                            r'[.,;:!?\'"()\[\]{}]', '',
+                            words[i - 1],
+                        ).lower()
+                        if prev_clean in _skip_before:
+                            removed_indices.add(i - 1)
+                    self.changes.append({
+                        "type": "universal_repeat",
+                        "description": f"Убран повтор: {clean}",
+                    })
 
             seen_content[clean] = i
 
-        return text
+        if not removed_indices:
+            return text
+
+        # Rebuild preserving original whitespace
+        result_parts: list[str] = []
+        for i, word in enumerate(words):
+            if i in removed_indices:
+                continue
+            if result_parts:
+                # Get the whitespace before this word
+                ws_idx = i * 2 - 1
+                if 0 < ws_idx < len(tokens):
+                    result_parts.append(tokens[ws_idx])
+                else:
+                    result_parts.append(' ')
+            result_parts.append(word)
+        return ''.join(result_parts)
 
     def _vary_punctuation(self, text: str, prob: float) -> str:
         """Добавить вариативность пунктуации."""

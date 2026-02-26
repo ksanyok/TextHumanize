@@ -36,11 +36,20 @@
     >>> print(ai["verdict"])
 """
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
+from texthumanize.ai_backend import AIBackend
 from texthumanize.autotune import AutoTuner
+from texthumanize.benchmark_suite import (
+    BenchmarkReport,
+    BenchmarkResult,
+    BenchmarkSuite,
+    quick_benchmark,
+)
+from texthumanize.cjk_segmenter import CJKSegmenter, detect_cjk_lang, is_cjk_text, segment_cjk
+from texthumanize.collocation_engine import CollocEngine, best_synonym_in_context, collocation_score
 from texthumanize.core import (
     adjust_tone,
     adversarial_calibrate,
@@ -61,6 +70,7 @@ from texthumanize.core import (
     explain,
     full_readability,
     humanize,
+    humanize_ai,
     humanize_batch,
     humanize_chunked,
     humanize_sentences,
@@ -76,17 +86,20 @@ from texthumanize.diff_report import (
     explain_json_patch,
     explain_side_by_side,
 )
+from texthumanize.fingerprint_randomizer import FingerprintRandomizer, diversify_text
 from texthumanize.grammar import GrammarIssue, GrammarReport, check_grammar, fix_grammar
 from texthumanize.health_score import ContentHealthReport, HealthComponent, content_health
 from texthumanize.perplexity_v2 import cross_entropy, perplexity_score
 from texthumanize.pipeline import Pipeline
 from texthumanize.plagiarism import PlagiarismReport, check_originality, compare_originality
+from texthumanize.pos_tagger import POSTagger
 from texthumanize.semantic import SemanticReport, semantic_similarity
 from texthumanize.sentence_readability import (
     SentenceReadabilityReport,
     SentenceScore,
     sentence_readability,
 )
+from texthumanize.statistical_detector import StatisticalDetector, detect_ai_statistical
 from texthumanize.stylistic import (
     STYLE_PRESETS,
     AnonymizeResult,
@@ -94,6 +107,7 @@ from texthumanize.stylistic import (
     StylisticFingerprint,
     StylometricAnonymizer,
 )
+from texthumanize.syntax_rewriter import SyntaxRewriter
 from texthumanize.uniqueness import (
     SimilarityReport,
     UniquenessReport,
@@ -102,6 +116,7 @@ from texthumanize.uniqueness import (
     uniqueness_score,
 )
 from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
+from texthumanize.word_lm import WordLanguageModel, word_naturalness, word_perplexity
 
 __all__ = [
     # Core
@@ -192,5 +207,36 @@ __all__ = [
     "check_originality",
     "compare_originality",
     "PlagiarismReport",
+    # AI Backend
+    "AIBackend",
+    "humanize_ai",
+    # POS Tagger
+    "POSTagger",
+    # CJK Segmenter
+    "CJKSegmenter",
+    "segment_cjk",
+    "is_cjk_text",
+    "detect_cjk_lang",
+    # Syntax Rewriter
+    "SyntaxRewriter",
+    # Statistical Detector
+    "StatisticalDetector",
+    "detect_ai_statistical",
+    # Word Language Model
+    "WordLanguageModel",
+    "word_perplexity",
+    "word_naturalness",
+    # Collocation Engine
+    "CollocEngine",
+    "collocation_score",
+    "best_synonym_in_context",
+    # Fingerprint Randomizer
+    "FingerprintRandomizer",
+    "diversify_text",
+    # Benchmark Suite
+    "BenchmarkSuite",
+    "BenchmarkReport",
+    "BenchmarkResult",
+    "quick_benchmark",
     "__version__",
 ]

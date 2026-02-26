@@ -3,6 +3,32 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.15.0] - 2025-06-28
+
+### Added
+- **9 new core modules** — full audit gap closure (100% of C1-C4, H1-H7, M1-M5, N1-N8 items):
+  - `ai_backend` — Three-tier AI backend: OpenAI API → OSS Gradio model (rate-limited, circuit-breaker) → built-in rules. New `humanize_ai()` function in core.
+  - `pos_tagger` — Rule-based POS tagger for EN (500+ exceptions), RU/UK (200+ each), DE (300+). Universal tagset with context disambiguation.
+  - `cjk_segmenter` — Chinese BiMM (2504-entry dict), Japanese character-type, Korean space+particle segmentation. Functions: `segment_cjk()`, `is_cjk_text()`, `detect_cjk_lang()`.
+  - `syntax_rewriter` — 8 sentence-level transformations (active↔passive, clause inversion, enumeration reorder, adverb migration, etc.). 150+ irregular verbs, EN/RU/UK/DE support. Integrated as pipeline stage 7b.
+  - `statistical_detector` — 35-feature AI text classifier with logistic regression. EN 85+ AI markers, RU 38+ markers. Integrated into `detect_ai()` with 60/40 weighted merge (heuristic/statistical).
+  - `word_lm` — Word-level unigram/bigram language model replacing character-trigram perplexity. 14 language frequency tables. Perplexity, burstiness, and naturalness scoring.
+  - `collocation_engine` — PMI-based collocation scoring for context-aware synonym ranking. EN ~130, RU ~30, DE ~20, FR ~15, ES ~12 collocations.
+  - `fingerprint_randomizer` — Anti-fingerprint diversification: plan randomization, synonym pool variation, whitespace jitter, paragraph intensity variation. Integrated as pipeline stage 13b.
+  - `benchmark_suite` — Automated quality benchmarking (6 dimensions): detection evasion, naturalness, meaning retention, diversity, length preservation, perplexity boost.
+- **Pipeline expanded to 17 stages** — added `syntax_rewriting` (stage 7b) and anti-fingerprint diversification (stage 13b).
+- **92 new tests** for all v0.15.0 modules — AI backend, POS tagger, CJK segmenter, syntax rewriter, statistical detector, word LM, collocation engine, fingerprint randomizer, benchmark suite, plus integration tests.
+
+### Fixed
+- **NO-OP `_reduce_adjacent_repeats()`** — was finding repeated words but doing `pass`. Now correctly removes second occurrences within a sliding window of 8 words, with article removal support.
+- **Paragraph whitespace preservation** — `_reduce_adjacent_repeats()` now uses `re.split(r'(\s+)')` to tokenize while preserving `\n\n` paragraph breaks.
+- **Syntax rewriter placeholder safety** — skips sentences containing `THZ_*` placeholders to prevent email/URL mangling.
+- **Operator precedence bug** in syntax rewriter pipeline stage — fixed `return t, changes if ...` → `return (t, changes) if ...`.
+
+### Changed
+- **1,696 Python tests** — up from 1,604 (100% pass rate).
+- **`detect_ai()` enhanced** — now returns `combined_score` (60% heuristic + 40% statistical) and `stat_probability` in results dict.
+
 ## [0.14.0] - 2025-06-27
 
 ### Added

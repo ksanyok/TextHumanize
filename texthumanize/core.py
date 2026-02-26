@@ -19,6 +19,8 @@ _tone = None
 _watermark = None
 _spinner = None
 _coherence = None
+_stat_detector = None
+_ai_backend = None
 _lazy_lock = threading.Lock()
 
 
@@ -70,6 +72,26 @@ def _get_spinner():
                 import texthumanize.spinner as _s
                 _spinner = _s
     return _spinner
+
+
+def _get_stat_detector():
+    global _stat_detector
+    if _stat_detector is None:
+        with _lazy_lock:
+            if _stat_detector is None:
+                import texthumanize.statistical_detector as _sd
+                _stat_detector = _sd
+    return _stat_detector
+
+
+def _get_ai_backend():
+    global _ai_backend
+    if _ai_backend is None:
+        with _lazy_lock:
+            if _ai_backend is None:
+                import texthumanize.ai_backend as _ab
+                _ai_backend = _ab
+    return _ai_backend
 
 
 def _get_coherence():
@@ -211,6 +233,37 @@ def humanize(
     result = pipeline.run(text, detected_lang)
 
     return result
+
+
+def humanize_ai(
+    text: str,
+    lang: str = "auto",
+    *,
+    openai_api_key: str | None = None,
+    openai_model: str = "gpt-4o-mini",
+    enable_oss: bool = False,
+    profile: str = "web",
+) -> HumanizeResult:
+    """Humanize using AI backend (OpenAI / OSS / fallback).
+
+    Three-tier strategy:
+    1. OpenAI (if api_key provided)
+    2. OSS model via Gradio (if enable_oss=True)
+    3. Built-in rules (always available)
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    ab = _get_ai_backend()
+    backend = ab.AIBackend(
+        openai_api_key=openai_api_key,
+        openai_model=openai_model,
+        enable_oss=enable_oss,
+    )
+    result_text = backend.paraphrase(text, lang=lang, style=profile)
+
+    # Run through pipeline for cleanup
+    return humanize(result_text, lang=lang, profile=profile, intensity=40)
 
 
 def _humanize_flagged_only(
@@ -662,8 +715,23 @@ def detect_ai(text: str, lang: str = "auto") -> dict:
 
     det = _get_detectors()
     result = det.detect_ai(text, lang=lang)
+
+    # Enhance with statistical detector
+    try:
+        sd = _get_stat_detector()
+        stat_result = sd.detect_ai_statistical(text, lang=lang)
+        # Weighted merge: 60% heuristic, 40% statistical
+        combined_score = result.ai_probability * 0.6 + stat_result.get("probability", 0.5) * 0.4
+        # Override if statistical detector is confident
+        stat_prob = stat_result.get("probability", 0.5)
+    except Exception:
+        combined_score = result.ai_probability
+        stat_prob = None
+
     return {
         "score": result.ai_probability,
+        "combined_score": combined_score,
+        "stat_probability": stat_prob,
         "verdict": result.verdict,
         "confidence": result.confidence,
         "metrics": {

@@ -9,6 +9,7 @@ from typing import Callable, Protocol
 from texthumanize.analyzer import TextAnalyzer
 from texthumanize.coherence_repair import CoherenceRepairer
 from texthumanize.decancel import Debureaucratizer
+from texthumanize.fingerprint_randomizer import FingerprintRandomizer
 from texthumanize.grammar_fix import GrammarCorrector
 from texthumanize.lang import has_deep_support
 from texthumanize.liveliness import LivelinessInjector
@@ -20,6 +21,7 @@ from texthumanize.repetitions import RepetitionReducer
 from texthumanize.segmenter import Segmenter
 from texthumanize.structure import StructureDiversifier
 from texthumanize.stylistic import StylisticAnalyzer, StylisticFingerprint
+from texthumanize.syntax_rewriter import SyntaxRewriter
 from texthumanize.tone_harmonizer import ToneHarmonizer
 from texthumanize.universal import UniversalProcessor
 from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
@@ -73,7 +75,7 @@ class Pipeline:
     STAGE_NAMES = (
         "watermark", "segmentation", "typography", "debureaucratization",
         "structure", "repetitions", "liveliness",
-        "paraphrasing", "tone", "universal", "naturalization",
+        "paraphrasing", "syntax_rewriting", "tone", "universal", "naturalization",
         "readability", "grammar", "coherence",
         "validation", "restore",
     )
@@ -595,6 +597,48 @@ class Pipeline:
             checkpoints.append(("paraphrasing", text))
             text = self._run_plugins("paraphrasing", text, lang, is_before=False)
 
+        # 7b. Syntax rewriting (sentence-level structural transforms)
+        if has_deep_support(lang):
+            text = self._run_plugins("syntax_rewriting", text, lang, is_before=True)
+            def _run_syntax_rewrite():
+                import re as _re_sr
+                sr = SyntaxRewriter(
+                    lang=lang,
+                    seed=effective_options.seed,
+                )
+                # Split into paragraphs first to preserve structure
+                paragraphs = text.split('\n')
+                changed = False
+                prob = effective_options.intensity / 100.0
+                import random as _rnd_sr
+                _sr_rng = _rnd_sr.Random(effective_options.seed)
+                result_paras = []
+                for para in paragraphs:
+                    if not para.strip():
+                        result_paras.append(para)
+                        continue
+                    sents = _re_sr.split(r'(?<=[.!?])\s+', para)
+                    rewritten = []
+                    for s in sents:
+                        if _sr_rng.random() < prob * 0.3:
+                            r = sr.rewrite_random(s)
+                            if r != s:
+                                changed = True
+                            rewritten.append(r)
+                        else:
+                            rewritten.append(s)
+                    result_paras.append(' '.join(rewritten))
+                t = '\n'.join(result_paras)
+                changes = [{"type": "syntax_rewrite", "description": "Syntax rewriting applied"}]
+                return (t, changes) if changed else (text, [])
+            text, _ch = self._safe_stage(
+                "syntax_rewriting", text, lang,
+                _run_syntax_rewrite, stage_timings,
+            )
+            all_changes.extend(_ch)
+            checkpoints.append(("syntax_rewriting", text))
+            text = self._run_plugins("syntax_rewriting", text, lang, is_before=False)
+
         # 8. Гармонизация тона (для ВСЕХ языков)
         text = self._run_plugins("tone", text, lang, is_before=True)
         def _run_tone():
@@ -692,6 +736,13 @@ class Pipeline:
         all_changes.extend(_ch)
         checkpoints.append(("coherence", text))
         text = self._run_plugins("coherence", text, lang, is_before=False)
+
+        # 13b. Anti-fingerprint diversification
+        _fp_rand = FingerprintRandomizer(
+            seed=effective_options.seed,
+            jitter_level=effective_options.intensity / 100.0 * 0.5,
+        )
+        text = _fp_rand.diversify_output(text)
 
         # 14. Восстановление защищённых сегментов
         _t0 = time.perf_counter()

@@ -12,7 +12,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?logo=typescript&logoColor=white)]()
 [![PHP 8.1+](https://img.shields.io/badge/php-8.1+-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
 &nbsp;&nbsp;
-[![Python Tests](https://img.shields.io/badge/tests-1604%20passed-2ea44f.svg?logo=pytest&logoColor=white)]()
+[![Python Tests](https://img.shields.io/badge/tests-1696%20passed-2ea44f.svg?logo=pytest&logoColor=white)]()
 [![PHP Tests](https://img.shields.io/badge/tests-223%20passed-2ea44f.svg?logo=php&logoColor=white)]()
 [![JS Tests](https://img.shields.io/badge/tests-28%20passed-2ea44f.svg?logo=vitest&logoColor=white)]()
 &nbsp;&nbsp;
@@ -152,15 +152,16 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 
 | Category | Feature | Python | TS/JS | PHP |
 |:---------|:--------|:------:|:-----:|:---:|
-| **Core** | `humanize()` — 16-stage pipeline | ✅ | ✅ | ✅ |
+| **Core** | `humanize()` — 17-stage pipeline | ✅ | ✅ | ✅ |
 | | `humanize_batch()` — parallel processing | ✅ | — | ✅ |
 | | `humanize_chunked()` — large text support | ✅ | — | ✅ |
 | | `analyze()` — artificiality scoring | ✅ | ✅ | ✅ |
 | | `explain()` — change report | ✅ | — | ✅ |
-| **AI Detection** | `detect_ai()` — 13-metric ensemble | ✅ | ✅ | ✅ |
+| **AI Detection** | `detect_ai()` — 13-metric + statistical ML | ✅ | ✅ | ✅ |
 | | `detect_ai_batch()` — batch detection | ✅ | — | — |
 | | `detect_ai_sentences()` — per-sentence | ✅ | — | — |
 | | `detect_ai_mixed()` — mixed content | ✅ | — | — |
+| | `detect_ai_statistical()` — 35-feature ML | ✅ | — | — |
 | **Paraphrasing** | `paraphrase()` — syntactic transforms | ✅ | — | ✅ |
 | **Tone** | `analyze_tone()` — formality analysis | ✅ | — | ✅ |
 | | `adjust_tone()` — 7-level adjustment | ✅ | — | ✅ |
@@ -170,6 +171,16 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 | **Analysis** | `analyze_coherence()` — paragraph flow | ✅ | — | ✅ |
 | | `full_readability()` — 6 indices | ✅ | — | ✅ |
 | | Stylistic fingerprinting | ✅ | — | — |
+| **NLP** | `POSTagger` — rule-based POS tagger (EN/RU/UK/DE) | ✅ | — | — |
+| | `CJKSegmenter` — Chinese/Japanese/Korean word segmentation | ✅ | — | — |
+| | `SyntaxRewriter` — 8 sentence-level transforms | ✅ | — | — |
+| | `WordLanguageModel` — word-level LM (14 langs) | ✅ | — | — |
+| | `CollocEngine` — PMI collocation scoring | ✅ | — | — |
+| **AI Backend** | `humanize_ai()` — three-tier AI rewriting | ✅ | — | — |
+| | OpenAI API integration | ✅ | — | — |
+| | OSS model fallback (rate-limited) | ✅ | — | — |
+| **Quality** | `BenchmarkSuite` — 6-dimension quality scoring | ✅ | — | — |
+| | `FingerprintRandomizer` — anti-detection diversity | ✅ | — | — |
 | **Advanced** | Style presets (5 personas) | ✅ | — | — |
 | | Auto-Tuner (feedback loop) | ✅ | — | — |
 | | Plugin system | ✅ | — | ✅ |
@@ -220,10 +231,10 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 
 | Feature | TextHumanize v0.8 | Typical Alternatives |
 |:--------|:------------------:|:--------------------:|
-| Pipeline stages | **11** | 2–4 |
-| Languages | **9 + universal** | 1–2 |
+| Pipeline stages | **17** | 2–4 |
+| Languages | **9 + universal + CJK** | 1–2 |
 | AI detection built-in | ✅ 13 metrics + ensemble | ❌ |
-| Total test count | **1,584** (Py+PHP+JS) | 10–50 |
+| Total test count | **1,696** (Py+PHP+JS) | 10–50 |
 | Test coverage | **99%** | Unknown |
 | Benchmark pass rate | **100%** (45/45) | No benchmark |
 | Codebase size | **27K+ lines** | 500–2K |
@@ -880,6 +891,153 @@ print(f"Dale-Chall:           {r.get('dale_chall', 0):.1f}")
 ```
 
 **Returns:** `dict`
+
+---
+
+## v0.15.0 — New Modules & APIs
+
+### `humanize_ai(text, lang, **options)`
+
+Three-tier AI-powered humanization: OpenAI → OSS model → built-in rules.
+
+```python
+from texthumanize import humanize_ai
+
+# Default: uses built-in rules (zero dependencies)
+result = humanize_ai("AI-generated text here.", lang="en")
+print(result.text)
+
+# With OpenAI API (best quality):
+result = humanize_ai(
+    "Text to humanize.",
+    lang="en",
+    openai_api_key="sk-...",
+    openai_model="gpt-4o-mini",
+)
+
+# With OSS model (free, rate-limited):
+result = humanize_ai("Text to humanize.", lang="en", enable_oss=True)
+```
+
+### `StatisticalDetector` — ML-based AI Detection
+
+35-feature classifier with logistic regression, integrated into `detect_ai()`.
+
+```python
+from texthumanize import StatisticalDetector, detect_ai_statistical
+
+# Standalone usage
+det = StatisticalDetector(lang="en")
+result = det.detect("Text to analyze for AI patterns.")
+print(f"Probability: {result['probability']:.1%}")
+print(f"Verdict: {result['verdict']}")  # human / mixed / ai
+
+# Or convenience function
+result = detect_ai_statistical("Your text here.", lang="en")
+```
+
+### `POSTagger` — Rule-based POS Tagging
+
+Part-of-speech tagger for EN (500+ exceptions), RU/UK (200+), DE (300+).
+
+```python
+from texthumanize import POSTagger
+
+tagger = POSTagger(lang="en")
+for word, tag in tagger.tag("The quick brown fox jumps"):
+    print(f"{word:12s} → {tag}")
+# The          → DET
+# quick        → ADJ
+# brown        → ADJ
+# fox          → NOUN
+# jumps        → VERB
+```
+
+### `CJKSegmenter` — Chinese/Japanese/Korean Word Segmentation
+
+```python
+from texthumanize import CJKSegmenter, is_cjk_text, detect_cjk_lang
+
+seg = CJKSegmenter(lang="zh")
+words = seg.segment("我们是中国人")  # ['我们', '是', '中国', '人']
+
+is_cjk_text("这是中文")      # True
+detect_cjk_lang("東京は大きい")  # "ja"
+```
+
+### `SyntaxRewriter` — Sentence-level Transforms
+
+8 transformations: active↔passive, clause inversion, enumeration reorder, adverb migration, etc.
+
+```python
+from texthumanize import SyntaxRewriter
+
+sr = SyntaxRewriter(lang="en", seed=42)
+variants = sr.rewrite("The team completed the project on time.")
+for v in variants:
+    print(v)
+```
+
+### `WordLanguageModel` — Word-level Perplexity
+
+14-language word-level unigram/bigram LM with naturalness scoring.
+
+```python
+from texthumanize import WordLanguageModel, word_perplexity, word_naturalness
+
+lm = WordLanguageModel(lang="en")
+pp = lm.perplexity("Some text to measure complexity")
+score = lm.naturalness_score("Your multi-sentence text here. Another one.")
+print(f"Verdict: {score['verdict']}")  # human / mixed / ai
+
+# Convenience:
+pp = word_perplexity("Quick check.", lang="en")
+ns = word_naturalness("Full analysis.", lang="en")
+```
+
+### `CollocEngine` — Collocation-Aware Synonym Ranking
+
+PMI-based scoring for choosing the most natural synonym in context.
+
+```python
+from texthumanize import CollocEngine
+
+eng = CollocEngine(lang="en")
+best = eng.best_synonym("important", ["crucial", "key", "significant"], context=["decision"])
+print(best)  # "crucial" (strongest collocation with "decision")
+```
+
+### `FingerprintRandomizer` — Anti-Detection Diversity
+
+Prevents detectable patterns in humanized output.
+
+```python
+from texthumanize import FingerprintRandomizer
+
+r = FingerprintRandomizer(seed=42, jitter_level=0.3)
+text1 = r.diversify_output("Some humanized text.")
+text2 = r.diversify_output("Some humanized text.")  # different each time
+```
+
+### `BenchmarkSuite` — Quality Measurement
+
+6-dimension automated quality benchmarking.
+
+```python
+from texthumanize import BenchmarkSuite, quick_benchmark
+
+# Quick single-pair benchmark:
+report = quick_benchmark("Original AI text.", "Humanized version.")
+print(report.summary())
+
+# Full suite:
+suite = BenchmarkSuite(lang="en")
+report = suite.run_all([
+    {"original": "AI text 1.", "humanized": "Human text 1."},
+    {"original": "AI text 2.", "humanized": "Human text 2."},
+])
+print(f"Overall score: {report.overall_score:.1f}/100")
+```
 
 ---
 
