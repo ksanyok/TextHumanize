@@ -19,6 +19,7 @@ from __future__ import annotations
 import random
 import re
 
+from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 from texthumanize.sentence_split import split_sentences
 
 
@@ -165,6 +166,8 @@ class UniversalProcessor:
 
         # Стратегия: разбить некоторые длинные предложения
         for i in range(len(result)):
+            if skip_placeholder_sentence(result[i]):
+                continue
             words = result[i].split()
             wlen = len(words)
 
@@ -185,6 +188,8 @@ class UniversalProcessor:
 
     def _universal_split_sentence(self, sentence: str) -> str | None:
         """Универсальная разбивка предложения (без словаря)."""
+        if has_placeholder(sentence):
+            return None
         words = sentence.split()
         if len(words) < 12:
             return None
@@ -238,6 +243,8 @@ class UniversalProcessor:
         window = 8
 
         for i, word in enumerate(words):
+            if has_placeholder(word):
+                continue
             clean = re.sub(r'[.,;:!?\'"()\[\]{}]', '', word).lower()
             if len(clean) < 4:  # Пропускаем короткие слова
                 continue
@@ -267,7 +274,7 @@ class UniversalProcessor:
                 idx = text.find(';')
                 before = text[:idx].rstrip()
                 after = text[idx + 1:].lstrip()
-                if after and after[0].islower():
+                if after and after[0].islower() and not has_placeholder(after):
                     after = after[0].upper() + after[1:]
                 text = before + '. ' + after
                 self.changes.append({
@@ -282,7 +289,7 @@ class UniversalProcessor:
                 pos = m.start()
                 before = text[:pos]
                 after = text[pos + 1:].lstrip()
-                if after and after[0].islower():
+                if after and after[0].islower() and not has_placeholder(after):
                     after = after[0].upper() + after[1:]
                 text = before + '. ' + after
                 self.changes.append({

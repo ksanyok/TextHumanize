@@ -176,6 +176,21 @@ def _detect_latin_language(text: str) -> str:
     en_score += sum(2 for m in en_markers if m in text_lower)
     scores["en"] = en_score
 
+    # Турецкий: ş/ğ/ı/ç/ö/ü + характерные слова
+    tr_score = 0
+    for c in 'şğı':
+        tr_score += text_lower.count(c) * 3
+    for c in 'çöü':
+        tr_score += text_lower.count(c)
+    tr_markers = [
+        " bir ", " ve ", " bu ", " için ", " ile ", " da ",
+        " de ", " olan ", " gibi ", " daha ", " çok ", " var ",
+        " ancak ", " ama ", " hem ", " kadar ", " olarak ",
+        " sonra ", " önce ", " ayrıca ", " dolayısıyla ",
+    ]
+    tr_score += sum(2 for m in tr_markers if m in text_lower)
+    scores["tr"] = tr_score
+
     # Если все скоры низкие — триграммный анализ
     max_score = max(scores.values()) if scores else 0
 
@@ -225,20 +240,41 @@ def _detect_latin_language(text: str) -> str:
 def detect_language(text: str) -> str:
     """Определить язык текста.
 
-    Поддерживает: ru, uk, en, de, fr, es, pl, pt, it.
-    Для неизвестных латинских языков возвращает 'en' (обработка
+    Поддерживает: ru, uk, en, de, fr, es, pl, pt, it, ar, zh, ja, ko, tr.
+    Для неизвестных языков возвращает 'en' (обработка
     через универсальный процессор всё равно сработает).
 
     Args:
         text: Текст для анализа.
 
     Returns:
-        Код языка: 'ru', 'uk', 'en', 'de', 'fr', 'es', 'pl', 'pt', 'it'.
+        Код языка.
     """
     if not text or len(text.strip()) < 10:
         return "en"
 
     text = " " + text + " "
+
+    # ── Script-based fast detection ───────────────────────────
+    # Arabic script detection
+    arabic_count = sum(1 for c in text if '\u0600' <= c <= '\u06FF' or '\u0750' <= c <= '\u077F' or '\uFB50' <= c <= '\uFDFF' or '\uFE70' <= c <= '\uFEFF')
+    alpha_count = sum(1 for c in text if c.isalpha()) or 1
+    if arabic_count / alpha_count > 0.3:
+        return "ar"
+
+    # CJK detection (Chinese / Japanese / Korean)
+    cjk_count = sum(1 for c in text if '\u4E00' <= c <= '\u9FFF' or '\u3400' <= c <= '\u4DBF' or '\uF900' <= c <= '\uFAFF')
+    hiragana_count = sum(1 for c in text if '\u3040' <= c <= '\u309F')
+    katakana_count = sum(1 for c in text if '\u30A0' <= c <= '\u30FF')
+    hangul_count = sum(1 for c in text if '\uAC00' <= c <= '\uD7AF' or '\u1100' <= c <= '\u11FF' or '\u3130' <= c <= '\u318F')
+
+    if hangul_count / alpha_count > 0.3:
+        return "ko"
+    if (hiragana_count + katakana_count) / alpha_count > 0.15:
+        return "ja"
+    if cjk_count / alpha_count > 0.3:
+        # CJK without kana/hangul → Chinese
+        return "zh"
 
     # Быстрая проверка: кириллический текст?
     cyr_ratio = _cyrillic_ratio(text)

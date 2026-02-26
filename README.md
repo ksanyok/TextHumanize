@@ -12,7 +12,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?logo=typescript&logoColor=white)]()
 [![PHP 8.1+](https://img.shields.io/badge/php-8.1+-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
 &nbsp;&nbsp;
-[![Python Tests](https://img.shields.io/badge/tests-1455%20passed-2ea44f.svg?logo=pytest&logoColor=white)]()
+[![Python Tests](https://img.shields.io/badge/tests-1509%20passed-2ea44f.svg?logo=pytest&logoColor=white)]()
 [![PHP Tests](https://img.shields.io/badge/tests-223%20passed-2ea44f.svg?logo=php&logoColor=white)]()
 [![JS Tests](https://img.shields.io/badge/tests-28%20passed-2ea44f.svg?logo=vitest&logoColor=white)]()
 &nbsp;&nbsp;
@@ -27,7 +27,7 @@
 
 <br/>
 
-**27,000+ lines of code** · **44 Python modules** · **11-stage pipeline** · **9 languages + universal**
+**27,000+ lines of code** · **44 Python modules** · **12-stage pipeline** · **14 languages + universal**
 
 [Quick Start](#quick-start) · [API Reference](#api-reference) · [AI Detection](#ai-detection--how-it-works) · [Cookbook](docs/COOKBOOK.md)
 
@@ -46,7 +46,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 **Python** (full) · **TypeScript/JavaScript** (core pipeline) · **PHP** (full)
 
 ### Languages:
-🇷🇺 Russian · 🇺🇦 Ukrainian · 🇬🇧 English · 🇩🇪 German · 🇫🇷 French · 🇪🇸 Spanish · 🇵🇱 Polish · 🇧🇷 Portuguese · 🇮🇹 Italian · 🌍 **any language** via universal processor
+🇷🇺 Russian · 🇺🇦 Ukrainian · 🇬🇧 English · 🇩🇪 German · 🇫🇷 French · 🇪🇸 Spanish · 🇵🇱 Polish · 🇧🇷 Portuguese · 🇮🇹 Italian · �🇦 Arabic · 🇨🇳 Chinese · 🇯🇵 Japanese · 🇰🇷 Korean · 🇹🇷 Turkish · �🌍 **any language** via universal processor
 
 ---
 
@@ -111,7 +111,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 | 🚀 **Blazing fast** | 30,000+ chars/sec — process a full article in milliseconds, not seconds |
 | 🔒 **100% private** | All processing is local. Your text never leaves your machine |
 | 🎯 **Precise control** | Intensity 0–100, 9 profiles, keyword preservation, max change ratio |
-| 🌍 **9 languages + universal** | Full dictionaries for 9 languages; statistical processor for any other |
+| 🌍 **14 languages + universal** | Full dictionaries for 14 languages; statistical processor for any other |
 | 📦 **Zero dependencies** | Pure Python stdlib — no pip packages, no model downloads |
 | 🔁 **Reproducible** | Seed-based PRNG — same input + same seed = identical output |
 | 🔌 **Extensible** | Plugin system to inject custom stages before/after any pipeline step |
@@ -1283,7 +1283,7 @@ The pipeline automatically adjusts processing based on how "AI-like" the input i
 
 If processing exceeds `max_change_ratio`, the pipeline automatically retries at lower intensity (×0.4, then ×0.15) instead of discarding all changes. This ensures maximum quality within constraints.
 
-**Stages 3–6** require full dictionary support (9 languages).
+**Stages 3–6** require full dictionary support (14 languages).
 **Stages 2, 7–8** work for any language, including those without dictionaries.
 **Stage 10** validates quality and retries if needed (configurable via `max_change_ratio`).
 
@@ -1472,7 +1472,7 @@ print(f"Verdict: {result['verdict']}")   # → "human_written"
 
 ## Language Support
 
-### Full Dictionary Support (9 languages)
+### Full Dictionary Support (14 languages)
 
 Each language pack includes:
 - Bureaucratic word → natural replacements
@@ -1497,6 +1497,11 @@ Each language pack includes:
 | Polish | `pl` | 18 | 12 | 18 | 15+ | 8+ |
 | Portuguese | `pt` | 16 | 12 | 17 | 12+ | 6+ |
 | Italian | `it` | 16 | 12 | 17 | 12+ | 6+ |
+| Arabic | `ar` | 81 | 49 | 80 | 40+ | 47 |
+| Chinese | `zh` | 80 | 36 | 80 | 40+ | 32 |
+| Japanese | `ja` | 60+ | 30+ | 60+ | 30+ | 25+ |
+| Korean | `ko` | 60+ | 30+ | 60+ | 30+ | 25+ |
+| Turkish | `tr` | 60+ | 30+ | 60+ | 30+ | 25+ |
 
 ### Universal Processor
 
@@ -2043,7 +2048,7 @@ All benchmarks on Apple Silicon (M1 Pro), Python 3.12, single thread. Reproducib
 
 ### Quality Benchmark
 
-Tested on 45 curated samples across 9 languages, multiple profiles, and edge cases:
+Tested on 45 curated samples across 14 languages, multiple profiles, and edge cases:
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -2211,7 +2216,7 @@ texthumanize/                   # 44 Python modules, 16,820 lines
 ├── context.py                  # Context-aware synonyms (WSD + negative collocations)
 ├── autotune.py                 # Auto-Tuner (feedback loop + JSON persistence)
 │
-├── lang_detect.py              # Language detection (9 languages)
+├── lang_detect.py              # Language detection (14 languages)
 ├── utils.py                    # Options, profiles, result classes
 ├── __main__.py                 # python -m texthumanize
 │
@@ -2327,7 +2332,7 @@ $casual = TextHumanize::adjustTone("Formal text", target: 'casual');
 | Watermark Detection | `WatermarkDetector` | ✅ |
 | Content Spinning | `ContentSpinner` | ✅ |
 | Coherence Analysis | `CoherenceAnalyzer` | ✅ |
-| Language Packs | 9 languages | ✅ |
+| Language Packs | 14 languages | ✅ |
 
 ```bash
 cd php/

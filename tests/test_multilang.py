@@ -111,14 +111,14 @@ class TestLanguagePacks:
 
     def test_unknown_language_returns_empty(self):
         """Неизвестный язык возвращает пустой пакет (без ошибки)."""
-        pack = get_lang_pack("zh")
-        assert pack["code"] == "zh"
+        pack = get_lang_pack("xx")
+        assert pack["code"] == "xx"
         assert pack["bureaucratic"] == {}
 
     def test_has_deep_support_unknown(self):
         """Неизвестный язык — нет глубокой поддержки."""
-        assert not has_deep_support("zh")
-        assert not has_deep_support("ja")
+        assert not has_deep_support("xx")
+        assert not has_deep_support("sw")
 
 
 class TestMultilingualProcessing:

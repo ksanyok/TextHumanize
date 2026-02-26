@@ -3,6 +3,32 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.12.0] - 2025-06-27
+
+### Added
+- **5 new languages** — Arabic (ar), Chinese Simplified (zh), Japanese (ja), Korean (ko), Turkish (tr). Total: **14 languages** with full deep processing support.
+  - **Arabic** — 81 bureaucratic, 80 synonyms, 49 AI connectors, 40 colloquial markers, 47 abbreviations, 40 perplexity boosters, 30 sentence starters, 40 bureaucratic phrases, 39 split conjunctions
+  - **Chinese** — 80 bureaucratic, 80 synonyms, 36 AI connectors, 40 colloquial markers, 32 abbreviations, 40 perplexity boosters, 30 sentence starters, 40 bureaucratic phrases, 41 split conjunctions
+  - **Japanese** — 60+ entries per category, keigo→casual register replacements
+  - **Korean** — 60+ entries per category, honorific→casual register replacements
+  - **Turkish** — 60+ entries per category, Ottoman→modern Turkish replacements
+- **Placeholder guard system** — all 6 text processing modules (structure, naturalizer, universal, decancel, repetitions, liveliness) now skip words and sentences containing placeholder tokens. Prevents `\x00THZ_*\x00` artifacts from leaking into output.
+- **HTML block protection** — entire `<ul>`, `<ol>`, `<table>`, `<pre>`, `<code>`, `<script>`, `<style>`, `<blockquote>` blocks are now protected as single segments. Individual `<li>` items also protected.
+- **Bare domain protection** — domains like `site.com.ua`, `portal.kh.ua`, `example.co.uk` are now protected without requiring `http://` prefix. Covers 24 TLDs and 18 country sub-TLDs.
+- **Watermark cleaning in pipeline** — `WatermarkDetector.clean()` now runs automatically as the first pipeline stage (before segmentation), removing zero-width characters, homoglyphs, invisible Unicode, and spacing anomalies. Supports plugin hooks (`before`/`after` the `watermark` stage).
+- **Language detection for new scripts** — Arabic (Unicode \u0600–\u06FF), CJK (Chinese \u4E00–\u9FFF, Japanese hiragana/katakana, Korean hangul), Turkish (marker-based with ş, ğ, ı).
+- **54 new tests** for all v0.12.0 features — HTML protection, domain safety, placeholder safety, new languages, watermark pipeline, language detection, restore robustness.
+
+### Fixed
+- **Placeholder token leaks** — processing stages no longer corrupt `\x00THZ_*\x00` tokens through word-boundary regex, `.lower()` operations, or sentence splitting. 3-pass `restore()` recovery: exact match → case-insensitive → orphan cleanup.
+- **Homoglyph detector corrupting Cyrillic** — removed Cyrillic `е` (U+0435), `а` (U+0430), `і` (U+0456) from `_SPECIAL_HOMOGLYPHS` table. These are normal Cyrillic/Ukrainian characters, not watermark homoglyphs. Contextual detection via `_CYRILLIC_TO_LATIN` / `_LATIN_TO_CYRILLIC` remains intact.
+- **Duplicate dictionary keys** — removed F601 duplicates in ar.py (1), ja.py (1), tr.py (4).
+- **Test for unknown language** — updated test to use truly unknown language codes instead of now-supported zh/ja.
+
+### Changed
+- **Pipeline stages** — now 12 stages (was 11): watermark → segmentation → typography → debureaucratization → structure → repetitions → liveliness → paraphrasing → universal → naturalization → validation → restore.
+- **1,509 Python tests** — up from 1,455 (100% pass rate).
+
 ## [0.11.0] - 2025-06-26
 
 ### Added

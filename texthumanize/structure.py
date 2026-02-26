@@ -6,6 +6,7 @@ import random
 import re
 
 from texthumanize.lang import get_lang_pack
+from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 from texthumanize.sentence_split import split_sentences
 from texthumanize.utils import coin_flip, get_profile, intensity_probability
 
@@ -120,6 +121,9 @@ class StructureDiversifier:
                 if not coin_flip(prob, self.rng):
                     continue
 
+                if has_placeholder(text[max(0, match.start()-5):match.end()+5]):
+                    continue
+
                 original = match.group(0)
                 replacement = self.rng.choice(replacements)
 
@@ -167,6 +171,8 @@ class StructureDiversifier:
 
                 # Ищем замену для текущего начала
                 clean_start = curr_start.rstrip(',.;:')
+                if has_placeholder(clean_start):
+                    continue
                 alternatives = starters.get(clean_start, [])
 
                 if alternatives:
@@ -219,6 +225,8 @@ class StructureDiversifier:
         self, sentence: str, split_conjs: list[str]
     ) -> list[str] | None:
         """Попробовать разбить предложение по союзу."""
+        if skip_placeholder_sentence(sentence):
+            return None
         words = sentence.split()
         mid_point = len(words) // 2
         best_split = None
@@ -287,7 +295,7 @@ class StructureDiversifier:
 
                 # Первая буква второго предложения → строчная
                 second = next_sent.strip()
-                if second and second[0].isupper():
+                if second and second[0].isupper() and not has_placeholder(second):
                     second = second[0].lower() + second[1:]
 
                 # Выбираем союз

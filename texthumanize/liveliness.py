@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 
 from texthumanize.lang import get_lang_pack
+from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 from texthumanize.sentence_split import split_sentences
 from texthumanize.utils import coin_flip, get_profile, intensity_probability
 
@@ -100,6 +101,9 @@ class LivelinessInjector:
             if i < 2:
                 continue
 
+            if skip_placeholder_sentence(sentences[i]):
+                continue
+
             if not coin_flip(prob * 0.2, self.rng):
                 continue
 
@@ -153,7 +157,7 @@ class LivelinessInjector:
             if idx > 0:
                 # Проверяем, что после ; идёт пробел и текст
                 after = text[idx + 1:].lstrip()
-                if after and after[0].islower():
+                if after and after[0].islower() and not has_placeholder(after):
                     after = after[0].upper() + after[1:]
 
                 text = text[:idx] + '.' + ' ' + after

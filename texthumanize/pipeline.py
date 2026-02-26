@@ -19,6 +19,7 @@ from texthumanize.stylistic import StylisticAnalyzer, StylisticFingerprint
 from texthumanize.universal import UniversalProcessor
 from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
 from texthumanize.validator import QualityValidator
+from texthumanize.watermark import WatermarkDetector
 
 
 class StagePlugin(Protocol):
@@ -37,6 +38,7 @@ class Pipeline:
     """Оркестратор пайплайна гуманизации текста.
 
     Этапы обработки:
+    0. Очистка водяных знаков (zero-width, homoglyphs, invisible Unicode)
     1. Сегментация (защита кода, URL, email и т.д.)
     2. Нормализация типографики
     3. Деканцеляризация (для языков с полным словарём)
@@ -60,7 +62,7 @@ class Pipeline:
     _hooks_after: dict[str, list[HookFn]] = {}
 
     STAGE_NAMES = (
-        "segmentation", "typography", "debureaucratization",
+        "watermark", "segmentation", "typography", "debureaucratization",
         "structure", "repetitions", "liveliness",
         "paraphrasing", "universal", "naturalization",
         "validation", "restore",
@@ -246,6 +248,19 @@ class Pipeline:
             ),
         })
 
+        # Watermark cleaning (even for natural text)
+        wm_detector = WatermarkDetector(lang=lang)
+        wm_report = wm_detector.detect(text)
+        if wm_report.has_watermarks:
+            text = wm_report.cleaned_text
+            all_changes.append({
+                "type": "watermark_cleaning",
+                "description": (
+                    f"Водяные знаки: {', '.join(wm_report.watermark_types)} "
+                    f"(удалено {wm_report.characters_removed} символов)"
+                ),
+            })
+
         # Segmentation
         preserve = preserve_config or {}
         segmenter = Segmenter(preserve=preserve)
@@ -368,6 +383,22 @@ class Pipeline:
 
         # 1. Сегментация — защита неизменяемых блоков
         preserve_config = dict(self.options.preserve)
+
+        # ── 0. Очистка водяных знаков ─────────────────────────
+        text = self._run_plugins("watermark", text, lang, is_before=True)
+        wm_detector = WatermarkDetector(lang=lang)
+        wm_report = wm_detector.detect(text)
+        if wm_report.has_watermarks:
+            text = wm_report.cleaned_text
+            all_changes.append({
+                "type": "watermark_cleaning",
+                "description": (
+                    f"Водяные знаки: {', '.join(wm_report.watermark_types)} "
+                    f"(удалено {wm_report.characters_removed} символов, "
+                    f"уверенность {wm_report.confidence:.0%})"
+                ),
+            })
+        text = self._run_plugins("watermark", text, lang, is_before=False)
 
         # ── Стилистический отпечаток ──────────────────────────
         # Если задан target_style, анализируем текущий стиль

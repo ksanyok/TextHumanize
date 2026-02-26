@@ -79,11 +79,11 @@ _SPECIAL_HOMOGLYPHS = {
     '\uff45': 'e', '\uff46': 'f', '\uff47': 'g',
     # Mathematical symbols that look like letters
     '\u2202': 'd',  # Partial Differential → d
-    '\u0435': 'e',  # Cyrillic е → Latin e
-    '\u03b1': 'a',  # Greek alpha → a
+    # NOTE: Cyrillic е (U+0435), а (U+0430), і (U+0456) are NOT homoglyphs —
+    # they are normal Cyrillic letters. Substitution is handled contextually
+    # via _CYRILLIC_TO_LATIN / _LATIN_TO_CYRILLIC in _detect_homoglyphs().
+    '\u03b1': 'a',  # Greek alpha → a (rare outside math)
     '\u03bf': 'o',  # Greek omicron → o
-    '\u0456': 'i',  # Ukrainian і → Latin i
-    '\u0430': 'a',  # Cyrillic а → Latin a
     # Subscript/superscript numbers
     '\u00b2': '2', '\u00b3': '3', '\u00b9': '1',
     '\u2070': '0', '\u2071': 'i',

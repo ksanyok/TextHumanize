@@ -5,6 +5,30 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+# ── Placeholder sentinel ──────────────────────────────────────
+# Null-byte framing is used to mark protected tokens.
+PLACEHOLDER_PREFIX = "\x00THZ_"
+PLACEHOLDER_SUFFIX = "\x00"
+_PLACEHOLDER_RE = re.compile(r'\x00THZ_[A-Z_]+_\d+\x00')
+
+# ── Placeholder-aware helpers (used by ALL pipeline stages) ───
+
+
+def has_placeholder(text: str) -> bool:
+    """Return True if *text* contains any placeholder token."""
+    return "\x00" in text
+
+
+def is_placeholder_word(word: str) -> bool:
+    """Return True if a whitespace-delimited word contains a placeholder."""
+    return "\x00" in word
+
+
+def skip_placeholder_sentence(sentence: str) -> bool:
+    """Return True if the sentence contains placeholder(s) and
+    should be left untouched by word-level transformations."""
+    return "\x00" in sentence
+
 
 @dataclass
 class ProtectedSegment:
@@ -21,11 +45,31 @@ class SegmentedText:
     segments: list[ProtectedSegment] = field(default_factory=list)
 
     def restore(self, processed_text: str) -> str:
-        """Восстановить защищённые сегменты в обработанном тексте."""
+        """Восстановить защищённые сегменты в обработанном тексте.
+
+        Handles both exact matches and case-corrupted placeholders
+        (e.g. lowercased by sentence-join logic).
+        """
         result = processed_text
-        # Восстанавливаем в обратном порядке, чтобы индексы не сбивались
+        # Pass 1: exact match (fast path)
         for seg in reversed(self.segments):
             result = result.replace(seg.placeholder, seg.original)
+
+        # Pass 2: if any \x00 markers remain, try case-insensitive recovery
+        if "\x00" in result:
+            for seg in reversed(self.segments):
+                # Build case-insensitive pattern from exact placeholder
+                pat = re.compile(re.escape(seg.placeholder), re.IGNORECASE)
+                result = pat.sub(seg.original, result)
+
+        # Pass 3: last resort — strip any orphaned placeholder tokens
+        if "\x00" in result:
+            result = _PLACEHOLDER_RE.sub("", result)
+            # Also handle lower-cased remnants
+            result = re.sub(r'\x00thz_[a-z_]+_\d+\x00', '', result, flags=re.IGNORECASE)
+            # Remove lone null bytes
+            result = result.replace("\x00", "")
+
         return result
 
 
@@ -38,10 +82,25 @@ _PATTERNS = {
         re.MULTILINE,
     ),
     "inline_code": re.compile(r'`[^`\n]+?`'),
+    # HTML block: protect entire paired tag + content (p, div, ul, ol, li, h1-h6, etc.)
+    "html_block": re.compile(
+        r'<(ul|ol|table|thead|tbody|tr|pre|code|script|style|blockquote)'
+        r'(?:\s[^>]*)?>[\s\S]*?</\1\s*>',
+        re.IGNORECASE,
+    ),
+    # URL: handles multi-level TLDs like .com.ua, .kh.ua, .co.uk
     "url": re.compile(
         r'https?://[^\s<>\[\]()\"\']+[^\s<>\[\]()\"\'.,;:!?)]'
         r'|'
         r'www\.[^\s<>\[\]()\"\']+[^\s<>\[\]()\"\'.,;:!?)]',
+        re.IGNORECASE,
+    ),
+    # Bare domain: site.com, site.com.ua, site.kh.ua (without http prefix)
+    "bare_domain": re.compile(
+        r'\b[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?'
+        r'\.(?:com|net|org|info|biz|io|dev|app|pro|me|ua|ru|de|fr|es|it|pl|pt|uk|eu|us|co|in|br)'
+        r'(?:\.(?:ua|uk|br|au|nz|za|ar|mx|jp|kr|cn|tw|hk|sg|my|in|il|tr))?'
+        r'(?:/[^\s<>\[\]()\"\']*[^\s<>\[\]()\"\'.,;:!?)])?',
         re.IGNORECASE,
     ),
     "email": re.compile(r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'),
@@ -53,8 +112,9 @@ _PATTERNS = {
     "markdown_heading": re.compile(r'^#{1,6}\s+', re.MULTILINE),
     "markdown_bold": re.compile(r'\*\*[^*]+?\*\*|__[^_]+?__'),
     "markdown_italic": re.compile(r'(?<!\*)\*[^*]+?\*(?!\*)|(?<!_)_[^_]+?_(?!_)'),
+    # HTML list items: protect <li>...</li> individually
+    "html_list_item": re.compile(r'<li\b[^>]*>[\s\S]*?</li\s*>', re.IGNORECASE),
     # Leader dots (TOC, оглавления): "Глава 1 .......... 5"
-    # Защищаем всю строку целиком, чтобы пайплайн не трогал содержание
     "leader_dots": re.compile(r'^.*\.{4,}.*\d+\s*$', re.MULTILINE),
 }
 
@@ -118,23 +178,35 @@ class Segmenter:
         if self.preserve.get("code_blocks", True):
             result = self._protect(result, "inline_code", segments)
 
-        # 3. Markdown-изображения (до ссылок!)
+        # 3. HTML blocks (ul, ol, table, pre, etc.) — before individual tags
+        if self.preserve.get("html", True):
+            result = self._protect(result, "html_block", segments)
+
+        # 4. HTML list items (<li>...</li>) — protect individually
+        if self.preserve.get("html", True):
+            result = self._protect(result, "html_list_item", segments)
+
+        # 5. Markdown-изображения (до ссылок!)
         if self.preserve.get("markdown", True):
             result = self._protect(result, "markdown_image", segments)
 
-        # 4. Markdown-ссылки
+        # 6. Markdown-ссылки
         if self.preserve.get("markdown", True):
             result = self._protect(result, "markdown_link", segments)
 
-        # 5. URL
+        # 7. URL (with http/https/www prefix)
         if self.preserve.get("urls", True):
             result = self._protect(result, "url", segments)
 
-        # 6. Email
+        # 8. Bare domains (site.com.ua, example.kh.ua, etc.)
+        if self.preserve.get("urls", True):
+            result = self._protect(result, "bare_domain", segments)
+
+        # 9. Email
         if self.preserve.get("emails", True):
             result = self._protect(result, "email", segments)
 
-        # 7. HTML-теги
+        # 10. HTML-теги (individual opening/closing tags)
         if self.preserve.get("html", True):
             result = self._protect(result, "html_tag", segments)
 

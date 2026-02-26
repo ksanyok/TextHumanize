@@ -40,6 +40,7 @@ import re
 from collections import Counter
 
 from texthumanize.decancel import _is_replacement_safe
+from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 from texthumanize.sentence_split import split_sentences
 
 # ─── Характерные стилевые паттерны автоматически сгенерированного текста ───
@@ -743,6 +744,9 @@ class TextNaturalizer:
                 if self.rng.random() > prob:
                     continue
 
+                if has_placeholder(text[max(0, match.start()-5):match.end()+5]):
+                    continue
+
                 original = match.group(0)
                 replacement = self.rng.choice(replacements)
 
@@ -783,6 +787,9 @@ class TextNaturalizer:
 
             # Заменяем первое вхождение
             match = matches[0]
+
+            if has_placeholder(text[max(0, match.start()-5):match.end()+5]):
+                continue
 
             original = match.group(0)
             replacement = self.rng.choice(replacements)
@@ -865,7 +872,7 @@ class TextNaturalizer:
                 # Объединяем через тире или запятую
                 first = sent.rstrip().rstrip('.!?')
                 second = result[i + 1]
-                if second and second[0].isupper():
+                if second and second[0].isupper() and not has_placeholder(second):
                     second = second[0].lower() + second[1:]
                 connector = self.rng.choice([' — ', ', и ', ', '])
                 if self.lang == "en":
@@ -964,7 +971,7 @@ class TextNaturalizer:
         discourse = self._boosters.get("discourse_markers", [])
         if discourse and self.rng.random() < prob * 0.5:
             # Выбираем случайное предложение (не первое и не последнее)
-            candidates = list(range(2, len(result) - 1))
+            candidates = [c for c in range(2, len(result) - 1) if not skip_placeholder_sentence(result[c])]
             if candidates:
                 idx = self.rng.choice(candidates)
                 marker = self.rng.choice(discourse)
@@ -985,7 +992,7 @@ class TextNaturalizer:
         # Стратегия 2: Вставить хеджинг
         hedges = self._boosters.get("hedges", [])
         if hedges and insertions < max_insertions and self.rng.random() < prob * 0.4:
-            candidates = list(range(3, len(result) - 1))
+            candidates = [c for c in range(3, len(result) - 1) if not skip_placeholder_sentence(result[c])]
             if candidates:
                 idx = self.rng.choice(candidates)
                 hedge = self.rng.choice(hedges)
@@ -1009,7 +1016,7 @@ class TextNaturalizer:
         inserts = fragments + questions
 
         if inserts and insertions < max_insertions and self.rng.random() < prob * 0.3:
-            candidates = list(range(3, len(result)))
+            candidates = [c for c in range(3, len(result)) if not skip_placeholder_sentence(result[c])]
             if candidates:
                 idx = self.rng.choice(candidates)
                 insert = self.rng.choice(inserts)
@@ -1024,7 +1031,7 @@ class TextNaturalizer:
         # Стратегия 4: Вводная конструкция в скобках
         parens = self._boosters.get("parenthetical", [])
         if parens and insertions < max_insertions and self.rng.random() < prob * 0.25:
-            candidates = list(range(2, len(result) - 1))
+            candidates = [c for c in range(2, len(result) - 1) if not skip_placeholder_sentence(result[c])]
             if candidates:
                 idx = self.rng.choice(candidates)
                 paren = self.rng.choice(parens)
@@ -1091,6 +1098,8 @@ class TextNaturalizer:
                 for i in range(len(result)):
                     words = result[i].split()
                     if not words:
+                        continue
+                    if skip_placeholder_sentence(result[i]):
                         continue
                     if words[0].lower().rstrip('.,;:') != start_word:
                         continue

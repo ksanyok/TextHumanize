@@ -9,6 +9,7 @@ from collections import Counter
 from texthumanize.context import ContextualSynonyms
 from texthumanize.lang import get_lang_pack
 from texthumanize.morphology import get_morphology
+from texthumanize.segmenter import has_placeholder
 from texthumanize.sentence_split import split_sentences
 from texthumanize.utils import coin_flip, get_profile, intensity_probability
 
@@ -100,6 +101,9 @@ class RepetitionReducer:
                 if count < 2:
                     continue
 
+                if has_placeholder(word):
+                    continue
+
                 # Проверяем, есть ли синоним
                 word_lower = word.lower()
                 synonyms = self._synonyms.get(word_lower, [])
@@ -180,6 +184,9 @@ class RepetitionReducer:
         # Заменяем одно из слов в повторяющейся биграмме
         for (w1, w2), count in repeated.items():
             if not coin_flip(prob * 0.4, self.rng):
+                continue
+
+            if has_placeholder(w1) or has_placeholder(w2):
                 continue
 
             # Пробуем заменить второе вхождение биграммы

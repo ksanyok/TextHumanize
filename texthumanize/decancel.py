@@ -7,6 +7,7 @@ import re
 
 from texthumanize.lang import get_lang_pack
 from texthumanize.morphology import get_morphology
+from texthumanize.segmenter import has_placeholder
 from texthumanize.utils import coin_flip, get_profile, intensity_probability
 
 # ═══════════════════════════════════════════════════════════════
@@ -234,6 +235,9 @@ class Debureaucratizer:
             matches = list(pattern.finditer(text))
 
             for match in matches:
+                if has_placeholder(text[max(0, match.start()-5):match.end()+5]):
+                    continue
+
                 original = match.group(0)
                 replacement = self.rng.choice(replacements)
 
@@ -285,6 +289,9 @@ class Debureaucratizer:
                     break
 
                 if not coin_flip(prob, self.rng):
+                    continue
+
+                if has_placeholder(text[max(0, match.start()-5):match.end()+5]):
                     continue
 
                 original = match.group(0)
