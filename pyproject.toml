@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texthumanize"
-version = "0.15.0"
+version = "0.15.1"
 description = "Алгоритмическая гуманизация текста с AI-детекцией, тональным анализом, перефразированием и спиннингом"
 readme = "README.md"
 license = {text = "Dual License — Free for personal use, commercial license required for business"}

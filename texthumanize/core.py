@@ -255,11 +255,17 @@ def humanize_ai(
         lang = detect_language(text)
 
     ab = _get_ai_backend()
-    backend = ab.AIBackend(
-        openai_api_key=openai_api_key,
-        openai_model=openai_model,
-        enable_oss=enable_oss,
-    )
+    # Cache key to reuse backend instances (preserves circuit breaker state)
+    _cache_key = (openai_api_key, openai_model, enable_oss)
+    if not hasattr(humanize_ai, '_instances'):
+        humanize_ai._instances = {}
+    if _cache_key not in humanize_ai._instances:
+        humanize_ai._instances[_cache_key] = ab.AIBackend(
+            openai_api_key=openai_api_key,
+            openai_model=openai_model,
+            enable_oss=enable_oss,
+        )
+    backend = humanize_ai._instances[_cache_key]
     result_text = backend.paraphrase(text, lang=lang, style=profile)
 
     # Run through pipeline for cleanup

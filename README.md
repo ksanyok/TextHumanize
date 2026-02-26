@@ -27,7 +27,7 @@
 
 <br/>
 
-**27,000+ lines of code** · **44 Python modules** · **16-stage pipeline** · **14 languages + universal**
+**40,000+ lines of code** · **72 Python modules** · **17-stage pipeline** · **14 languages + universal**
 
 [Quick Start](#quick-start) · [API Reference](#api-reference) · [AI Detection](#ai-detection--how-it-works) · [Cookbook](docs/COOKBOOK.md)
 
@@ -35,7 +35,7 @@
 
 ---
 
-TextHumanize is a **pure-algorithmic text processing engine** that normalizes style, improves readability, and removes mechanical patterns from text. No neural networks, no API keys, no internet — just 27K+ lines of finely tuned rules, dictionaries, and statistical methods.
+TextHumanize is a **pure-algorithmic text processing engine** that normalizes style, improves readability, and removes mechanical patterns from text. No neural networks, no API keys, no internet — just 40K+ lines of finely tuned rules, dictionaries, and statistical methods.
 
 It normalizes typography, simplifies bureaucratic language, diversifies sentence structure, increases burstiness and perplexity, replaces formulaic phrases, and applies context-aware synonym substitution — all while preserving semantic meaning.
 
@@ -237,7 +237,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 | Total test count | **1,696** (Py+PHP+JS) | 10–50 |
 | Test coverage | **99%** | Unknown |
 | Benchmark pass rate | **100%** (45/45) | No benchmark |
-| Codebase size | **27K+ lines** | 500–2K |
+| Codebase size | **40K+ lines** | 500–2K |
 | Platforms | Python + JS + PHP | Single |
 | Plugin system | ✅ | ❌ |
 | Tone analysis | ✅ 7 levels | ❌ |
@@ -1401,7 +1401,7 @@ All responses include `_elapsed_ms` field with processing time in milliseconds.
 
 ## Processing Pipeline
 
-TextHumanize uses a **16-stage pipeline** with adaptive intensity:
+TextHumanize uses a **17-stage pipeline** with adaptive intensity:
 
 ```
 Input Text
@@ -1409,6 +1409,8 @@ Input Text
   ├─ 0.  Watermark Cleaning       ─ remove zero-width chars, homoglyphs    [auto]
   │
   ├─ 1.  Segmentation             ─ protect code blocks, URLs, emails, brands
+  │
+  ├─ 1b. CJK Segmentation         ─ word-boundary injection for CJK text   [auto, zh/ja/ko]
   │
   ├─ 2.  Typography               ─ normalize dashes, quotes, ellipses, punctuation
   │
@@ -1420,19 +1422,25 @@ Input Text
   │
   ├─ 6.  Liveliness               ─ inject natural phrasing                [dictionary]
   │
-  ├─ 7.  Universal                ─ statistical processing                 [any language]
+  ├─ 7.  Paraphrasing             ─ semantic sentence-level transforms     [syntax trees]
+  │
+  ├─ 7b. Syntax Rewriting         ─ structural sentence transforms         [POS-tagged]
   │
   ├─ 8.  Tone Harmonization       ─ align tone consistency                 [context-aware]
   │
-  ├─ 9.  Naturalization           ─ burstiness, perplexity, rhythm         [KEY STAGE]
+  ├─ 9.  Universal                ─ statistical processing                 [any language]
   │
-  ├─ 10. Stylistic Alignment      ─ match target fingerprint/preset        [optional]
+  ├─ 10. Naturalization           ─ burstiness, perplexity, rhythm         [KEY STAGE, collocation-aware]
+  │
+  ├─ 10b.Word LM Quality Gate     ─ perplexity check, rollback if degraded [advisory]
   │
   ├─ 11. Readability Optimization ─ improve sentence readability           [adaptive]
   │
   ├─ 12. Grammar Correction       ─ fix grammar issues                     [rule-based]
   │
   ├─ 13. Coherence Repair         ─ repair paragraph flow & transitions    [context-aware]
+  │
+  ├─ 13b.Fingerprint Diversify    ─ anti-fingerprint micro-variations      [typography]
   │
   ├─ 14. Validation               ─ quality check, graduated retry
   │
@@ -2503,41 +2511,51 @@ cd js && npx vitest run             # 28 tests
 ## Architecture
 
 ```
-texthumanize/                   # 44 Python modules, 16,820 lines
+texthumanize/                   # 72 Python modules, 40,677 lines
 ├── __init__.py                 # Public API: 25 functions + 5 classes
 ├── core.py                     # Facade: humanize(), analyze(), detect_ai(), etc.
 ├── api.py                      # REST API: zero-dependency HTTP server, 12 endpoints
 ├── cli.py                      # CLI: 15+ commands
-├── pipeline.py                 # 16-stage pipeline + adaptive intensity + graduated retry
+├── pipeline.py                 # 17-stage pipeline + adaptive intensity + graduated retry
 │
 ├── analyzer.py                 # Artificiality scoring + 6 readability metrics
 ├── tokenizer.py                # Paragraph/sentence/word tokenization
 ├── sentence_split.py           # Smart sentence splitter (abbreviations, decimals)
 │
 ├── segmenter.py                # Code/URL/email/brand protection (stage 1)
+├── cjk_segmenter.py            # CJK word segmentation — zh/ja/ko (stage 1b)
 ├── normalizer.py               # Typography normalization (stage 2)
 ├── decancel.py                 # Debureaucratization + 15% budget + echo check (stage 3)
 ├── structure.py                # Sentence structure diversification (stage 4)
 ├── repetitions.py              # Repetition reduction + morphology (stage 5)
 ├── liveliness.py               # Natural phrasing injection (stage 6)
-├── universal.py                # Universal processor — any language (stage 7)
+├── paraphraser_ext.py          # Semantic paraphrasing — syntax trees (stage 7)
+├── syntax_rewriter.py          # Structural sentence transforms — POS-tagged (stage 7b)
 ├── tone_harmonizer.py          # Tone harmonization (stage 8)
-├── naturalizer.py              # Key stage: burstiness, perplexity, rhythm (stage 9)
-├── stylistic.py                # Stylistic fingerprinting + presets (stage 10)
+├── universal.py                # Universal processor — any language (stage 9)
+├── naturalizer.py              # Key stage: burstiness, perplexity, collocation-aware synonyms (stage 10)
+├── word_lm.py                  # Word language model — perplexity quality gate (stage 10b)
 ├── readability_opt.py          # Readability optimization (stage 11)
 ├── grammar_fix.py              # Grammar correction (stage 12)
 ├── coherence_repair.py         # Coherence repair (stage 13)
+├── fingerprint_randomizer.py   # Anti-fingerprint diversification (stage 13b)
 ├── validator.py                # Quality validation + graduated retry (stage 14)
 │
 ├── detectors.py                # AI detector: 13 metrics + ensemble boosting
+├── statistical_detector.py     # Statistical AI detection (feature weights + ensemble)
+├── pos_tagger.py               # Rule-based POS tagger (en/de/ru/uk)
+├── collocation_engine.py       # Collocation scoring — context-aware synonym ranking
+├── benchmark_suite.py          # Benchmarking suite — quality metrics
+├── ai_backend.py               # AI backend — OpenAI + OSS Gradio providers
+│
 ├── paraphrase.py               # Syntactic paraphrasing engine
-├── paraphraser_ext.py          # Extended paraphrasing (advanced transforms)
 ├── tone.py                     # Tone analysis & adjustment (7 levels)
 ├── watermark.py                # Watermark detection & cleaning (5 types)
 ├── spinner.py                  # Text spinning & spintax generation
 ├── coherence.py                # Coherence & paragraph flow analysis
 ├── morphology.py               # Morphological engine (RU/UK/EN/DE)
 ├── context.py                  # Context-aware synonyms (WSD + negative collocations)
+├── stylistic.py                # Stylistic fingerprinting + presets
 ├── autotune.py                 # Auto-Tuner (feedback loop + JSON persistence)
 │
 ├── lang_detect.py              # Language detection (14 languages)

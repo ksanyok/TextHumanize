@@ -7,6 +7,7 @@ from difflib import SequenceMatcher
 from typing import Callable, Protocol
 
 from texthumanize.analyzer import TextAnalyzer
+from texthumanize.cjk_segmenter import CJKSegmenter, is_cjk_text
 from texthumanize.coherence_repair import CoherenceRepairer
 from texthumanize.decancel import Debureaucratizer
 from texthumanize.fingerprint_randomizer import FingerprintRandomizer
@@ -27,6 +28,7 @@ from texthumanize.universal import UniversalProcessor
 from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
 from texthumanize.validator import QualityValidator
 from texthumanize.watermark import WatermarkDetector
+from texthumanize.word_lm import WordLanguageModel
 
 
 class StagePlugin(Protocol):
@@ -504,6 +506,29 @@ class Pipeline:
             all_changes.extend(cd_changes)
         stage_timings["typography"] = time.perf_counter() - _t0
 
+        # 2c. CJK pre-segmentation — inject word boundaries for CJK text
+        # so downstream word-level stages (regex \b, splits) work correctly.
+        _cjk_active = False
+        if is_cjk_text(text):
+            _t0 = time.perf_counter()
+            from texthumanize.cjk_segmenter import detect_cjk_lang
+            cjk_lang = detect_cjk_lang(text) or "zh"
+            _cjk_seg = CJKSegmenter(lang=cjk_lang)
+            _cjk_words = _cjk_seg.segment(text)
+            # Only add spaces between CJK tokens (keep existing if mixed)
+            cjk_text = " ".join(w for w in _cjk_words if w.strip())
+            if cjk_text and cjk_text != text:
+                text = cjk_text
+                _cjk_active = True
+                all_changes.append({
+                    "type": "cjk_segmentation",
+                    "description": (
+                        f"CJK сегментация ({cjk_lang}): "
+                        f"разбивка на {len(_cjk_words)} токенов"
+                    ),
+                })
+            stage_timings["cjk_segmentation"] = time.perf_counter() - _t0
+
         # Этапы 3-6: словарная обработка (только для языков с полным словарём)
         if has_deep_support(lang):
             # 3. Деканцеляризация
@@ -688,6 +713,38 @@ class Pipeline:
         all_changes.extend(_ch)
         checkpoints.append(("naturalization", text))
         text = self._run_plugins("naturalization", text, lang, is_before=False)
+
+        # 10b. Word LM quality gate — ensure naturalization didn't make
+        # text MORE predictable (lower perplexity = more AI-like).
+        # Roll back naturalization if perplexity dropped significantly.
+        _t0 = time.perf_counter()
+        try:
+            _wlm = WordLanguageModel(lang=lang)
+            _pp_before = _wlm.perplexity(checkpoints[-2][1] if len(checkpoints) >= 2 else original)
+            _pp_after = _wlm.perplexity(text)
+            if _pp_before > 0 and _pp_after > 0:
+                # If perplexity dropped by >30%, naturalization made text
+                # more predictable — partial rollback
+                if _pp_after < _pp_before * 0.7:
+                    _prev_text = checkpoints[-2][1] if len(checkpoints) >= 2 else original
+                    text = _prev_text
+                    all_changes.append({
+                        "type": "quality_gate_rollback",
+                        "description": (
+                            f"Word LM: перплексия упала {_pp_before:.1f}→{_pp_after:.1f}, "
+                            "откат натурализации"
+                        ),
+                    })
+                else:
+                    all_changes.append({
+                        "type": "quality_gate_pass",
+                        "description": (
+                            f"Word LM: перплексия {_pp_before:.1f}→{_pp_after:.1f} (OK)"
+                        ),
+                    })
+        except Exception:
+            pass  # Word LM is advisory, never blocks pipeline
+        stage_timings["word_lm_gate"] = time.perf_counter() - _t0
 
         # 11. Оптимизация читаемости (для ВСЕХ языков)
         text = self._run_plugins("readability", text, lang, is_before=True)

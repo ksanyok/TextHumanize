@@ -136,30 +136,58 @@ class FingerprintRandomizer:
     def diversify_whitespace(self, text: str) -> str:
         """Vary whitespace patterns to prevent fingerprinting.
 
-        Randomly adds/removes trailing spaces before newlines,
-        varies paragraph spacing.
+        Randomly adjusts spacing around punctuation, varies
+        paragraph breaks, changes list indentation style.
         """
         if self.jitter < 0.1:
             return text
 
         lines = text.split('\n')
         result = []
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            stripped = line.rstrip()
 
-        for line in lines:
-            # Random trailing space removal / addition
-            line = line.rstrip()
-
-            # Occasionally add soft variation
+            # 1. Occasionally double-space after period (human quirk)
             if (
-                self.rng.random() < self.jitter * 0.15
-                and line
-                and not line.endswith((' ', '\t'))
+                stripped.endswith('.')
+                and self.rng.random() < self.jitter * 0.08
+                and i + 1 < len(lines)
+                and lines[i + 1].strip()
             ):
-                # Variation: sometimes no change, sometimes
-                # add invisible zero-width space (optional)
-                pass  # Keep clean for now
+                result.append(stripped)
+                # Insert extra blank line between paragraphs
+                if not (i + 1 < len(lines) and lines[i + 1] == ''):
+                    result.append('')
+                i += 1
+                continue
 
-            result.append(line)
+            # 2. Randomly vary spacing after commas/semicolons
+            if self.rng.random() < self.jitter * 0.12:
+                # Normalize double-spaces after punct to single
+                stripped = re.sub(r'([,;:])  ', r'\1 ', stripped)
+
+            # 3. Vary indentation of list-like items
+            if (
+                re.match(r'^(\s*)([-*•])\s', stripped)
+                and self.rng.random() < self.jitter * 0.15
+            ):
+                m = re.match(r'^(\s*)([-*•])\s', stripped)
+                if m:
+                    indent = m.group(1)
+                    marker = m.group(2)
+                    rest = stripped[m.end():]
+                    # Vary: switch bullet style
+                    alt_markers = ['-', '•', '*']
+                    alt_markers = [
+                        x for x in alt_markers if x != marker
+                    ]
+                    new_marker = self.rng.choice(alt_markers)
+                    stripped = f"{indent}{new_marker} {rest}"
+
+            result.append(stripped)
+            i += 1
 
         return '\n'.join(result)
 
@@ -215,38 +243,100 @@ class FingerprintRandomizer:
         """Final pass: add micro-variations.
 
         - Vary em-dash vs en-dash style
-        - Vary quote styles occasionally
-        - Optional Unicode normalization differences
+        - Vary quote styles (straight/curly)
+        - Vary ellipsis style
+        - Vary comma-before-and (Oxford comma)
+        - Vary abbreviation style
+        - Vary number formatting
         """
         if self.jitter < 0.1:
             return text
 
         result = text
 
-        # Randomly swap some em-dashes ↔ en-dashes
-        if '—' in result and self.rng.random() < 0.2:
-            dashes = list(
-                re.finditer(r'—', result),
-            )
+        # 1. Em-dash ↔ en-dash with spaces
+        if '—' in result and self.rng.random() < 0.25:
+            dashes = list(re.finditer(r'\s?—\s?', result))
             if dashes:
                 pick = self.rng.choice(dashes)
+                styles = [' – ', ' — ', '—']
+                replacement = self.rng.choice(styles)
                 result = (
                     result[:pick.start()]
-                    + ' — '
+                    + replacement
                     + result[pick.end():]
                 )
 
-        # Randomly swap straight/curly quotes (subtle)
-        if '"' in result and self.rng.random() < 0.15:
-            # Replace one pair of straight quotes with curly
-            m = re.search(r'"([^"]{1,100})"', result)
-            if m:
-                inner = m.group(1)
+        # 2. Straight quotes → curly quotes (or vice versa)
+        if self.rng.random() < 0.2:
+            if '"' in result:
+                m = re.search(r'"([^"]{1,200})"', result)
+                if m:
+                    inner = m.group(1)
+                    result = (
+                        result[:m.start()]
+                        + '\u201c' + inner + '\u201d'
+                        + result[m.end():]
+                    )
+            elif '\u201c' in result:
+                m = re.search(
+                    r'\u201c([^\u201d]{1,200})\u201d', result,
+                )
+                if m:
+                    inner = m.group(1)
+                    result = (
+                        result[:m.start()]
+                        + '"' + inner + '"'
+                        + result[m.end():]
+                    )
+
+        # 3. Vary ellipsis: "..." ↔ "…"
+        if self.rng.random() < 0.3:
+            if '...' in result:
+                result = result.replace('...', '…', 1)
+            elif '…' in result:
+                result = result.replace('…', '...', 1)
+
+        # 4. Oxford comma variation: ", and" ↔ " and"
+        if self.rng.random() < self.jitter * 0.15:
+            m = re.search(
+                r',\s+and\s+(?=[a-z])', result, re.IGNORECASE,
+            )
+            if m and self.rng.random() < 0.5:
                 result = (
                     result[:m.start()]
-                    + '\u201c' + inner + '\u201d'
+                    + ' and '
                     + result[m.end():]
                 )
+
+        # 5. Abbreviation variation: "e.g." ↔ "for example"
+        if self.rng.random() < self.jitter * 0.12:
+            abbrev_map = {
+                'e.g.': 'for example',
+                'i.e.': 'that is',
+                'etc.': 'and so on',
+            }
+            for abbr, expanded in abbrev_map.items():
+                if abbr in result.lower():
+                    idx = result.lower().find(abbr)
+                    orig = result[idx:idx + len(abbr)]
+                    result = (
+                        result[:idx] + expanded + result[idx + len(orig):]
+                    )
+                    break
+
+        # 6. Number formatting: "100" ↔ "one hundred"
+        # (only for small numbers in prose)
+        if self.rng.random() < self.jitter * 0.08:
+            small_nums = {
+                ' 2 ': ' two ', ' 3 ': ' three ',
+                ' 4 ': ' four ', ' 5 ': ' five ',
+                ' 10 ': ' ten ',
+            }
+            for num, word in small_nums.items():
+                if num in result:
+                    result = result.replace(num, word, 1)
+                    break
 
         return result
 

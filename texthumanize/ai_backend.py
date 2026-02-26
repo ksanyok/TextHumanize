@@ -182,18 +182,22 @@ class _OSSProvider:
     Circuit breaker disables after consecutive failures.
     """
 
-    _API_URL = (
+    _DEFAULT_URL = (
         "https://amd-gpt-oss-120b-chatbot.hf.space"
         "/api/predict"
     )
     _MAX_CONSECUTIVE_FAILURES = 3
     _CIRCUIT_COOLDOWN = 300.0  # 5 minutes
+    _MAX_RETRIES = 2
 
     def __init__(
         self,
         rate_limit: float = 10.0,
         timeout: float = 60.0,
+        *,
+        api_url: str | None = None,
     ) -> None:
+        self._api_url = api_url or self._DEFAULT_URL
         self._rate_limit = rate_limit
         self._timeout = timeout
         self._lock = threading.Lock()
@@ -235,13 +239,21 @@ class _OSSProvider:
     # ── rate limiter ───────────────────────────────
 
     def _wait_for_rate_limit(self) -> None:
-        """Block until rate limit window has passed."""
+        """Wait for rate limit window, non-blocking check first."""
         with self._lock:
             now = time.monotonic()
             elapsed = now - self._last_request_ts
             if elapsed < self._rate_limit:
-                wait = self._rate_limit - elapsed
-                time.sleep(wait)
+                wait = min(
+                    self._rate_limit - elapsed,
+                    self._rate_limit,
+                )
+                # Release lock during sleep to avoid blocking
+                self._lock.release()
+                try:
+                    time.sleep(wait)
+                finally:
+                    self._lock.acquire()
             self._last_request_ts = time.monotonic()
 
     # ── public ─────────────────────────────────────
@@ -279,53 +291,79 @@ class _OSSProvider:
         headers = {
             "Content-Type": "application/json",
         }
-        req = urllib.request.Request(
-            self._API_URL,
-            data=body,
-            headers=headers,
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(
-                req, timeout=self._timeout
-            ) as resp:
-                data = json.loads(
-                    resp.read().decode("utf-8")
-                )
-        except urllib.error.HTTPError as exc:
-            self._record_failure()
-            detail = ""
-            try:
-                detail = exc.read().decode(
-                    "utf-8", "replace"
-                )
-            except Exception:
-                pass
-            raise RuntimeError(
-                f"OSS API HTTP {exc.code}: {detail}"
-            ) from exc
-        except urllib.error.URLError as exc:
-            self._record_failure()
-            raise RuntimeError(
-                f"OSS API connection error: {exc.reason}"
-            ) from exc
-        except Exception as exc:
-            self._record_failure()
-            raise RuntimeError(
-                f"OSS API error: {exc}"
-            ) from exc
 
-        try:
-            result = data.get("data", [None])[0]
-            if result is None:
-                raise ValueError("empty response")
-            self._record_success()
-            return str(result).strip()
-        except (KeyError, IndexError, TypeError, ValueError) as exc:
-            self._record_failure()
-            raise RuntimeError(
-                "OSS API: unexpected response format"
-            ) from exc
+        last_err: Exception | None = None
+        for attempt in range(1, self._MAX_RETRIES + 1):
+            req = urllib.request.Request(
+                self._api_url,
+                data=body,
+                headers=headers,
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(
+                    req, timeout=self._timeout
+                ) as resp:
+                    data = json.loads(
+                        resp.read().decode("utf-8")
+                    )
+                # Parse response
+                result = data.get("data", [None])[0]
+                if result is None:
+                    raise ValueError("empty response")
+                self._record_success()
+                return str(result).strip()
+            except urllib.error.HTTPError as exc:
+                last_err = exc
+                code = exc.code
+                # Retry on 5xx server errors
+                if code >= 500 and attempt < self._MAX_RETRIES:
+                    wait = 2.0 * attempt
+                    time.sleep(wait)
+                    continue
+                self._record_failure()
+                detail = ""
+                try:
+                    detail = exc.read().decode(
+                        "utf-8", "replace"
+                    )
+                except Exception:
+                    pass
+                raise RuntimeError(
+                    f"OSS API HTTP {exc.code}: {detail}"
+                ) from exc
+            except urllib.error.URLError as exc:
+                last_err = exc
+                if attempt < self._MAX_RETRIES:
+                    time.sleep(2.0 * attempt)
+                    continue
+                self._record_failure()
+                raise RuntimeError(
+                    f"OSS API connection error: {exc.reason}"
+                ) from exc
+            except (
+                KeyError, IndexError,
+                TypeError, ValueError,
+            ) as exc:
+                self._record_failure()
+                raise RuntimeError(
+                    "OSS API: unexpected response format"
+                ) from exc
+            except Exception as exc:
+                last_err = exc
+                if attempt < self._MAX_RETRIES:
+                    time.sleep(2.0 * attempt)
+                    continue
+                self._record_failure()
+                raise RuntimeError(
+                    f"OSS API error: {exc}"
+                ) from exc
+
+        self._record_failure()
+        raise RuntimeError(
+            f"OSS API: all {self._MAX_RETRIES} retries failed: "
+            f"{last_err}"
+        )
 
 
 # ═══════════════════════════════════════════════════════
@@ -428,6 +466,7 @@ class AIBackend:
         openai_model: str = "gpt-4o-mini",
         enable_oss: bool = False,
         oss_rate_limit: float = 10.0,
+        oss_api_url: str | None = None,
         prefer: str = "auto",
     ) -> None:
         if prefer not in self._VALID_PREFER:
@@ -452,6 +491,7 @@ class AIBackend:
         if enable_oss:
             self._oss = _OSSProvider(
                 rate_limit=oss_rate_limit,
+                api_url=oss_api_url,
             )
 
         # Resolved active backend name (cached)

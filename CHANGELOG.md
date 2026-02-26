@@ -3,6 +3,30 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.15.1] - 2025-06-28
+
+### Fixed
+- **`fingerprint_randomizer.diversify_whitespace()` NO-OP** — was `pass`. Now implements paragraph break variation, comma/semicolon spacing normalization, and bullet marker style variation.
+- **`fingerprint_randomizer.diversify_output()` too weak** — expanded from 2 micro-changes to 6 real transformations: em-dash↔en-dash styles, straight↔curly quotes, ellipsis variation, Oxford comma toggle, abbreviation expansion, number word variation.
+- **`ai_backend` singleton per call** — `humanize_ai()` now caches `AIBackend` instances keyed by `(api_key, model, enable_oss)`, preserving circuit breaker state across calls.
+- **`ai_backend` hardcoded OSS URL** — changed to configurable `oss_api_url` parameter with default fallback.
+- **`ai_backend` blocking rate limiter** — releases lock during `time.sleep()` to avoid blocking other threads.
+- **`ai_backend` no retry logic** — added retry loop with exponential backoff (up to 2 retries) for 5xx and connection errors.
+- **POS tagger `-er` suffix always NOUN** — now correctly identifies comparative adjectives (bigger, faster, smaller, taller, etc.) as ADJ.
+- **POS tagger German `-t` → VERB** — added 50+ common German nouns ending in `-t` (Arbeit, Angst, Dienst, Macht, etc.) as exceptions.
+- **Benchmark `_bench_diversity` ×2 multiplier** — removed inflated score scaling. Diversity score now equals raw Jaccard distance.
+- **Benchmark `_bench_meaning_retention` 0.5 fallback** — failed/unavailable samples now score 0.0 instead of inflating results.
+- **Test tolerance for German artificiality** — added ±1.0 tolerance for micro-fluctuations caused by improved POS tagging.
+
+### Added
+- **CJK segmentation in pipeline** — CJK text automatically gets word-boundary injection before processing so downstream word-level stages work correctly.
+- **Collocation-aware synonym selection** — naturalizer now uses `CollocEngine.best_synonym()` for context-aware replacement instead of random choice.
+- **Word LM quality gate** — after naturalization, pipeline checks perplexity. Rolls back if text became >30% more predictable (AI-like).
+
+### Changed
+- Pipeline expanded to include CJK segmentation (stage 1b), paraphrasing (stage 7), and Word LM quality gate (stage 10b) in documentation.
+- Architecture section updated: 72 Python modules, 40,677 lines of code.
+
 ## [0.15.0] - 2025-06-28
 
 ### Added

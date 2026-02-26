@@ -1681,13 +1681,42 @@ class POSTagger:
         if low.endswith("est") and length > 4:
             return ADJ
 
-        # -er → context-dependent (ADJ comparative
-        #        or NOUN agent)
+        # -er → context-dependent (ADJ comparative or NOUN agent)
         if low.endswith("er") and length > 3:
-            # Common agent-noun suffixes
+            # Common agent-noun suffixes (-eer, -ier always NOUN)
             if low.endswith(("eer", "ier")):
                 return NOUN
-            # Default: agent noun
+            # Known comparative adjectives (doubled consonant + er)
+            # e.g. bigger, fatter, hotter, sadder, thinner, wetter
+            _COMP_ADJ = {
+                "bigger", "fatter", "hotter", "sadder", "thinner",
+                "wetter", "redder", "madder", "fitter", "flatter",
+                "dimmer", "slimmer", "tanner",
+            }
+            if low in _COMP_ADJ:
+                return ADJ
+            # Common comparative adjectives (base+er)
+            _COMP_BASES = {
+                "faster", "slower", "taller", "smaller", "older",
+                "younger", "longer", "shorter", "wider", "newer",
+                "cheaper", "deeper", "richer", "darker", "lighter",
+                "cleaner", "louder", "softer", "sharper", "stronger",
+                "weaker", "cooler", "warmer", "closer", "nicer",
+                "safer", "simpler", "gentler", "humbler", "nobler",
+                "later", "earlier", "higher", "lower", "brighter",
+            }
+            if low in _COMP_BASES:
+                return ADJ
+            # Heuristic: if the word without -er (or -r) is in common
+            # short adjective patterns (≤6 chars base + er), lean ADJ
+            base = low[:-2] if not low.endswith("ier") else low[:-3] + "y"
+            if len(base) <= 6 and base.endswith(
+                ("t", "d", "g", "k", "p", "n", "l", "w", "m")
+            ):
+                # Could be comparative — but default to NOUN since
+                # agent nouns are more common overall
+                pass
+            # Default: agent noun (teacher, writer, player, etc.)
             return NOUN
 
         # Noun suffixes
@@ -1771,7 +1800,32 @@ class POSTagger:
                 return VERB
 
         # 3rd person singular -t (springt, kommt)
+        # BUT many German nouns end in -t (Arbeit, Angst, Dienst, etc.)
+        # Only tag as VERB if it doesn't match common noun patterns.
         if low.endswith("t") and length > 3:
+            # Common German nouns ending in -t that are NOT verbs
+            _DE_T_NOUNS = {
+                "arbeit", "angst", "dienst", "frost", "gunst",
+                "kunst", "macht", "nacht", "pracht", "recht",
+                "markt", "welt", "zeit", "arzt", "wurst",
+                "geist", "gast", "ast", "brust", "lust",
+                "faust", "haut", "brut", "blut", "glut",
+                "wut", "mut", "gut", "rat", "staat",
+                "draht", "tat", "saat", "naht", "fahrt",
+                "art", "wort", "ort", "sort", "sport",
+                "bart", "start", "chart", "hart",
+                "amt", "hemd", "punkt", "stadt",
+                "frucht", "flucht", "zucht", "sucht",
+                "sicht", "schicht", "pflicht", "licht",
+                "gift", "schrift", "kraft", "luft", "kluft",
+                "vernunft", "ankunft", "zukunft", "herkunft",
+                "knecht", "fracht", "schlacht", "tracht",
+            }
+            if low in _DE_T_NOUNS:
+                return NOUN
+            # Capitalized words in German are usually nouns
+            # (handled elsewhere), so here we only tag lowercase
+            # words ending in -t as likely verb forms.
             return VERB
 
         # Adverb suffixes (-weise, -lich)

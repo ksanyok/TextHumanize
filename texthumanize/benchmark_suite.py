@@ -219,7 +219,7 @@ class BenchmarkSuite:
         except ImportError:
             return BenchmarkResult(
                 name="Meaning Retention",
-                score=0.5,
+                score=0.0,
                 details={"error": "semantic not available"},
             )
 
@@ -236,9 +236,9 @@ class BenchmarkSuite:
                 sim = res.overall if hasattr(res, 'overall') else 0.5
                 scores.append(sim)
             except Exception:
-                scores.append(0.5)
+                scores.append(0.0)
 
-        avg = sum(scores) / len(scores) if scores else 0.5
+        avg = sum(scores) / len(scores) if scores else 0.0
         elapsed = (time.monotonic() - t0) * 1000
 
         return BenchmarkResult(
@@ -292,7 +292,7 @@ class BenchmarkSuite:
 
         return BenchmarkResult(
             name="Diversity",
-            score=round(min(avg_dist * 2, 1.0), 4),
+            score=round(min(avg_dist, 1.0), 4),
             details={
                 "avg_jaccard_dist": round(avg_dist, 3),
                 "pairs": len(distances),

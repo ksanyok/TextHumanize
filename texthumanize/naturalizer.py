@@ -39,6 +39,7 @@ import random
 import re
 from collections import Counter
 
+from texthumanize.collocation_engine import CollocEngine
 from texthumanize.decancel import _is_replacement_safe
 from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 from texthumanize.sentence_split import split_sentences
@@ -765,12 +766,17 @@ class TextNaturalizer:
         return text
 
     def _replace_ai_words(self, text: str, prob: float) -> str:
-        """Заменить слова, характерные для автогенерации."""
+        """Заменить слова, характерные для автогенерации.
+
+        Uses collocation engine for context-aware synonym selection
+        when multiple replacement candidates are available.
+        """
         if not self._replacements:
             return text
 
         replaced = 0
         max_replacements = max(5, len(text.split()) // 20)
+        colloc = CollocEngine(lang=self.lang)
 
         for word, replacements in self._replacements.items():
             if replaced >= max_replacements:
@@ -791,8 +797,19 @@ class TextNaturalizer:
             if has_placeholder(text[max(0, match.start()-5):match.end()+5]):
                 continue
 
-            original = match.group(0)
-            replacement = self.rng.choice(replacements)
+            # Collocation-aware synonym selection:
+            # extract context words around the match for scoring
+            ctx_start = max(0, match.start() - 120)
+            ctx_end = min(len(text), match.end() + 120)
+            ctx_text = text[ctx_start:match.start()] + text[match.end():ctx_end]
+            ctx_words = re.findall(r'[\w]+', ctx_text.lower())
+
+            if len(replacements) > 1 and ctx_words:
+                replacement = colloc.best_synonym(
+                    word, replacements, ctx_words,
+                )
+            else:
+                replacement = self.rng.choice(replacements)
 
             # Context guard: проверяем, безопасна ли замена в контексте
             if not _is_replacement_safe(
@@ -800,6 +817,8 @@ class TextNaturalizer:
                 replacement=replacement,
             ):
                 continue
+
+            original = match.group(0)
 
             # Морфологическое согласование: подбираем форму синонима
             if self.lang in ("ru", "uk", "en", "de"):
