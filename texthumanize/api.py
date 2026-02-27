@@ -243,6 +243,12 @@ class TextHumanizeHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         """POST endpoints."""
         path = self.path.rstrip("/")
+
+        # SSE streaming endpoint
+        if path == "/sse/humanize":
+            self._handle_sse_humanize()
+            return
+
         handler_fn = ROUTES.get(path)
         if handler_fn is None:
             _json_response(self, {"error": f"Unknown endpoint: {path}"}, status=404)
@@ -263,6 +269,62 @@ class TextHumanizeHandler(BaseHTTPRequestHandler):
                 "type": type(exc).__name__,
                 "traceback": traceback.format_exc(),
             }, status=500)
+
+    def _handle_sse_humanize(self) -> None:
+        """Server-Sent Events streaming for humanize."""
+        try:
+            data = _read_json(self)
+        except ValueError as exc:
+            _json_response(
+                self, {"error": str(exc)}, status=400,
+            )
+            return
+
+        text = data.get("text", "")
+        lang = data.get("lang", "auto")
+        profile = data.get("profile", "web")
+        intensity = data.get("intensity", 60)
+        seed = data.get("seed")
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+
+        try:
+            from texthumanize.core import humanize_stream
+            idx = 0
+            for chunk in humanize_stream(
+                text, lang=lang, profile=profile,
+                intensity=intensity, seed=seed,
+            ):
+                event = json.dumps(
+                    {"chunk": chunk, "index": idx},
+                    ensure_ascii=False,
+                )
+                self.wfile.write(
+                    f"data: {event}\n\n".encode("utf-8"),
+                )
+                self.wfile.flush()
+                idx += 1
+
+            done = json.dumps(
+                {"done": True, "total_chunks": idx},
+            )
+            self.wfile.write(
+                f"data: {done}\n\n".encode("utf-8"),
+            )
+            self.wfile.flush()
+        except Exception as exc:
+            err = json.dumps(
+                {"error": str(exc)}, ensure_ascii=False,
+            )
+            self.wfile.write(
+                f"data: {err}\n\n".encode("utf-8"),
+            )
+            self.wfile.flush()
 
 # ─── Server factory ──────────────────────────────────────────
 

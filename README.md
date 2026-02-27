@@ -22,7 +22,7 @@
 
 **42,375 lines of code** · **75 Python modules** · **17-stage pipeline** · **14 languages + universal** · **1,802 tests**
 
-[Quick Start](#quick-start) · [Features](#feature-matrix) · [API Reference](docs/API_REFERENCE.md) · [Cookbook](docs/COOKBOOK.md) · [License](#license--pricing)
+[Quick Start](#quick-start) · [Features](#feature-matrix) · [Documentation](https://ksanyok.github.io/TextHumanize/) · [Live Demo](https://humanizekit.tester-buyreadysite.website/) · [License](#license--pricing)
 
 </div>
 
@@ -30,7 +30,7 @@
 
 TextHumanize is a **pure-algorithmic text processing engine** that normalizes style, improves readability, and removes mechanical patterns from text. No neural networks, no API keys, no internet — just 42K+ lines of finely tuned rules, dictionaries, and statistical methods.
 
-**Built-in toolkit:** AI Detection · Paraphrasing · Tone Analysis · Watermark Cleaning · Content Spinning · Coherence Analysis · Readability Scoring · Stylistic Fingerprinting · Auto-Tuner · Perplexity Analysis · Plagiarism Detection
+**Built-in toolkit:** AI Detection · Paraphrasing · Tone Analysis · Watermark Cleaning · Content Spinning · Coherence Analysis · Readability Scoring · Stylistic Fingerprinting · Auto-Tuner · Perplexity Analysis · Plagiarism Detection · **Async API** · **SSE Streaming**
 
 **Platforms:** Python (full) · TypeScript/JavaScript (core) · PHP (full)
 
@@ -173,6 +173,11 @@ variants = spin_variants("Original text.", count=5, lang="en")
 # Batch + chunked processing
 results = humanize_batch(["Text 1", "Text 2"], lang="en", max_workers=4)
 result = humanize_chunked(large_doc, chunk_size=3000, lang="ru")
+
+# Async API — native asyncio support
+from texthumanize import async_humanize, async_detect_ai
+result = await async_humanize("Text to process", lang="en")
+ai = await async_detect_ai("Text to check", lang="en")
 ```
 
 ---
@@ -453,7 +458,7 @@ mypy texthumanize/                 # Type check
 cd php && php vendor/bin/phpunit   # 223 tests
 ```
 
-CI/CD runs on every push: Python 3.9–3.12 + PHP 8.1–8.3 matrix, ruff, mypy, pytest.
+CI/CD runs on every push: Python 3.9–3.13 + PHP 8.1–8.3 matrix, ruff, mypy, pytest with coverage ≥70%.
 
 ---
 
@@ -526,6 +531,8 @@ All commercial licenses include full source code, updates for 1 year, and email 
 ---
 
 <p align="center">
+  <a href="https://ksanyok.github.io/TextHumanize/">Documentation</a> ·
+  <a href="https://humanizekit.tester-buyreadysite.website/">Live Demo</a> ·
   <a href="https://github.com/ksanyok/TextHumanize">GitHub</a> ·
   <a href="https://github.com/ksanyok/TextHumanize/issues">Issues</a> ·
   <a href="https://github.com/ksanyok/TextHumanize/discussions">Discussions</a> ·

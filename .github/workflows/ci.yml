@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
 
     steps:
       - uses: actions/checkout@v4
@@ -37,17 +37,18 @@ jobs:
       - name: Run tests with coverage (Python 3.12 only)
         if: matrix.python-version == '3.12'
         run: |
-          pytest --cov=texthumanize --cov-report=term-missing --cov-report=xml -q
+          pytest --cov=texthumanize --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -q
 
       - name: Type check with mypy (Python 3.12 only)
         if: matrix.python-version == '3.12'
         run: |
-          mypy texthumanize/ --ignore-missing-imports --no-error-summary || true
+          mypy texthumanize/ --ignore-missing-imports --no-error-summary
 
   php:
     name: PHP ${{ matrix.php-version }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         php-version: ['8.1', '8.2', '8.3']
 
@@ -67,3 +68,39 @@ jobs:
       - name: Run PHPUnit tests
         working-directory: php
         run: vendor/bin/phpunit --colors=always
+
+  js:
+    name: TypeScript / JavaScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: js
+        run: npm install
+
+      - name: Run tests
+        working-directory: js
+        run: npm test
+
+  docs:
+    name: Build Docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install MkDocs
+        run: pip install mkdocs-material mkdocs-minify-plugin
+
+      - name: Build documentation
+        run: mkdocs build --strict

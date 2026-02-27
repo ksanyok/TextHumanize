@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texthumanize"
-version = "0.15.4"
-description = "Алгоритмическая гуманизация текста с AI-детекцией, тональным анализом, перефразированием и спиннингом"
+version = "0.16.0"
+description = "Algorithmic text humanization with AI detection, tone analysis, paraphrasing, and spinning — 17-stage pipeline, 14 languages, zero dependencies"
 readme = "README.md"
 license = {text = "Dual License — Free for personal use, commercial license required for business"}
 requires-python = ">=3.9"
@@ -61,9 +61,11 @@ texthumanize-api = "texthumanize.api:run_server"
 
 [project.urls]
 Homepage = "https://github.com/ksanyok/TextHumanize"
-Documentation = "https://github.com/ksanyok/TextHumanize#readme"
+Documentation = "https://ksanyok.github.io/TextHumanize/"
 Repository = "https://github.com/ksanyok/TextHumanize"
 Issues = "https://github.com/ksanyok/TextHumanize/issues"
+Changelog = "https://github.com/ksanyok/TextHumanize/blob/main/CHANGELOG.md"
+Demo = "https://humanizekit.tester-buyreadysite.website/"
 
 [tool.setuptools.packages.find]
 include = ["texthumanize*"]

@@ -40,7 +40,7 @@ try:
     from importlib.metadata import version as _meta_version
     __version__ = _meta_version("texthumanize")
 except Exception:
-    __version__ = "0.15.4"
+    __version__ = "0.16.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
@@ -98,6 +98,13 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "DetectionMetrics": ("texthumanize.utils", "DetectionMetrics"),
     # pipeline.py
     "Pipeline": ("texthumanize.pipeline", "Pipeline"),
+    # async_api.py
+    "async_humanize": ("texthumanize.async_api", "async_humanize"),
+    "async_detect_ai": ("texthumanize.async_api", "async_detect_ai"),
+    "async_analyze": ("texthumanize.async_api", "async_analyze"),
+    "async_paraphrase": ("texthumanize.async_api", "async_paraphrase"),
+    "async_humanize_batch": ("texthumanize.async_api", "async_humanize_batch"),
+    "async_detect_ai_batch": ("texthumanize.async_api", "async_detect_ai_batch"),
     # stylistic.py
     "STYLE_PRESETS": ("texthumanize.stylistic", "STYLE_PRESETS"),
     "AnonymizeResult": ("texthumanize.stylistic", "AnonymizeResult"),
@@ -314,6 +321,13 @@ __all__ = [
     "BenchmarkReport",
     "BenchmarkResult",
     "quick_benchmark",
+    # Async API
+    "async_humanize",
+    "async_detect_ai",
+    "async_analyze",
+    "async_paraphrase",
+    "async_humanize_batch",
+    "async_detect_ai_batch",
     # Exceptions
     "TextHumanizeError",
     "PipelineError",

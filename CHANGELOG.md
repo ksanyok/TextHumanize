@@ -3,6 +3,25 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.16.0] - 2025-06-28
+
+### Added
+- **MkDocs documentation site** — Material theme, 15 pages covering installation, quickstart, profiles, all features, framework integrations, API reference, CLI, REST API, architecture. Deploys to `ksanyok.github.io/TextHumanize/`.
+- **Async API** (`texthumanize/async_api.py`) — 6 async functions: `async_humanize()`, `async_detect_ai()`, `async_analyze()`, `async_paraphrase()`, `async_humanize_batch()`, `async_detect_ai_batch()`. Uses `asyncio.run_in_executor()` for non-blocking execution.
+- **SSE streaming endpoint** — `POST /sse/humanize` in REST API returns `text/event-stream` with chunk-by-chunk humanization via `humanize_stream()` generator.
+- **Framework integration examples** — `examples/fastapi_integration.py` (async + Pydantic), `examples/flask_integration.py` (blueprint + caching), `examples/django_integration.py` (views + middleware + template filter).
+- **WordPress plugin** (`wordpress/texthumanize-wp.php`) — full WP plugin with meta box (AI check + humanize buttons), settings page, AJAX handlers, auto-humanize filter.
+- **CI: Python 3.13** added to test matrix (3.9–3.13).
+- **CI: Coverage threshold** — `--cov-fail-under=70` enforced.
+- **CI: MkDocs build job** — `mkdocs build --strict` validates docs on every push.
+- **CI: JavaScript test job** — Node.js 20, runs `npm test` in `js/` directory.
+
+### Changed
+- **pyproject.toml** — description changed from Russian to English for PyPI discoverability. Added Changelog, Demo, and Documentation URLs.
+- **README** — added Documentation and Live Demo links, async API + SSE in toolkit list, Python 3.13 in CI description, footer links to docs site and demo.
+- **CI: mypy now blocking** — removed `|| true` fallback; type errors fail the build.
+- Version: 0.15.4 → 0.16.0.
+
 ## [0.15.4] - 2025-06-27
 
 ### Added
