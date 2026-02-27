@@ -9,7 +9,6 @@ import math
 
 import pytest
 
-
 # ═══════════════════════════════════════════════════════════════
 #  Neural Engine Tests
 # ═══════════════════════════════════════════════════════════════
@@ -19,7 +18,7 @@ class TestNeuralEngine:
     """Tests for the pure-Python neural network engine."""
 
     def test_vector_ops(self) -> None:
-        from texthumanize.neural_engine import _dot, _matvec, _cosine_similarity
+        from texthumanize.neural_engine import _cosine_similarity, _dot, _matvec
         assert _dot([1, 2, 3], [4, 5, 6]) == 32
         assert _cosine_similarity([1, 0], [0, 1]) == pytest.approx(0.0, abs=1e-6)
         assert _cosine_similarity([1, 0], [1, 0]) == pytest.approx(1.0, abs=1e-6)
@@ -27,7 +26,7 @@ class TestNeuralEngine:
         assert result == [3, 7]
 
     def test_activations(self) -> None:
-        from texthumanize.neural_engine import _sigmoid, _tanh, _relu, _gelu, _softmax
+        from texthumanize.neural_engine import _relu, _sigmoid, _softmax, _tanh
         assert _sigmoid(0) == pytest.approx(0.5, abs=1e-6)
         assert _sigmoid(100) == pytest.approx(1.0, abs=1e-4)
         assert _sigmoid(-100) == pytest.approx(0.0, abs=1e-4)
@@ -62,7 +61,7 @@ class TestNeuralEngine:
         assert out[1] == pytest.approx(4.0, abs=1e-6)
 
     def test_feedforward_net(self) -> None:
-        from texthumanize.neural_engine import FeedForwardNet, DenseLayer
+        from texthumanize.neural_engine import DenseLayer, FeedForwardNet
         net = FeedForwardNet([
             DenseLayer([[1.0, 2.0]], [0.0], activation="relu"),  # 2→1
         ])
@@ -70,7 +69,7 @@ class TestNeuralEngine:
         assert out == [3.0]
 
     def test_feedforward_predict_proba(self) -> None:
-        from texthumanize.neural_engine import FeedForwardNet, DenseLayer
+        from texthumanize.neural_engine import DenseLayer, FeedForwardNet
         net = FeedForwardNet([
             DenseLayer([[1.0, -1.0]], [0.0], activation="linear"),  # 2→1 binary
         ])
@@ -79,7 +78,7 @@ class TestNeuralEngine:
         assert 0.0 <= proba <= 1.0
 
     def test_feedforward_param_count(self) -> None:
-        from texthumanize.neural_engine import FeedForwardNet, DenseLayer
+        from texthumanize.neural_engine import DenseLayer, FeedForwardNet
         net = FeedForwardNet([
             DenseLayer([[1.0, 2.0], [3.0, 4.0]], [0.0, 0.0], activation="relu"),  # 2*2+2=6
             DenseLayer([[1.0, 0.0]], [0.0], activation="linear"),  # 1*2+1=3
@@ -163,7 +162,7 @@ class TestNeuralEngine:
         assert len(out) == 2
 
     def test_serialization(self) -> None:
-        from texthumanize.neural_engine import FeedForwardNet, DenseLayer
+        from texthumanize.neural_engine import DenseLayer, FeedForwardNet
         net = FeedForwardNet([
             DenseLayer([[1.0, 2.0]], [0.5], activation="relu"),
         ], name="test_net")
@@ -401,7 +400,10 @@ class TestWordEmbeddings:
         sim_similar = wv.word_similarity("good", "great")
         sim_dissim = wv.word_similarity("good", "computer")
         # Similar pair should have higher similarity than dissimilar
-        assert sim_similar > sim_dissim or True  # Hash-based may not always sort
+        # Hash-based embeddings may not always preserve semantic ordering,
+        # so we just verify both return valid floats in [-1, 1]
+        assert -1.0 <= sim_similar <= 1.0
+        assert -1.0 <= sim_dissim <= 1.0
 
     def test_sentence_vector(self) -> None:
         from texthumanize.word_embeddings import WordVec
@@ -557,11 +559,11 @@ class TestNeuralIntegration:
 
     def test_import_all_neural_modules(self) -> None:
         """All neural modules should import without error."""
-        from texthumanize.neural_engine import FeedForwardNet, LSTMCell, EmbeddingTable, HMM
+        from texthumanize.hmm_tagger import HMMTagger
         from texthumanize.neural_detector import NeuralAIDetector
+        from texthumanize.neural_engine import FeedForwardNet, LSTMCell
         from texthumanize.neural_lm import NeuralPerplexity
         from texthumanize.word_embeddings import WordVec
-        from texthumanize.hmm_tagger import HMMTagger
         assert FeedForwardNet is not None
         assert LSTMCell is not None
         assert NeuralAIDetector is not None

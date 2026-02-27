@@ -9,8 +9,6 @@ Run: pytest tests/test_adversarial.py -v
 
 from __future__ import annotations
 
-import pytest
-
 from texthumanize import detect_ai, humanize
 
 
