@@ -35,6 +35,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import re
 from collections import Counter
@@ -43,6 +44,8 @@ from texthumanize.collocation_engine import CollocEngine
 from texthumanize.decancel import _is_replacement_safe
 from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 from texthumanize.sentence_split import split_sentences
+
+logger = logging.getLogger(__name__)
 
 # ─── Характерные стилевые паттерны автоматически сгенерированного текста ───
 
@@ -635,7 +638,6 @@ _PERPLEXITY_BOOSTERS = {
                       "E com razão.", "Em uma palavra.", "Pois é."],
     },
 }
-
 
 class TextNaturalizer:
     """Модуль стилевой натурализации текста.

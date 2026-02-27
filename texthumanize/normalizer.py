@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import re
 
 from texthumanize.utils import get_profile
 
+logger = logging.getLogger(__name__)
 
 class TypographyNormalizer:
     """Нормализует типографику текста под выбранный профиль.

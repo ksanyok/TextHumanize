@@ -1,9 +1,9 @@
 """Тесты новых функций: humanize_batch, similarity, quality_score, MARKETING tone."""
 
 import pytest
-from texthumanize import humanize, humanize_batch, HumanizeResult
-from texthumanize.tone import ToneAdjuster, ToneLevel
 
+from texthumanize import HumanizeResult, humanize, humanize_batch
+from texthumanize.tone import ToneAdjuster, ToneLevel
 
 # Общие тексты для переиспользования
 RU_TEXT = (

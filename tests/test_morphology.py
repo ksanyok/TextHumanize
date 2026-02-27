@@ -1,6 +1,5 @@
 """Тесты для морфологического движка (morphology.py)."""
 
-import pytest
 from texthumanize.morphology import MorphologyEngine, get_morphology
 
 

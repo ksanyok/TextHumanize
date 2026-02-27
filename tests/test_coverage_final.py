@@ -1,17 +1,14 @@
 """Финальный файл для закрытия оставшихся 197 строк до 97-100% покрытия."""
 
 import random
-import re
-import unicodedata
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 # ═══════════════════════════════════════════════════════════════
 #  paraphrase.py — L261-262, L294-303, L334-337, L360
 # ═══════════════════════════════════════════════════════════════
-
-from texthumanize.paraphrase import Paraphraser, paraphrase_text
+from texthumanize.paraphrase import Paraphraser
 
 
 class TestParaphraseFinal:
@@ -961,7 +958,7 @@ class TestSegmenterFinal:
 #  tokenizer.py — L46, L115, L129, L169-170
 # ═══════════════════════════════════════════════════════════════
 
-from texthumanize.tokenizer import Tokenizer, Sentence
+from texthumanize.tokenizer import Sentence, Tokenizer
 
 
 class TestTokenizerFinal:

@@ -16,10 +16,13 @@ Usage:
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
 from texthumanize._colloc_data import get_collocations
+
+logger = logging.getLogger(__name__)
 
 # ── Lazy-loaded collocation data ──────────────────────────
 # 2500+ collocations across 9 languages.
@@ -30,20 +33,16 @@ _SUPPORTED_LANGS = frozenset({
     "en", "ru", "de", "fr", "es", "it", "pt", "pl", "uk",
 })
 
-
 def _get_collocs(lang: str) -> dict[tuple[str, str], float]:
     """Get collocation dict for a language (lazy-loaded)."""
     if lang not in _COLLOCS_CACHE:
         _COLLOCS_CACHE[lang] = get_collocations(lang)
     return _COLLOCS_CACHE[lang]
 
-
 _TOK_RE = re.compile(r"[\w'']+", re.UNICODE)
-
 
 def _tokenize(text: str) -> list[str]:
     return [w.lower() for w in _TOK_RE.findall(text)]
-
 
 class CollocEngine:
     """Collocation-aware scoring engine.
@@ -200,7 +199,6 @@ class CollocEngine:
             "collocs": pairs_found,
         }
 
-
 # ── Convenience ───────────────────────────────────────────
 
 def collocation_score(
@@ -208,7 +206,6 @@ def collocation_score(
 ) -> float:
     """Quick PMI lookup between two words."""
     return CollocEngine(lang=lang).pmi(w1, w2)
-
 
 def best_synonym_in_context(
     original: str,

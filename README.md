@@ -12,11 +12,11 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?logo=typescript&logoColor=white)]()
 [![PHP 8.1+](https://img.shields.io/badge/php-8.1+-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
 &nbsp;&nbsp;
-[![Python Tests](https://img.shields.io/badge/tests-1696%20passed-2ea44f.svg?logo=pytest&logoColor=white)]()
-[![PHP Tests](https://img.shields.io/badge/tests-223%20passed-2ea44f.svg?logo=php&logoColor=white)]()
-[![JS Tests](https://img.shields.io/badge/tests-28%20passed-2ea44f.svg?logo=vitest&logoColor=white)]()
+[![CI](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
+[![Python Tests](https://img.shields.io/badge/tests-1756%20passed-2ea44f.svg?logo=pytest&logoColor=white)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
+[![PHP Tests](https://img.shields.io/badge/tests-223%20passed-2ea44f.svg?logo=php&logoColor=white)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
 &nbsp;&nbsp;
-[![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)]()
+[![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
 [![Benchmark](https://img.shields.io/badge/benchmark-100%25-brightgreen.svg)]()
 
 [![mypy](https://img.shields.io/badge/types-mypy%20clean-blue.svg)](https://mypy-lang.org/)
@@ -27,7 +27,7 @@
 
 <br/>
 
-**40,000+ lines of code** · **72 Python modules** · **17-stage pipeline** · **14 languages + universal**
+**42,000+ lines of code** · **73 Python modules** · **17-stage pipeline** · **14 languages + universal**
 
 [Quick Start](#quick-start) · [API Reference](#api-reference) · [AI Detection](#ai-detection--how-it-works) · [Cookbook](docs/COOKBOOK.md)
 
@@ -311,7 +311,7 @@ npm install
 
 ```python
 import texthumanize
-print(texthumanize.__version__)  # 0.11.0
+print(texthumanize.__version__)  # 0.15.2
 ```
 
 ### Updating to latest version
@@ -323,7 +323,7 @@ print(texthumanize.__version__)  # 0.11.0
 pip install --upgrade texthumanize
 
 # Update to specific version
-pip install texthumanize==0.8.0
+pip install texthumanize>=0.15.0
 ```
 
 #### From source (GitHub)
@@ -366,15 +366,15 @@ npm install && npm run build
 
 ```bash
 # Python — install directly from a GitHub release tag
-pip install git+https://github.com/ksanyok/TextHumanize.git@v0.8.0
+pip install git+https://github.com/ksanyok/TextHumanize.git@v0.15.2
 
 # Or download a release archive
-pip install https://github.com/ksanyok/TextHumanize/archive/refs/tags/v0.8.0.tar.gz
+pip install https://github.com/ksanyok/TextHumanize/archive/refs/tags/v0.15.2.tar.gz
 ```
 
 > **Tip:** Pin your version in `requirements.txt` for reproducible builds:
 > ```
-> texthumanize @ git+https://github.com/ksanyok/TextHumanize.git@v0.8.0
+> texthumanize @ git+https://github.com/ksanyok/TextHumanize.git@v0.15.2
 > ```
 
 ---

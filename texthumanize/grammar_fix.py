@@ -11,8 +11,11 @@
 
 from __future__ import annotations
 
+import logging
+
 from texthumanize.grammar import check_grammar, fix_grammar
 
+logger = logging.getLogger(__name__)
 
 class GrammarCorrector:
     """Обёртка grammar.py для использования в пайплайне.

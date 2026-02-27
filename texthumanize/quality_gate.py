@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import logging
 import os
 import subprocess
 import sys
@@ -29,10 +30,11 @@ from typing import Sequence
 
 from texthumanize.core import analyze, detect_ai, detect_watermarks
 
+logger = logging.getLogger(__name__)
+
 # ─────────────────────────────────────────────────────────────
 #  Dataclasses
 # ─────────────────────────────────────────────────────────────
-
 
 @dataclass
 class GateResult:
@@ -44,7 +46,6 @@ class GateResult:
     watermark_count: int = 0
     issues: list[str] = field(default_factory=list)
 
-
 @dataclass
 class GateConfig:
     """Quality gate thresholds."""
@@ -54,11 +55,9 @@ class GateConfig:
     max_file_size: int = 500_000  # 500 KB
     extensions: tuple[str, ...] = (".md", ".txt", ".rst", ".html", ".adoc")
 
-
 # ─────────────────────────────────────────────────────────────
 #  Core logic
 # ─────────────────────────────────────────────────────────────
-
 
 def check_file(path: str, config: GateConfig | None = None) -> GateResult:
     """Check a single text file against quality thresholds.
@@ -130,7 +129,6 @@ def check_file(path: str, config: GateConfig | None = None) -> GateResult:
 
     return result
 
-
 def check_files(
     paths: Sequence[str],
     config: GateConfig | None = None,
@@ -146,11 +144,9 @@ def check_files(
     """
     return [check_file(p, config) for p in paths]
 
-
 # ─────────────────────────────────────────────────────────────
 #  Git helpers
 # ─────────────────────────────────────────────────────────────
-
 
 def get_changed_text_files(extensions: tuple[str, ...] | None = None) -> list[str]:
     """Return text files changed in the current git diff (HEAD vs working tree).
@@ -176,11 +172,9 @@ def get_changed_text_files(extensions: tuple[str, ...] | None = None) -> list[st
     files = [f for f in out.splitlines() if f.strip()]
     return [f for f in files if any(f.endswith(e) for e in exts)]
 
-
 # ─────────────────────────────────────────────────────────────
 #  CLI
 # ─────────────────────────────────────────────────────────────
-
 
 def _find_files(patterns: list[str], extensions: tuple[str, ...]) -> list[str]:
     """Expand globs and filter by extension."""
@@ -194,7 +188,6 @@ def _find_files(patterns: list[str], extensions: tuple[str, ...]) -> list[str]:
         else:
             result.extend(glob.glob(pat, recursive=True))
     return sorted(set(result))
-
 
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point for the quality gate.
@@ -284,7 +277,6 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"\nquality-gate: {len(results)} file(s) passed ✅")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

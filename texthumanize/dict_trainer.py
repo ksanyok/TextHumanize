@@ -9,10 +9,12 @@ No external APIs — purely statistical n-gram analysis.
 
 from __future__ import annotations
 
+import logging
 import re
 from collections import Counter
 from dataclasses import dataclass
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class TrainingResult:

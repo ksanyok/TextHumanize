@@ -1,13 +1,13 @@
 """Покрытие pipeline.py, structure.py, liveliness.py, repetitions.py, validator.py."""
 
 import pytest
-from texthumanize.pipeline import Pipeline
-from texthumanize.structure import StructureDiversifier
-from texthumanize.liveliness import LivelinessInjector
-from texthumanize.repetitions import RepetitionReducer
-from texthumanize.validator import QualityValidator
-from texthumanize.utils import HumanizeOptions
 
+from texthumanize.liveliness import LivelinessInjector
+from texthumanize.pipeline import Pipeline
+from texthumanize.repetitions import RepetitionReducer
+from texthumanize.structure import StructureDiversifier
+from texthumanize.utils import HumanizeOptions
+from texthumanize.validator import QualityValidator
 
 # ═══════════════════════════════════════════════════════════════
 #  Pipeline

@@ -1,11 +1,11 @@
 """Тесты для обнаружения водяных знаков (watermark.py)."""
 
-import pytest
 from texthumanize.watermark import (
-    WatermarkDetector, WatermarkReport,
-    detect_watermarks, clean_watermarks,
+    WatermarkDetector,
+    WatermarkReport,
+    clean_watermarks,
+    detect_watermarks,
 )
-
 
 CLEAN_TEXT = "This is a perfectly normal text without any hidden characters."
 

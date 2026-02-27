@@ -8,16 +8,11 @@ lang_detect, context, repetitions, structure.
 
 from __future__ import annotations
 
-import math
-import random
-import re
-import sys
 import unittest
 from collections import Counter
 from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
-
 
 # ═══════════════════════════════════════════════════════════════
 #  tokenizer.py — L115, L129, L169–170
@@ -876,8 +871,10 @@ class TestCliR3(unittest.TestCase):
 
     def test_output_text_to_file(self):
         """L335–341: сохранение в файл."""
+        import os
+        import tempfile
+
         from texthumanize.cli import _output_text
-        import tempfile, os
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             path = f.name
         try:
@@ -1043,7 +1040,7 @@ class TestToneR3Extra(unittest.TestCase):
 
     def test_analyze_single_score_via_patch(self):
         """L298: len(sorted_scores) < 2 через патч scores dict."""
-        from texthumanize.tone import ToneAnalyzer, ToneLevel
+        from texthumanize.tone import ToneAnalyzer
         analyzer = ToneAnalyzer("en")
         text = "The system works properly and delivers results efficiently today."
         # Патчим чтобы scores содержал только 1 запись

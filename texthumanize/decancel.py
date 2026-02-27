@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import re
 
@@ -9,6 +10,8 @@ from texthumanize.lang import get_lang_pack
 from texthumanize.morphology import get_morphology
 from texthumanize.segmenter import has_placeholder
 from texthumanize.utils import coin_flip, get_profile, intensity_probability
+
+logger = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════
 #  Context guards — запрещаем замену слова, если рядом стоят

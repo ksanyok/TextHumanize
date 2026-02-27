@@ -1,7 +1,8 @@
 """Тесты основного API."""
 
 import pytest
-from texthumanize import humanize, analyze, explain, HumanizeResult, AnalysisReport
+
+from texthumanize import AnalysisReport, HumanizeResult, analyze, explain, humanize
 
 
 class TestHumanize:

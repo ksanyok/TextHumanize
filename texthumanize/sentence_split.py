@@ -12,12 +12,14 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from functools import lru_cache
 
 from texthumanize.lang import get_lang_pack
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class SentenceSpan:

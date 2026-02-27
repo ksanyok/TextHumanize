@@ -8,7 +8,10 @@ No external dependencies.
 
 from __future__ import annotations
 
+import logging
 import unicodedata
+
+logger = logging.getLogger(__name__)
 
 # ── Chinese dictionary ─────────────────────────────
 # Built as a frozenset for O(1) lookup.

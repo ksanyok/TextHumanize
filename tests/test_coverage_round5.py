@@ -1,8 +1,6 @@
 """Round 5: финальная зачистка uncovered lines."""
 import unittest
-from unittest.mock import MagicMock, patch, mock_open
-import re
-
+from unittest.mock import MagicMock, patch
 
 # ═══════════════════════════════════════════════════════════════
 #  analyzer.py — L52
@@ -268,9 +266,9 @@ class TestCliR5(unittest.TestCase):
 
     def test_output_text_stdout(self):
         """L347: no --output → print(text) to stdout."""
-        from texthumanize.cli import _output_text
         import io
-        import sys
+
+        from texthumanize.cli import _output_text
         args = MagicMock()
         args.output = None
         captured = io.StringIO()
@@ -280,7 +278,6 @@ class TestCliR5(unittest.TestCase):
 
     def test_report_write_error(self):
         """L328-329: report write fails → print error to stderr."""
-        from texthumanize import cli
         import io
         import sys
         args = MagicMock()

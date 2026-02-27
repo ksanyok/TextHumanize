@@ -1,7 +1,6 @@
 """Тесты сегментатора — защита URL, кода и других элементов."""
 
-import pytest
-from texthumanize.segmenter import Segmenter, SegmentedText
+from texthumanize.segmenter import Segmenter
 
 
 class TestSegmenter:

@@ -10,10 +10,10 @@ text naturalness and doesn't introduce regressions like:
 """
 
 import re
+
 import pytest
 
-from texthumanize import humanize, HumanizeResult
-
+from texthumanize import humanize
 
 # ── Test data ─────────────────────────────────────────────
 
@@ -437,7 +437,7 @@ class TestResultMetadata:
     def test_lang_field_set(self):
         """Language field should be correctly set."""
         result = humanize(AI_TEXT_EN, lang="en", intensity=70, seed=42)
-        assert result.lang == "en"   
+        assert result.lang == "en"
 
     def test_profile_field_set(self):
         """Profile field should be set when specified."""

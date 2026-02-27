@@ -1,8 +1,8 @@
 """Golden-тесты: фиксированные входы → ожидаемые характеристики выхода."""
 
 import pytest
-from texthumanize import humanize, analyze
 
+from texthumanize import analyze, humanize
 
 # Тестовые тексты, типичные для AI-генерации
 AI_TEXT_RU = """

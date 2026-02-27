@@ -1,12 +1,9 @@
 """Тесты для coherence, paraphrase, watermark — повышение покрытия."""
 from __future__ import annotations
 
-import pytest
-
 from texthumanize.coherence import CoherenceAnalyzer
 from texthumanize.paraphrase import Paraphraser
 from texthumanize.watermark import WatermarkDetector, detect_watermarks
-
 
 # ═══════════════════════════════════════════════════════════════
 #  COHERENCE — с 68% до ~85%+

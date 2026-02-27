@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from collections import Counter
 
 from texthumanize.lang import LANGUAGES
 
+logger = logging.getLogger(__name__)
 
 def _extract_trigrams(text: str, limit: int = 300) -> Counter:
     """Извлечь триграммы из текста."""

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from texthumanize.uniqueness import (
     SimilarityReport,
     UniquenessReport,
@@ -11,7 +9,6 @@ from texthumanize.uniqueness import (
     text_fingerprint,
     uniqueness_score,
 )
-
 
 # ── uniqueness_score ─────────────────────────────────────────
 

@@ -1,10 +1,7 @@
 """Тесты для морфологического движка — повышение покрытия с 55% до ~85%+."""
 from __future__ import annotations
 
-import pytest
-
 from texthumanize.morphology import MorphologyEngine, get_morphology
-
 
 # ═══════════════════════════════════════════════════════════════
 #  Русский язык

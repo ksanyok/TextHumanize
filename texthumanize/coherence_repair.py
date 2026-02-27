@@ -10,12 +10,15 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import re
 
 from texthumanize.coherence import CoherenceAnalyzer
 from texthumanize.segmenter import skip_placeholder_sentence
 from texthumanize.sentence_split import split_sentences
+
+logger = logging.getLogger(__name__)
 
 # Переходные слова для вставки между абзацами (по языкам и категориям)
 _TRANSITION_INSERTIONS: dict[str, dict[str, list[str]]] = {

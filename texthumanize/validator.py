@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from difflib import SequenceMatcher
 
 from texthumanize.analyzer import TextAnalyzer
 from texthumanize.utils import AnalysisReport
 
+logger = logging.getLogger(__name__)
 
 class QualityValidator:
     """Проверяет качество результата после гуманизации.

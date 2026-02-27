@@ -1,11 +1,12 @@
 """Тесты для спиннера контента (spinner.py)."""
 
-import pytest
 from texthumanize.spinner import (
-    ContentSpinner, SpinResult,
-    spin_text, generate_spintax, generate_variants,
+    ContentSpinner,
+    SpinResult,
+    generate_spintax,
+    generate_variants,
+    spin_text,
 )
-
 
 SAMPLE_TEXT = (
     "We use modern technology to create effective solutions. "

@@ -36,87 +36,161 @@
     >>> print(ai["verdict"])
 """
 
-__version__ = "0.15.1"
+try:
+    from importlib.metadata import version as _meta_version
+    __version__ = _meta_version("texthumanize")
+except Exception:
+    __version__ = "0.15.3"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
-from texthumanize.ai_backend import AIBackend
-from texthumanize.autotune import AutoTuner
-from texthumanize.benchmark_suite import (
-    BenchmarkReport,
-    BenchmarkResult,
-    BenchmarkSuite,
-    quick_benchmark,
+# Exceptions — always available (lightweight module, no heavy deps)
+from texthumanize.exceptions import (  # noqa: F401, E402
+    AIBackendError,
+    AIBackendRateLimitError,
+    AIBackendUnavailableError,
+    ConfigError,
+    DetectionError,
+    InputTooLargeError,
+    PipelineError,
+    StageError,
+    TextHumanizeError,
+    UnsupportedLanguageError,
 )
-from texthumanize.cjk_segmenter import CJKSegmenter, detect_cjk_lang, is_cjk_text, segment_cjk
-from texthumanize.collocation_engine import CollocEngine, best_synonym_in_context, collocation_score
-from texthumanize.core import (
-    adjust_tone,
-    adversarial_calibrate,
-    analyze,
-    analyze_coherence,
-    analyze_tone,
-    anonymize_style,
-    build_author_profile,
-    clean_watermarks,
-    compare_fingerprint,
-    detect_ab,
-    detect_ai,
-    detect_ai_batch,
-    detect_ai_mixed,
-    detect_ai_sentences,
-    detect_watermarks,
-    evasion_resistance,
-    explain,
-    full_readability,
-    humanize,
-    humanize_ai,
-    humanize_batch,
-    humanize_chunked,
-    humanize_sentences,
-    humanize_stream,
-    humanize_variants,
-    paraphrase,
-    spin,
-    spin_variants,
-)
-from texthumanize.dict_trainer import TrainingResult, export_custom_dict, train_from_corpus
-from texthumanize.diff_report import (
-    explain_html,
-    explain_json_patch,
-    explain_side_by_side,
-)
-from texthumanize.fingerprint_randomizer import FingerprintRandomizer, diversify_text
-from texthumanize.grammar import GrammarIssue, GrammarReport, check_grammar, fix_grammar
-from texthumanize.health_score import ContentHealthReport, HealthComponent, content_health
-from texthumanize.perplexity_v2 import cross_entropy, perplexity_score
-from texthumanize.pipeline import Pipeline
-from texthumanize.plagiarism import PlagiarismReport, check_originality, compare_originality
-from texthumanize.pos_tagger import POSTagger
-from texthumanize.semantic import SemanticReport, semantic_similarity
-from texthumanize.sentence_readability import (
-    SentenceReadabilityReport,
-    SentenceScore,
-    sentence_readability,
-)
-from texthumanize.statistical_detector import StatisticalDetector, detect_ai_statistical
-from texthumanize.stylistic import (
-    STYLE_PRESETS,
-    AnonymizeResult,
-    StylisticAnalyzer,
-    StylisticFingerprint,
-    StylometricAnonymizer,
-)
-from texthumanize.syntax_rewriter import SyntaxRewriter
-from texthumanize.uniqueness import (
-    SimilarityReport,
-    UniquenessReport,
-    compare_texts,
-    text_fingerprint,
-    uniqueness_score,
-)
-from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
-from texthumanize.word_lm import WordLanguageModel, word_naturalness, word_perplexity
+
+# ── PEP 562 lazy loading ─────────────────────────────────────
+# All heavy modules are loaded on first attribute access.
+_LAZY_IMPORTS: dict[str, tuple[str, str]] = {
+    # core.py
+    "humanize": ("texthumanize.core", "humanize"),
+    "humanize_batch": ("texthumanize.core", "humanize_batch"),
+    "humanize_chunked": ("texthumanize.core", "humanize_chunked"),
+    "humanize_sentences": ("texthumanize.core", "humanize_sentences"),
+    "humanize_stream": ("texthumanize.core", "humanize_stream"),
+    "humanize_variants": ("texthumanize.core", "humanize_variants"),
+    "humanize_ai": ("texthumanize.core", "humanize_ai"),
+    "analyze": ("texthumanize.core", "analyze"),
+    "explain": ("texthumanize.core", "explain"),
+    "detect_ai": ("texthumanize.core", "detect_ai"),
+    "detect_ai_batch": ("texthumanize.core", "detect_ai_batch"),
+    "detect_ai_sentences": ("texthumanize.core", "detect_ai_sentences"),
+    "detect_ai_mixed": ("texthumanize.core", "detect_ai_mixed"),
+    "build_author_profile": ("texthumanize.core", "build_author_profile"),
+    "compare_fingerprint": ("texthumanize.core", "compare_fingerprint"),
+    "detect_ab": ("texthumanize.core", "detect_ab"),
+    "evasion_resistance": ("texthumanize.core", "evasion_resistance"),
+    "adversarial_calibrate": ("texthumanize.core", "adversarial_calibrate"),
+    "anonymize_style": ("texthumanize.core", "anonymize_style"),
+    "paraphrase": ("texthumanize.core", "paraphrase"),
+    "analyze_tone": ("texthumanize.core", "analyze_tone"),
+    "adjust_tone": ("texthumanize.core", "adjust_tone"),
+    "detect_watermarks": ("texthumanize.core", "detect_watermarks"),
+    "clean_watermarks": ("texthumanize.core", "clean_watermarks"),
+    "spin": ("texthumanize.core", "spin"),
+    "spin_variants": ("texthumanize.core", "spin_variants"),
+    "analyze_coherence": ("texthumanize.core", "analyze_coherence"),
+    "full_readability": ("texthumanize.core", "full_readability"),
+    # utils.py
+    "HumanizeOptions": ("texthumanize.utils", "HumanizeOptions"),
+    "HumanizeResult": ("texthumanize.utils", "HumanizeResult"),
+    "AnalysisReport": ("texthumanize.utils", "AnalysisReport"),
+    "DetectionReport": ("texthumanize.utils", "DetectionReport"),
+    "DetectionMetrics": ("texthumanize.utils", "DetectionMetrics"),
+    # pipeline.py
+    "Pipeline": ("texthumanize.pipeline", "Pipeline"),
+    # stylistic.py
+    "STYLE_PRESETS": ("texthumanize.stylistic", "STYLE_PRESETS"),
+    "AnonymizeResult": ("texthumanize.stylistic", "AnonymizeResult"),
+    "StylisticAnalyzer": ("texthumanize.stylistic", "StylisticAnalyzer"),
+    "StylisticFingerprint": ("texthumanize.stylistic", "StylisticFingerprint"),
+    "StylometricAnonymizer": ("texthumanize.stylistic", "StylometricAnonymizer"),
+    # autotune.py
+    "AutoTuner": ("texthumanize.autotune", "AutoTuner"),
+    # grammar.py
+    "check_grammar": ("texthumanize.grammar", "check_grammar"),
+    "fix_grammar": ("texthumanize.grammar", "fix_grammar"),
+    "GrammarIssue": ("texthumanize.grammar", "GrammarIssue"),
+    "GrammarReport": ("texthumanize.grammar", "GrammarReport"),
+    # uniqueness.py
+    "uniqueness_score": ("texthumanize.uniqueness", "uniqueness_score"),
+    "compare_texts": ("texthumanize.uniqueness", "compare_texts"),
+    "text_fingerprint": ("texthumanize.uniqueness", "text_fingerprint"),
+    "UniquenessReport": ("texthumanize.uniqueness", "UniquenessReport"),
+    "SimilarityReport": ("texthumanize.uniqueness", "SimilarityReport"),
+    # health_score.py
+    "content_health": ("texthumanize.health_score", "content_health"),
+    "ContentHealthReport": ("texthumanize.health_score", "ContentHealthReport"),
+    "HealthComponent": ("texthumanize.health_score", "HealthComponent"),
+    # semantic.py
+    "semantic_similarity": ("texthumanize.semantic", "semantic_similarity"),
+    "SemanticReport": ("texthumanize.semantic", "SemanticReport"),
+    # sentence_readability.py
+    "sentence_readability": ("texthumanize.sentence_readability", "sentence_readability"),
+    "SentenceReadabilityReport": ("texthumanize.sentence_readability", "SentenceReadabilityReport"),
+    "SentenceScore": ("texthumanize.sentence_readability", "SentenceScore"),
+    # perplexity_v2.py
+    "perplexity_score": ("texthumanize.perplexity_v2", "perplexity_score"),
+    "cross_entropy": ("texthumanize.perplexity_v2", "cross_entropy"),
+    # dict_trainer.py
+    "train_from_corpus": ("texthumanize.dict_trainer", "train_from_corpus"),
+    "export_custom_dict": ("texthumanize.dict_trainer", "export_custom_dict"),
+    "TrainingResult": ("texthumanize.dict_trainer", "TrainingResult"),
+    # plagiarism.py
+    "check_originality": ("texthumanize.plagiarism", "check_originality"),
+    "compare_originality": ("texthumanize.plagiarism", "compare_originality"),
+    "PlagiarismReport": ("texthumanize.plagiarism", "PlagiarismReport"),
+    # ai_backend.py
+    "AIBackend": ("texthumanize.ai_backend", "AIBackend"),
+    # pos_tagger.py
+    "POSTagger": ("texthumanize.pos_tagger", "POSTagger"),
+    # cjk_segmenter.py
+    "CJKSegmenter": ("texthumanize.cjk_segmenter", "CJKSegmenter"),
+    "segment_cjk": ("texthumanize.cjk_segmenter", "segment_cjk"),
+    "is_cjk_text": ("texthumanize.cjk_segmenter", "is_cjk_text"),
+    "detect_cjk_lang": ("texthumanize.cjk_segmenter", "detect_cjk_lang"),
+    # syntax_rewriter.py
+    "SyntaxRewriter": ("texthumanize.syntax_rewriter", "SyntaxRewriter"),
+    # statistical_detector.py
+    "StatisticalDetector": ("texthumanize.statistical_detector", "StatisticalDetector"),
+    "detect_ai_statistical": ("texthumanize.statistical_detector", "detect_ai_statistical"),
+    # word_lm.py
+    "WordLanguageModel": ("texthumanize.word_lm", "WordLanguageModel"),
+    "word_perplexity": ("texthumanize.word_lm", "word_perplexity"),
+    "word_naturalness": ("texthumanize.word_lm", "word_naturalness"),
+    # collocation_engine.py
+    "CollocEngine": ("texthumanize.collocation_engine", "CollocEngine"),
+    "collocation_score": ("texthumanize.collocation_engine", "collocation_score"),
+    "best_synonym_in_context": ("texthumanize.collocation_engine", "best_synonym_in_context"),
+    # fingerprint_randomizer.py
+    "FingerprintRandomizer": ("texthumanize.fingerprint_randomizer", "FingerprintRandomizer"),
+    "diversify_text": ("texthumanize.fingerprint_randomizer", "diversify_text"),
+    # benchmark_suite.py
+    "BenchmarkSuite": ("texthumanize.benchmark_suite", "BenchmarkSuite"),
+    "BenchmarkReport": ("texthumanize.benchmark_suite", "BenchmarkReport"),
+    "BenchmarkResult": ("texthumanize.benchmark_suite", "BenchmarkResult"),
+    "quick_benchmark": ("texthumanize.benchmark_suite", "quick_benchmark"),
+    # diff_report.py
+    "explain_html": ("texthumanize.diff_report", "explain_html"),
+    "explain_json_patch": ("texthumanize.diff_report", "explain_json_patch"),
+    "explain_side_by_side": ("texthumanize.diff_report", "explain_side_by_side"),
+}
+
+
+def __getattr__(name: str):
+    """PEP 562: lazy-load heavy modules on first attribute access."""
+    if name in _LAZY_IMPORTS:
+        module_path, attr = _LAZY_IMPORTS[name]
+        import importlib
+        mod = importlib.import_module(module_path)
+        val = getattr(mod, attr)
+        globals()[name] = val  # cache for subsequent accesses
+        return val
+    raise AttributeError(f"module 'texthumanize' has no attribute {name!r}")
+
+
+def __dir__():
+    """Include lazy-loaded names in dir() output."""
+    return list(set(globals().keys()) | set(_LAZY_IMPORTS.keys()))
 
 __all__ = [
     # Core
@@ -170,6 +244,8 @@ __all__ = [
     "HumanizeOptions",
     "HumanizeResult",
     "AnalysisReport",
+    "DetectionReport",
+    "DetectionMetrics",
     "StylisticFingerprint",
     "StylisticAnalyzer",
     "STYLE_PRESETS",
@@ -238,5 +314,16 @@ __all__ = [
     "BenchmarkReport",
     "BenchmarkResult",
     "quick_benchmark",
+    # Exceptions
+    "TextHumanizeError",
+    "PipelineError",
+    "StageError",
+    "DetectionError",
+    "ConfigError",
+    "UnsupportedLanguageError",
+    "InputTooLargeError",
+    "AIBackendError",
+    "AIBackendUnavailableError",
+    "AIBackendRateLimitError",
     "__version__",
 ]

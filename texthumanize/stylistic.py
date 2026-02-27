@@ -15,11 +15,13 @@
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 from collections import Counter
 from dataclasses import dataclass, field
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class StylisticFingerprint:
@@ -96,7 +98,6 @@ class StylisticFingerprint:
             self.avg_paragraph_length / 10.0,
         ]
 
-
 # Местоимения по языкам (для подсчёта pronoun_start_ratio)
 _PRONOUNS = {
     "en": {"i", "we", "he", "she", "it", "they", "you", "this", "that", "these", "those"},
@@ -131,7 +132,6 @@ _CONNECTORS = {
     "pt": {"no entanto", "além disso", "contudo", "portanto", "assim",
            "ademais", "todavia", "por conseguinte", "outrossim"},
 }
-
 
 class StylisticAnalyzer:
     """Анализатор стилистического отпечатка текста."""
@@ -259,11 +259,9 @@ class StylisticAnalyzer:
         sentences = re.split(r'(?<=[.!?…])\s+', text)
         return [s.strip() for s in sentences if s.strip() and len(s.split()) > 1]
 
-
 # ═══════════════════════════════════════════════════════════════
 #  STYLOMETRIC ANONYMIZER
 # ═══════════════════════════════════════════════════════════════
-
 
 class StylometricAnonymizer:
     """Трансформирует текст, чтобы его стилистический отпечаток отличался от исходного.
@@ -555,7 +553,6 @@ class StylometricAnonymizer:
         # that would require per-language synonym dictionaries
         return text
 
-
 @dataclass
 class AnonymizeResult:
     """Result of stylometric anonymization."""
@@ -565,7 +562,6 @@ class AnonymizeResult:
     similarity_before: float = 0.0
     similarity_after: float = 0.0
     changes: list[dict] = field(default_factory=list)
-
 
 # ═══════════════════════════════════════════════════════════════
 #  Предустановленные стилистические отпечатки

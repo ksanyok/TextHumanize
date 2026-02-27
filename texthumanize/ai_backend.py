@@ -74,11 +74,9 @@ _PROMPT_NATURALNESS = (
 
 _FALLBACK_ORDER = ("openai", "oss", "builtin")
 
-
 # ═══════════════════════════════════════════════════════
 #  OpenAI provider
 # ═══════════════════════════════════════════════════════
-
 
 class _OpenAIProvider:
     """Calls OpenAI Chat Completions API via urllib."""
@@ -169,11 +167,9 @@ class _OpenAIProvider:
                 "OpenAI API: unexpected response format"
             ) from exc
 
-
 # ═══════════════════════════════════════════════════════
 #  OSS Gradio provider (rate-limited, circuit-broken)
 # ═══════════════════════════════════════════════════════
-
 
 class _OSSProvider:
     """Calls amd/gpt-oss-120b-chatbot Gradio endpoint.
@@ -365,11 +361,9 @@ class _OSSProvider:
             f"{last_err}"
         )
 
-
 # ═══════════════════════════════════════════════════════
 #  Built-in provider (always available)
 # ═══════════════════════════════════════════════════════
-
 
 class _BuiltinProvider:
     """Wraps the library's own rule-based engine.
@@ -429,11 +423,9 @@ class _BuiltinProvider:
         )
         return result.text
 
-
 # ═══════════════════════════════════════════════════════
 #  Main AIBackend facade
 # ═══════════════════════════════════════════════════════
-
 
 class AIBackend:
     """Unified AI backend with three-tier fallback.

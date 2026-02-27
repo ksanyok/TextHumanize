@@ -1,8 +1,6 @@
 """Тесты для модуля AI-детекции (detectors.py)."""
 
-import pytest
 from texthumanize.detectors import AIDetector, DetectionResult, detect_ai, detect_ai_batch
-
 
 # Типичный AI-текст (очень однородный, формальный, без ошибок)
 AI_TEXT_EN = (

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 import random
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
-from typing import Any
+from typing import Any, TypedDict
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class HumanizeOptions:
@@ -271,3 +273,46 @@ def coin_flip(probability: float, rng: random.Random | None = None) -> bool:
 def intensity_probability(intensity: int, profile_factor: float) -> float:
     """Вычислить вероятность применения трансформации."""
     return min((intensity / 100.0) * profile_factor, 1.0)
+
+
+# ── TypedDicts for structured return types ────────────────
+
+
+class DetectionMetrics(TypedDict, total=False):
+    """Detailed per-metric scores from AI detection."""
+
+    entropy: float
+    burstiness: float
+    vocabulary: float
+    zipf: float
+    stylometry: float
+    ai_patterns: float
+    punctuation: float
+    coherence: float
+    grammar_perfection: float
+    opening_diversity: float
+    readability_consistency: float
+    rhythm: float
+    perplexity: float
+    discourse: float
+    semantic_repetition: float
+    entity_specificity: float
+    voice: float
+    topic_sentence: float
+
+
+class DetectionReport(TypedDict, total=False):
+    """Structured result of :func:`detect_ai`.
+
+    Using ``total=False`` allows the dict to omit optional keys.
+    """
+
+    score: float
+    combined_score: float
+    stat_probability: float | None
+    verdict: str
+    confidence: float
+    metrics: DetectionMetrics
+    explanations: list[str]
+    domain: str
+    lang: str

@@ -1,11 +1,13 @@
 """Тесты для тонального анализа (tone.py)."""
 
-import pytest
 from texthumanize.tone import (
-    ToneAnalyzer, ToneAdjuster, ToneReport, ToneLevel,
-    analyze_tone, adjust_tone,
+    ToneAdjuster,
+    ToneAnalyzer,
+    ToneLevel,
+    ToneReport,
+    adjust_tone,
+    analyze_tone,
 )
-
 
 FORMAL_TEXT = (
     "It is imperative to acknowledge that the aforementioned methodology "

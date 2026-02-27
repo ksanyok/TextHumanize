@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 import re
 import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from texthumanize.analyzer import TextAnalyzer
+from texthumanize.exceptions import ConfigError, InputTooLargeError
 from texthumanize.lang_detect import detect_language
 from texthumanize.pipeline import Pipeline
-from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
+from texthumanize.utils import AnalysisReport, DetectionReport, HumanizeOptions, HumanizeResult
+
+logger = logging.getLogger(__name__)
 
 # Ленивый импорт новых модулей (для обратной совместимости)
 _detectors = None
@@ -187,19 +191,16 @@ def humanize(
     """
     # Input sanitization
     if not isinstance(text, str):
-        raise TypeError(f"Expected str, got {type(text).__name__}")
+        raise ConfigError(f"Expected str, got {type(text).__name__}")
     if not text or not text.strip():
         return HumanizeResult(
             original=text, text=text, lang=lang or "en",
             profile=profile, intensity=intensity,
             changes=[], metrics_before={}, metrics_after={},
         )
-    MAX_TEXT_LENGTH = 500_000  # 500KB safety limit
+    MAX_TEXT_LENGTH = 1_000_000  # 1M chars safety limit
     if len(text) > MAX_TEXT_LENGTH:
-        raise ValueError(
-            f"Text too long ({len(text)} chars). "
-            f"Max {MAX_TEXT_LENGTH}. Use humanize_chunked() for large texts."
-        )
+        raise InputTooLargeError(len(text), MAX_TEXT_LENGTH)
 
     # Определяем язык
     detected_lang = lang
@@ -710,7 +711,7 @@ def _split_into_chunks(text: str, chunk_size: int, overlap: int = 0) -> list[str
 #  НОВЫЕ API ФУНКЦИИ v0.4.0
 # ═══════════════════════════════════════════════════════════════
 
-def detect_ai(text: str, lang: str = "auto") -> dict:
+def detect_ai(text: str, lang: str = "auto") -> DetectionReport:
     """Определить вероятность AI-генерации текста.
 
     Использует 12 независимых статистических метрик:
@@ -733,6 +734,15 @@ def detect_ai(text: str, lang: str = "auto") -> dict:
         >>> result = detect_ai("This is a remarkably compelling text.")
         >>> print(f"AI: {result['score']:.2f}, verdict: {result['verdict']}")
     """
+    if not isinstance(text, str):
+        raise ConfigError(f"Expected str, got {type(text).__name__}")
+    if not text or not text.strip():
+        return {"score": 0.0, "combined_score": 0.0, "stat_probability": None,
+                "verdict": "human", "confidence": 0.0, "metrics": {}}
+    MAX_DETECT_LENGTH = 1_000_000
+    if len(text) > MAX_DETECT_LENGTH:
+        raise InputTooLargeError(len(text), MAX_DETECT_LENGTH)
+
     if lang == "auto":
         lang = detect_language(text)
 

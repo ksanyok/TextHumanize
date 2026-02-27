@@ -1,6 +1,5 @@
 """Покрытие context.py, sentence_split.py, tone.py — все непокрытые ветки."""
 
-import pytest
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -72,7 +71,11 @@ class TestContextualSynonyms:
 #  Sentence Split — splits, repairs, protected zones
 # ═══════════════════════════════════════════════════════════════
 
-from texthumanize.sentence_split import SentenceSplitter, split_sentences, split_sentences_with_spans
+from texthumanize.sentence_split import (
+    SentenceSplitter,
+    split_sentences,
+    split_sentences_with_spans,
+)
 
 
 class TestSentenceSplitter:
@@ -196,7 +199,7 @@ class TestSentenceSplitTopLevel:
 #  Tone — analyze + adjust
 # ═══════════════════════════════════════════════════════════════
 
-from texthumanize.tone import ToneAnalyzer, ToneAdjuster, ToneLevel, analyze_tone, adjust_tone
+from texthumanize.tone import ToneAdjuster, ToneAnalyzer, ToneLevel, adjust_tone, analyze_tone
 
 
 class TestToneAnalyzer:

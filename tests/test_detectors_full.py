@@ -1,8 +1,6 @@
 """Покрытие detectors.py и analyzer.py — все непокрытые ветки."""
 
-import pytest
 from texthumanize.detectors import AIDetector
-
 
 # ═══════════════════════════════════════════════════════════════
 #  AIDetector — Detection result + sub-metrics

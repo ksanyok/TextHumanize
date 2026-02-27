@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from typing import Any
 
@@ -22,6 +23,8 @@ from texthumanize.core import (
     spin,
     spin_variants,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def main():

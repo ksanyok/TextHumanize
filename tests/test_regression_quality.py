@@ -11,8 +11,8 @@
 import re
 
 import pytest
-from texthumanize import humanize, analyze
 
+from texthumanize import analyze, humanize
 
 # ═══════════════════════════════════════════════════════════════
 #  Test data

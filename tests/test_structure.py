@@ -1,6 +1,5 @@
 """Тесты структуры предложений."""
 
-import pytest
 from texthumanize.structure import StructureDiversifier
 
 

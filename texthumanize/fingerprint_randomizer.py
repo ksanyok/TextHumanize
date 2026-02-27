@@ -17,10 +17,12 @@ Usage:
 from __future__ import annotations
 
 import hashlib
+import logging
 import random
 import re
 from typing import Any
 
+logger = logging.getLogger(__name__)
 
 class FingerprintRandomizer:
     """Anti-fingerprint diversification engine.
@@ -382,7 +384,6 @@ class FingerprintRandomizer:
             "diverse": ratio > 0.5,
         }
 
-
 # ── Convenience ───────────────────────────────────────────
 
 def randomize_substitutions(
@@ -394,7 +395,6 @@ def randomize_substitutions(
     return FingerprintRandomizer(
         jitter_level=jitter,
     ).randomize_plan(substitutions)
-
 
 def diversify_text(
     text: str,

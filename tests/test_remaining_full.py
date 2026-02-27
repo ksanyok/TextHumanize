@@ -1,16 +1,13 @@
 """Покрытие остальных модулей: spinner, tokenizer, watermark, paraphrase,
 morphology, cli, utils, normalizer, segmenter, decancel, core, lang_detect, api, __main__."""
 
-import io
-import pytest
-import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
+import pytest
 
 # ═══════════════════════════════════════════════════════════════
 #  Spinner
 # ═══════════════════════════════════════════════════════════════
-
 from texthumanize.spinner import ContentSpinner
 
 
@@ -62,7 +59,7 @@ class TestContentSpinner:
 #  Tokenizer
 # ═══════════════════════════════════════════════════════════════
 
-from texthumanize.tokenizer import Tokenizer, Sentence
+from texthumanize.tokenizer import Sentence, Tokenizer
 
 
 class TestTokenizer:
@@ -317,10 +314,10 @@ class TestMorphologyEngine:
 
 from texthumanize.utils import (
     HumanizeOptions,
-    get_profile,
-    should_apply,
     coin_flip,
+    get_profile,
     intensity_probability,
+    should_apply,
 )
 
 
@@ -452,7 +449,7 @@ class TestDecancellerExtended:
 #  Core
 # ═══════════════════════════════════════════════════════════════
 
-from texthumanize.core import humanize, explain, HumanizeResult
+from texthumanize.core import explain, humanize
 
 
 class TestCoreExtended:
@@ -530,18 +527,18 @@ class TestLangDetect:
 # ═══════════════════════════════════════════════════════════════
 
 from texthumanize.api import (
-    _require_text,
-    _handle_humanize,
     _handle_analyze,
-    _handle_detect_ai,
-    _handle_paraphrase,
-    _handle_tone_analyze,
-    _handle_tone_adjust,
-    _handle_watermarks_detect,
-    _handle_watermarks_clean,
-    _handle_spin,
     _handle_coherence,
+    _handle_detect_ai,
+    _handle_humanize,
+    _handle_paraphrase,
     _handle_readability,
+    _handle_spin,
+    _handle_tone_adjust,
+    _handle_tone_analyze,
+    _handle_watermarks_clean,
+    _handle_watermarks_detect,
+    _require_text,
     create_app,
 )
 

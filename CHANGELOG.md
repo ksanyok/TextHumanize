@@ -3,6 +3,29 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.15.3] - 2025-02-28
+
+### Added
+- **Exception hierarchy** (`texthumanize/exceptions.py`) — `TextHumanizeError` base with `PipelineError`, `StageError`, `DetectionError`, `ConfigError`, `InputTooLargeError`, `UnsupportedLanguageError`, `AIBackendError`, `AIBackendUnavailableError`, `AIBackendRateLimitError`. `ConfigError` inherits both `TextHumanizeError` and `ValueError` for backward compatibility.
+- **Structured logging** — `import logging` + `logger = logging.getLogger(__name__)` added to all 53+ modules. No log output by default (NullHandler); users configure handlers as needed.
+- **Input size limits** — `humanize()` and `detect_ai()` reject non-string input (`ConfigError`) and texts >1 MB (`InputTooLargeError`). API server rejects request bodies >5 MB.
+- **PEP 562 lazy `__init__.py`** — 90+ public names lazily loaded via `__getattr__()` with `globals()` caching. Reduces import time and memory. `__dir__()` for discoverability.
+- **`DetectionReport` / `DetectionMetrics` TypedDicts** (`utils.py`) — structured return types for `detect_ai()`.
+- **29 error-handling tests** (`tests/test_error_handling.py`) — exception hierarchy, input validation, pipeline validation, edge cases.
+- **`CONTRIBUTING.md`** — developer setup, testing, linting, type checking, project structure, PR guidelines.
+- **`docs/README.md`** — documentation index (content extraction planned).
+
+### Changed
+- **Version via `importlib.metadata`** — `__version__` now reads from installed package metadata with `"0.15.3"` fallback, eliminating manual version bumps.
+- **CI `fail-fast: false`** — all Python/PHP matrix jobs run to completion even if one fails.
+- **Dynamic CI badge** in README — replaced static version badge with GitHub Actions workflow status badge.
+- **README updated** — version references, test count (1785), module count (73), lines (42K+).
+- **Ruff auto-fix** — 189 lint issues auto-fixed (unsorted imports, unused imports, trailing whitespace, multiple imports on one line).
+- Total tests: 1756 → 1785.
+
+### Fixed
+- **E402 lint errors** from logging injection — `logger` definitions moved after all imports in `api.py`, `cli.py`, `word_lm.py`.
+
 ## [0.15.2] - 2026-02-27
 
 ### Fixed

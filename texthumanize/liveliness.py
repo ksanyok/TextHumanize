@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 
 from texthumanize.lang import get_lang_pack
@@ -9,6 +10,7 @@ from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 from texthumanize.sentence_split import split_sentences
 from texthumanize.utils import coin_flip, get_profile, intensity_probability
 
+logger = logging.getLogger(__name__)
 
 class LivelinessInjector:
     """Добавляет разговорные маркеры и вариативность пунктуации.

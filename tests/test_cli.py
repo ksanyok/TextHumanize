@@ -1,12 +1,11 @@
 """Tests for cli.py — command-line interface."""
 
 import json
-import os
 import sys
-import tempfile
+from unittest.mock import patch
 
 import pytest
-from unittest.mock import patch
+
 from texthumanize.cli import main
 
 
@@ -22,7 +21,8 @@ class TestCLIVersion:
             run_cli('--version')
         assert exc.value.code == 0
         out = capsys.readouterr().out
-        assert '0.15.1' in out
+        import texthumanize
+        assert texthumanize.__version__ in out
 
 
 class TestCLIHumanize:

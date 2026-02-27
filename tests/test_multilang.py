@@ -2,10 +2,9 @@
 
 import pytest
 
-from texthumanize import humanize, analyze
-from texthumanize.lang import get_lang_pack, has_deep_support, LANGUAGES
+from texthumanize import analyze, humanize
+from texthumanize.lang import get_lang_pack, has_deep_support
 from texthumanize.lang_detect import detect_language
-
 
 # ─── Тексты на новых языках ─────────────────────────────────
 

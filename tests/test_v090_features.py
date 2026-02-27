@@ -10,15 +10,10 @@
 from __future__ import annotations
 
 import json
-import re
-
-import pytest
 
 from texthumanize import (
     AnonymizeResult,
     StylometricAnonymizer,
-    StylisticAnalyzer,
-    StylisticFingerprint,
     anonymize_style,
     explain,
     humanize,
@@ -32,7 +27,6 @@ from texthumanize.quality_gate import GateConfig, GateResult, check_file
 from texthumanize.stylistic import STYLE_PRESETS
 from texthumanize.utils import HumanizeResult
 from texthumanize.watermark import WatermarkDetector
-
 
 # ═══════════════════════════════════════════════════════════════
 #  Helpers

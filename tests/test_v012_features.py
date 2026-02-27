@@ -8,18 +8,14 @@
 - Детекция новых языков
 """
 
-import re
 
-import pytest
 
 from texthumanize import humanize
-from texthumanize.lang import get_lang_pack, has_deep_support, LANGUAGES
+from texthumanize.lang import LANGUAGES, get_lang_pack, has_deep_support
 from texthumanize.lang_detect import detect_language
 from texthumanize.pipeline import Pipeline
 from texthumanize.segmenter import Segmenter, has_placeholder, is_placeholder_word
-from texthumanize.utils import HumanizeOptions
 from texthumanize.watermark import WatermarkDetector
-
 
 # ═══════════════════════════════════════════════════════════════
 #  HTML BLOCK & LIST PROTECTION

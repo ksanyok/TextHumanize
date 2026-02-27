@@ -11,7 +11,11 @@
 
 from __future__ import annotations
 
+import logging
+
 from texthumanize.tone import ToneAdjuster, ToneAnalyzer, ToneLevel
+
+logger = logging.getLogger(__name__)
 
 # Маппинг профилей на целевой тон
 _PROFILE_TONE_MAP: dict[str, ToneLevel] = {

@@ -1,16 +1,11 @@
 """Третий добивающий файл — хардкор ветки: RNG-dependent, edge cases."""
 
 import random
-import re
-from unittest.mock import patch, MagicMock
-
-import pytest
-
+from unittest.mock import MagicMock
 
 # ═══════════════════════════════════════════════════════════════
 #  naturalizer.py — 24 строки (RNG-dependent branches)
 # ═══════════════════════════════════════════════════════════════
-
 from texthumanize.naturalizer import TextNaturalizer
 
 

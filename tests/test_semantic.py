@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from texthumanize.semantic import SemanticReport, semantic_similarity
 
 

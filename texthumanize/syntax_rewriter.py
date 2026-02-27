@@ -20,11 +20,14 @@ Usage:
 
 from __future__ import annotations
 
+import logging
 import random
 import re
 from typing import Dict, List, Optional, Tuple
 
 from texthumanize.pos_tagger import POSTagger
+
+logger = logging.getLogger(__name__)
 
 # ─── Irregular verb table (EN) ─────────────────────────────
 # {base_form: past_participle}
@@ -452,13 +455,11 @@ _SENT_SPLIT_RE = re.compile(
     r'(?<=[.!?])\s+'
 )
 
-
 # ─── Helpers ────────────────────────────────────────────────
 
 def _tokenize(text: str) -> List[str]:
     """Split text into word and punctuation tokens."""
     return _WORD_RE.findall(text)
-
 
 def _capitalize_first(s: str) -> str:
     """Capitalize the first character only."""
@@ -466,13 +467,11 @@ def _capitalize_first(s: str) -> str:
         return s
     return s[0].upper() + s[1:]
 
-
 def _lower_first(s: str) -> str:
     """Lower-case the first character only."""
     if not s:
         return s
     return s[0].lower() + s[1:]
-
 
 def _strip_trailing_punct(s: str) -> Tuple[str, str]:
     """Separate trailing sentence punctuation."""
@@ -480,7 +479,6 @@ def _strip_trailing_punct(s: str) -> Tuple[str, str]:
     if s and s[-1] in ".!?":
         return s[:-1].rstrip(), s[-1]
     return s, ""
-
 
 def _join_tokens(tokens: List[str]) -> str:
     """Join tokens back into text with spacing."""
@@ -495,7 +493,6 @@ def _join_tokens(tokens: List[str]) -> str:
         else:
             parts.append(" " + tok)
     return "".join(parts)
-
 
 # Verbs that do NOT double final consonant
 _NO_DOUBLE = {
@@ -522,7 +519,6 @@ _NO_DOUBLE = {
     "broadcast", "forecast",
 }
 
-
 def _get_past_participle_en(verb: str) -> str:
     """Get EN past participle for a verb."""
     low = verb.lower()
@@ -547,14 +543,12 @@ def _get_past_participle_en(verb: str) -> str:
         return low + low[-1] + "ed"
     return low + "ed"
 
-
 def _get_past_simple_en(verb: str) -> str:
     """Get EN past simple for a verb."""
     low = verb.lower()
     if low in _EN_PAST_SIMPLE:
         return _EN_PAST_SIMPLE[low]
     return _get_past_participle_en(low)
-
 
 def _get_gerund_en(verb: str) -> str:
     """Get EN gerund (-ing form) for a verb."""
@@ -585,7 +579,6 @@ def _get_gerund_en(verb: str) -> str:
         return low + low[-1] + "ing"
     return low + "ing"
 
-
 def _base_from_3s(verb: str) -> str:
     """Recover EN base form from 3rd person -s."""
     low = verb.lower()
@@ -601,10 +594,8 @@ def _base_from_3s(verb: str) -> str:
         return low[:-1]
     return low
 
-
 def _is_vowel(ch: str) -> bool:
     return ch.lower() in "aeiou"
-
 
 # ─── detect be-forms ────────────────────────────────────────
 
@@ -616,7 +607,6 @@ _EN_BE_FORMS = {
 _EN_HAVE_FORMS = {
     "has", "have", "had", "having",
 }
-
 
 def _pick_be_form(
     subject: str, tense: str = "present",
@@ -639,7 +629,6 @@ def _pick_be_form(
     if low.endswith("s") and not low.endswith("ss"):
         return "are"
     return "is"
-
 
 # ═══════════════════════════════════════════════════════════
 # SyntaxRewriter

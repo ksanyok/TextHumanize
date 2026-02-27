@@ -25,6 +25,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 import traceback
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -47,6 +48,8 @@ from texthumanize.core import (
     spin_variants,
 )
 
+logger = logging.getLogger(__name__)
+
 # ─── Helpers ──────────────────────────────────────────────────
 
 def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200) -> None:
@@ -59,15 +62,19 @@ def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200
     handler.end_headers()
     handler.wfile.write(body)
 
+MAX_REQUEST_BODY = 5_000_000  # 5 MB
 
 def _read_json(handler: BaseHTTPRequestHandler) -> dict:
     """Прочитать JSON из тела запроса."""
     length = int(handler.headers.get("Content-Length", 0))
     if length == 0:
         return {}
+    if length > MAX_REQUEST_BODY:
+        raise ValueError(
+            f"Request body too large ({length} bytes, max {MAX_REQUEST_BODY})"
+        )
     raw = handler.rfile.read(length)
     return dict(json.loads(raw.decode("utf-8")))
-
 
 def _require_text(data: dict) -> str:
     """Извлечь обязательное поле text."""
@@ -75,7 +82,6 @@ def _require_text(data: dict) -> str:
     if not text or not isinstance(text, str):
         raise ValueError("Поле 'text' обязательно и должно быть строкой")
     return str(text)
-
 
 # ─── Route handlers ──────────────────────────────────────────
 
@@ -96,7 +102,6 @@ def _handle_humanize(data: dict) -> dict:
         "changes_count": len(result.changes),
     }
 
-
 def _handle_analyze(data: dict) -> dict:
     text = _require_text(data)
     report = analyze(text, lang=data.get("lang", "auto"))
@@ -111,7 +116,6 @@ def _handle_analyze(data: dict) -> dict:
         "coleman_liau_index": round(report.coleman_liau_index, 2),
     }
 
-
 def _handle_detect_ai(data: dict) -> dict:
     text = data.get("text")
     texts = data.get("texts")
@@ -120,7 +124,6 @@ def _handle_detect_ai(data: dict) -> dict:
     if text:
         return detect_ai(text, lang=data.get("lang", "auto"))
     raise ValueError("Поле 'text' или 'texts' обязательно")
-
 
 def _handle_paraphrase(data: dict) -> dict:
     text = _require_text(data)
@@ -132,11 +135,9 @@ def _handle_paraphrase(data: dict) -> dict:
     )
     return {"text": result}
 
-
 def _handle_tone_analyze(data: dict) -> dict:
     text = _require_text(data)
     return analyze_tone(text, lang=data.get("lang", "auto"))
-
 
 def _handle_tone_adjust(data: dict) -> dict:
     text = _require_text(data)
@@ -148,17 +149,14 @@ def _handle_tone_adjust(data: dict) -> dict:
     )
     return {"text": result}
 
-
 def _handle_watermarks_detect(data: dict) -> dict:
     text = _require_text(data)
     return detect_watermarks(text, lang=data.get("lang", "auto"))
-
 
 def _handle_watermarks_clean(data: dict) -> dict:
     text = _require_text(data)
     result = clean_watermarks(text, lang=data.get("lang", "auto"))
     return {"text": result}
-
 
 def _handle_spin(data: dict) -> dict:
     text = _require_text(data)
@@ -179,16 +177,13 @@ def _handle_spin(data: dict) -> dict:
     )
     return {"text": result}
 
-
 def _handle_coherence(data: dict) -> dict:
     text = _require_text(data)
     return analyze_coherence(text, lang=data.get("lang", "auto"))
 
-
 def _handle_readability(data: dict) -> dict:
     text = _require_text(data)
     return full_readability(text, lang=data.get("lang", "auto"))
-
 
 # ─── Router ──────────────────────────────────────────────────
 
@@ -206,7 +201,6 @@ ROUTES: dict[str, Any] = {
     "/coherence": _handle_coherence,
     "/readability": _handle_readability,
 }
-
 
 # ─── Request Handler ─────────────────────────────────────────
 
@@ -270,13 +264,11 @@ class TextHumanizeHandler(BaseHTTPRequestHandler):
                 "traceback": traceback.format_exc(),
             }, status=500)
 
-
 # ─── Server factory ──────────────────────────────────────────
 
 def create_app(host: str = "0.0.0.0", port: int = 8080) -> HTTPServer:
     """Создать HTTP-сервер."""
     return HTTPServer((host, port), TextHumanizeHandler)
-
 
 def run_server(host: str = "0.0.0.0", port: int = 8080) -> None:
     """Запустить HTTP-сервер."""
@@ -289,12 +281,10 @@ def run_server(host: str = "0.0.0.0", port: int = 8080) -> None:
         print("\nShutting down...")
         server.shutdown()
 
-
 # ─── CLI ──────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     import argparse
-
     parser = argparse.ArgumentParser(description="TextHumanize API Server")
     parser.add_argument("--host", default="0.0.0.0", help="Bind host")
     parser.add_argument("--port", type=int, default=8080, help="Bind port")

@@ -2,9 +2,8 @@
 
 import pytest
 
-from texthumanize.universal import UniversalProcessor
 from texthumanize.naturalizer import TextNaturalizer
-
+from texthumanize.universal import UniversalProcessor
 
 # ─── Тестовые тексты ─────────────────────────────────────────
 

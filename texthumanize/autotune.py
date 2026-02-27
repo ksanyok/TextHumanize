@@ -18,12 +18,14 @@ Usage:
 from __future__ import annotations
 
 import json
+import logging
 import statistics
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class TuneRecord:
@@ -42,7 +44,6 @@ class TuneRecord:
         if self.timestamp == 0.0:
             self.timestamp = time.time()
 
-
 @dataclass
 class TuneParams:
     """Suggested pipeline parameters based on feedback history."""
@@ -53,7 +54,6 @@ class TuneParams:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
-
 
 class AutoTuner:
     """Feedback-driven parameter optimizer.
@@ -250,7 +250,6 @@ class AutoTuner:
             self._records = [TuneRecord(**d) for d in data]
         except (json.JSONDecodeError, TypeError, KeyError):
             self._records = []
-
 
 def _get_metric(result: Any, key: str, section: str) -> float:
     """Extract metric from HumanizeResult."""

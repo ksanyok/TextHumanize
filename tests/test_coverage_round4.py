@@ -2,16 +2,9 @@
 
 from __future__ import annotations
 
-import math
-import re
-import statistics
-import sys
 import unittest
-from collections import Counter
-from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
-
 
 # ═══════════════════════════════════════════════════════════════
 #  detectors.py — L385, L471, L551, L567, L587–589, L631,
@@ -221,7 +214,7 @@ class TestMorphologyR4(unittest.TestCase):
     # --- L438: -ing, stem ends in vowel/y ---
     def test_lemmatize_en_vowel_stem(self):
         """staying → stay (stem ends in y) → L435-436."""
-        from texthumanize.morphology import MorphologyEngine, _EN_IRREGULAR_REVERSE
+        from texthumanize.morphology import _EN_IRREGULAR_REVERSE, MorphologyEngine
         m = MorphologyEngine("en")
         word = "staying" if "staying" not in _EN_IRREGULAR_REVERSE else "praying"
         result = m._lemmatize_en(word)
@@ -597,8 +590,9 @@ class TestLangDetectR4(unittest.TestCase):
     # --- L220: second trigram fallback → return "en" ---
     def test_trigram_fallback_second_block(self):
         """max_score >= 4 but < 6, trigrams fail → return "en" → L220."""
-        from texthumanize.lang_detect import _detect_latin_language
         from unittest.mock import patch
+
+        from texthumanize.lang_detect import _detect_latin_language
         # "the" и "and" дают en_score=4 (>= 4: skip first block)
         # Но 4 < 6: enter second trigram block
         # Mock _extract_trigrams чтобы тригрммы не совпали
@@ -705,7 +699,6 @@ class TestCliR4(unittest.TestCase):
     # --- L328-329: ошибка записи report ---
     def test_report_write_error(self):
         """Ошибка записи файла отчёта → L328-329."""
-        from texthumanize.cli import _output_text
         # Проверяем через _save_report если есть
         # Иначе через основной flow
         try:

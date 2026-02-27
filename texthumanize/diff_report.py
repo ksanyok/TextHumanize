@@ -15,10 +15,13 @@ from __future__ import annotations
 import difflib
 import html as html_mod
 import json
+import logging
 import re
 from typing import Any
 
 from texthumanize.utils import HumanizeResult
+
+logger = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════
 #  HTML DIFF (inline, side-by-side)

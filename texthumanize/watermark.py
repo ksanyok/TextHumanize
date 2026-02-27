@@ -9,11 +9,13 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import math
 import re
 import unicodedata
 from dataclasses import dataclass, field
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class WatermarkReport:

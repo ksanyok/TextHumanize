@@ -18,6 +18,7 @@ Usage:
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 from typing import Any
@@ -31,6 +32,8 @@ from texthumanize._word_freq_data import (
     get_ru_bi,
     get_ru_uni,
 )
+
+logger = logging.getLogger(__name__)
 
 # ── Frequency tables ──────────────────────────────────────
 # Major languages (EN, RU, DE, FR, ES) use compressed data
@@ -237,11 +240,9 @@ _SMOOTH = 1e-8  # Laplace smoothing floor
 
 _TOK_RE = re.compile(r"[\w'']+", re.UNICODE)
 
-
 def _tokenize(text: str) -> list[str]:
     """Lowercase word tokenization."""
     return [w.lower() for w in _TOK_RE.findall(text)]
-
 
 class WordLanguageModel:
     """Word-level unigram/bigram language model.
@@ -443,7 +444,6 @@ class WordLanguageModel:
             "verdict": verdict,
         }
 
-
 # ── Convenience functions ─────────────────────────────────
 
 def word_perplexity(
@@ -451,7 +451,6 @@ def word_perplexity(
 ) -> float:
     """Compute word-level perplexity."""
     return WordLanguageModel(lang=lang).perplexity(text)
-
 
 def word_naturalness(
     text: str, lang: str = "en",

@@ -6,9 +6,12 @@ No external dependencies — pure Python with stdlib only.
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 from collections import Counter
+
+logger = logging.getLogger(__name__)
 
 # ----------------------------------------------------------
 # AI-characteristic marker words (EN)

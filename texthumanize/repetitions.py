@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import re
 from collections import Counter
@@ -13,6 +14,7 @@ from texthumanize.segmenter import has_placeholder
 from texthumanize.sentence_split import split_sentences
 from texthumanize.utils import coin_flip, get_profile, intensity_probability
 
+logger = logging.getLogger(__name__)
 
 class RepetitionReducer:
     """Уменьшает повторы слов и фраз в тексте.

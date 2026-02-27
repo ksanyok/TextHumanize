@@ -10,12 +10,14 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import re
 from dataclasses import dataclass
 
 from texthumanize.morphology import get_morphology
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class ParaphraseResult:

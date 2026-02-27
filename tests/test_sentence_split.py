@@ -1,7 +1,10 @@
 """Тесты для умного сплиттера предложений (sentence_split.py)."""
 
-import pytest
-from texthumanize.sentence_split import SentenceSplitter, split_sentences, split_sentences_with_spans
+from texthumanize.sentence_split import (
+    SentenceSplitter,
+    split_sentences,
+    split_sentences_with_spans,
+)
 
 
 class TestSplitSentences:

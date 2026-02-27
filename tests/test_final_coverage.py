@@ -2,18 +2,14 @@
 
 import io
 import json
-import pytest
-import re
-import sys
-from http.server import HTTPServer
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
 
 # ═══════════════════════════════════════════════════════════════
 #  API HTTP Handler (lines 220-268)
 # ═══════════════════════════════════════════════════════════════
-
-from texthumanize.api import TextHumanizeHandler, _json_response, _read_json, create_app, ROUTES
+from texthumanize.api import TextHumanizeHandler, _json_response, _read_json
 
 
 class TestAPIHTTPHandler:
@@ -504,8 +500,10 @@ class TestCLIDeep:
 
     def test_analyze_mode(self):
         """--analyze режим."""
+        import os
+        import tempfile
+
         from texthumanize.cli import main
-        import tempfile, os
         f = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
         try:
             f.write("Test sentence for analysis mode here.")
@@ -520,8 +518,10 @@ class TestCLIDeep:
 
     def test_detect_mode(self):
         """--detect-ai режим."""
+        import os
+        import tempfile
+
         from texthumanize.cli import main
-        import tempfile, os
         f = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
         try:
             f.write("Test sentence for detection.")
@@ -546,8 +546,10 @@ class TestCLIDeep:
 
     def test_readability_mode(self):
         """--readability режим."""
+        import os
+        import tempfile
+
         from texthumanize.cli import main
-        import tempfile, os
         f = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
         try:
             f.write("This is a test. Another sentence here. More text to analyze.")
@@ -562,8 +564,10 @@ class TestCLIDeep:
 
     def test_watermarks_mode(self):
         """--watermarks режим."""
+        import os
+        import tempfile
+
         from texthumanize.cli import main
-        import tempfile, os
         f = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
         try:
             f.write("Clean text without watermarks.")

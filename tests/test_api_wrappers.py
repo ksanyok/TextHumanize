@@ -1,24 +1,24 @@
 """Tests for core.py API wrapper functions (detect_ai, paraphrase, tone, etc.)."""
 
 import pytest
+
 from texthumanize.core import (
+    adjust_tone,
+    analyze,
+    analyze_coherence,
+    analyze_tone,
+    clean_watermarks,
     detect_ai,
     detect_ai_batch,
-    paraphrase,
-    analyze_tone,
-    adjust_tone,
     detect_watermarks,
-    clean_watermarks,
-    spin,
-    spin_variants,
-    analyze_coherence,
+    explain,
     full_readability,
     humanize,
     humanize_chunked,
-    analyze,
-    explain,
+    paraphrase,
+    spin,
+    spin_variants,
 )
-
 
 # ── detect_ai ─────────────────────────────────────────────────
 
@@ -256,8 +256,9 @@ class TestHumanizeEdgeCases:
         assert r.text == "   "
 
     def test_none_text(self):
-        # None should raise TypeError with input sanitization
-        with pytest.raises(TypeError):
+        # None should raise ConfigError (or TypeError) with input sanitization
+        from texthumanize.exceptions import ConfigError
+        with pytest.raises(ConfigError):
             humanize(None)
 
     def test_auto_lang_en(self):

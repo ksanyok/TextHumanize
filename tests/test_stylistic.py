@@ -6,7 +6,6 @@ import pytest
 
 from texthumanize.stylistic import StylisticAnalyzer, StylisticFingerprint
 
-
 # ───────────────────────── Sample texts ─────────────────────
 
 _SHORT_EN = (
@@ -182,7 +181,7 @@ class TestStylisticPipelineIntegration:
         assert opts.target_style is fp
 
     def test_pipeline_with_target_style(self):
-        from texthumanize import humanize, StylisticAnalyzer, StylisticFingerprint
+        from texthumanize import StylisticAnalyzer, humanize
 
         # Extract a target style from casual text
         sa = StylisticAnalyzer(lang="en")

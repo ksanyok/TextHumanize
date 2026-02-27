@@ -1,6 +1,5 @@
 """Тесты для контекстного подбора синонимов (context.py)."""
 
-import pytest
 from texthumanize.context import ContextualSynonyms
 
 

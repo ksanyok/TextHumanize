@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from texthumanize.sentence_readability import (
     SentenceReadabilityReport,
     SentenceScore,

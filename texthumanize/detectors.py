@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 import statistics
@@ -31,6 +32,8 @@ from typing import Any
 
 from texthumanize.lang import get_lang_pack
 from texthumanize.sentence_split import split_sentences
+
+logger = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════
 #  РЕЗУЛЬТАТ ДЕТЕКЦИИ
@@ -113,7 +116,6 @@ class DetectionResult:
             for exp in self.explanations[:10]:
                 lines.append(f"  • {exp}")
         return "\n".join(lines)
-
 
 # ═══════════════════════════════════════════════════════════════
 #  AI-ХАРАКТЕРНЫЕ СЛОВА (языково-специфичные)
@@ -218,7 +220,6 @@ _AI_WORDS = {
         },
     },
 }
-
 
 # ═══════════════════════════════════════════════════════════════
 #  ОСНОВНОЙ ДЕТЕКТОР
@@ -2275,7 +2276,6 @@ class AIDetector:
 
         return explanations
 
-
 # ─── Удобная функция ─────────────────────────────────────────
 
 def detect_ai(text: str, lang: str = "auto") -> DetectionResult:
@@ -2295,7 +2295,6 @@ def detect_ai(text: str, lang: str = "auto") -> DetectionResult:
     """
     detector = AIDetector(lang=lang)
     return detector.detect(text)
-
 
 def detect_ai_batch(
     texts: list[str], lang: str = "auto"

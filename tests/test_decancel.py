@@ -1,6 +1,5 @@
 """Тесты деканцеляризации."""
 
-import pytest
 from texthumanize.decancel import Debureaucratizer
 
 

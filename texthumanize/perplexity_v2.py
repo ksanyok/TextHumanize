@@ -10,9 +10,12 @@ predictable). Human text has HIGHER and more VARIABLE perplexity.
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 from collections import Counter
+
+logger = logging.getLogger(__name__)
 
 # Pre-built character trigram frequency tables for common languages
 # Top-50 most frequent trigrams with normalized probabilities

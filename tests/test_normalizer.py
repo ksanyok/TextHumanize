@@ -1,6 +1,5 @@
 """Тесты нормализации типографики."""
 
-import pytest
 from texthumanize.normalizer import TypographyNormalizer
 
 

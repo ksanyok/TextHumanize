@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-import time
-
-import pytest
-
-from texthumanize import humanize, humanize_batch, humanize_chunked
-
+from texthumanize import humanize_batch, humanize_chunked
 
 _SAMPLE = (
     "Artificial intelligence is rapidly evolving. Neural networks process "

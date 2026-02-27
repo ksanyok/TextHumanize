@@ -8,12 +8,15 @@ Zero-dependency, pure Python.
 
 from __future__ import annotations
 
+import logging
 import math
 import statistics
 from dataclasses import dataclass, field
 
 from texthumanize.lang_detect import detect_language
 from texthumanize.sentence_split import split_sentences
+
+logger = logging.getLogger(__name__)
 
 # ═════════════════════════════════════════════════════════════
 #  AUTHOR FINGERPRINT

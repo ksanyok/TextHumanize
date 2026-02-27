@@ -6,10 +6,13 @@
 
 from __future__ import annotations
 
+import logging
 import random
 from typing import Any
 
 from texthumanize.morphology import get_morphology
+
+logger = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════
 #  КОЛЛОКАЦИОННЫЕ ПРАВИЛА (что с чем сочетается)

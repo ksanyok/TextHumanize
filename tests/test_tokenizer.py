@@ -1,7 +1,6 @@
 """Tests for tokenizer.py — paragraph/sentence/word tokenization."""
 
-import pytest
-from texthumanize.tokenizer import Tokenizer, TokenizedText, Paragraph, Sentence
+from texthumanize.tokenizer import Paragraph, Sentence, TokenizedText, Tokenizer
 
 
 class TestTokenizerBasic:

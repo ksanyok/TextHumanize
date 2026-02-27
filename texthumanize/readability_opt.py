@@ -10,11 +10,14 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import re
 
 from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 from texthumanize.sentence_readability import sentence_readability
+
+logger = logging.getLogger(__name__)
 
 # Конъюнкции/места для разбивки по языкам
 _SPLIT_CONJUNCTIONS: dict[str, list[str]] = {

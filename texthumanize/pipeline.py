@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from difflib import SequenceMatcher
 from typing import Callable, Protocol
@@ -30,6 +31,7 @@ from texthumanize.validator import QualityValidator
 from texthumanize.watermark import WatermarkDetector
 from texthumanize.word_lm import WordLanguageModel
 
+logger = logging.getLogger(__name__)
 
 class StagePlugin(Protocol):
     """Protocol for custom pipeline stage plugins."""
@@ -38,10 +40,8 @@ class StagePlugin(Protocol):
         """Process text and return the modified version."""
         ...
 
-
 # Тип хука: функция (text, lang) -> text
 HookFn = Callable[[str, str], str]
-
 
 class Pipeline:
     """Оркестратор пайплайна гуманизации текста.
@@ -346,7 +346,6 @@ class Pipeline:
         If the stage raises an exception, returns the original text
         unchanged and records a skip change.
         """
-        import logging
         t0 = time.perf_counter()
         try:
             new_text, changes = fn()

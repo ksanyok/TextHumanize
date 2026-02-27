@@ -1,8 +1,6 @@
 """Тесты для анализа когерентности (coherence.py)."""
 
-import pytest
 from texthumanize.coherence import CoherenceAnalyzer, CoherenceReport
-
 
 COHERENT_TEXT = (
     "Machine learning is a subset of artificial intelligence. "

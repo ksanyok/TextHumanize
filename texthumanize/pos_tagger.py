@@ -20,9 +20,12 @@ Usage:
 
 from __future__ import annotations
 
+import logging
 import re
 import threading
 from typing import Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 # ── Universal tagset ──────────────────────────────────────────
 NOUN = "NOUN"
@@ -52,7 +55,6 @@ _PUNCT_RE = re.compile(
     r'^[.,!?;:\-\—\–\"\'`\(\)\[\]{}<>/\\@#$%^&*_=+|~]+$'
 )
 _NUM_RE = re.compile(r'^[0-9]+(?:[.,][0-9]+)*$')
-
 
 # ═══════════════════════════════════════════════════════════════
 # English data
@@ -758,7 +760,6 @@ _EN_VERB_SUFFIXES = (
 
 _EN_ADV_SUFFIX = "ly"
 
-
 # ═══════════════════════════════════════════════════════════════
 # Russian data
 # ═══════════════════════════════════════════════════════════════
@@ -954,7 +955,6 @@ _RU_VERB_PAST_SUFFIXES = (
 
 _RU_ADV_SUFFIXES = ("ски", "ьно", "ки")
 
-
 # ═══════════════════════════════════════════════════════════════
 # Ukrainian data
 # ═══════════════════════════════════════════════════════════════
@@ -1127,7 +1127,6 @@ _UK_VERB_PAST_SUFFIXES = (
 )
 
 _UK_ADV_SUFFIXES = ("ськи", "ьно", "ки")
-
 
 # ═══════════════════════════════════════════════════════════════
 # German data
@@ -1458,7 +1457,6 @@ _DE_VERB_CONJ_SUFFIXES = (
 )
 
 _DE_ADV_SUFFIXES = ("weise", "lich")
-
 
 # ═══════════════════════════════════════════════════════════════
 # POSTagger class

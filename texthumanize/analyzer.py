@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from collections import Counter
 
@@ -9,6 +10,7 @@ from texthumanize.lang import get_lang_pack
 from texthumanize.perplexity import PerplexityEstimator
 from texthumanize.utils import AnalysisReport
 
+logger = logging.getLogger(__name__)
 
 class TextAnalyzer:
     """Анализирует текст и вычисляет метрики «искусственности».

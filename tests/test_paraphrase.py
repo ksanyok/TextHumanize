@@ -1,8 +1,6 @@
 """Тесты для перефразирования (paraphrase.py)."""
 
-import pytest
 from texthumanize.paraphrase import Paraphraser, paraphrase_text
-
 
 SAMPLE_EN = (
     "The company has developed a new approach to solving complex problems. "

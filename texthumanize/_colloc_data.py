@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import base64
 import zlib
-from typing import Dict, Tuple
 
 _EN_DATA = (
     "eNp1XVl627iyfrYXcz6Ndno5EAlJjElCzUGOevW35irQuS+J8QPEWCjUBOie0/P1NqVufDv/7/B+"

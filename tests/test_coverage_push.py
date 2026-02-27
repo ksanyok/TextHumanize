@@ -3,20 +3,15 @@
 import io
 import json
 import os
-import random
 import re
-import sys
 import tempfile
-import unicodedata
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-
 
 # ═══════════════════════════════════════════════════════════════
 #  universal.py — 32 строки
 # ═══════════════════════════════════════════════════════════════
-
 from texthumanize.universal import UniversalProcessor
 
 
@@ -297,7 +292,7 @@ class TestContextBranch:
 #  api.py — оставшиеся ветки
 # ═══════════════════════════════════════════════════════════════
 
-from texthumanize.api import TextHumanizeHandler, _json_response, _read_json, ROUTES
+from texthumanize.api import TextHumanizeHandler
 
 
 class TestAPIBranch:

@@ -39,12 +39,14 @@ class TestInputSanitization(unittest.TestCase):
 
     def test_non_string_raises_type_error(self):
         from texthumanize import humanize
-        with self.assertRaises(TypeError):
+        from texthumanize.exceptions import ConfigError
+        with self.assertRaises((TypeError, ConfigError)):
             humanize(123)
 
     def test_none_raises_type_error(self):
         from texthumanize import humanize
-        with self.assertRaises(TypeError):
+        from texthumanize.exceptions import ConfigError
+        with self.assertRaises((TypeError, ConfigError)):
             humanize(None)
 
     def test_empty_string_returns_empty(self):
@@ -59,8 +61,9 @@ class TestInputSanitization(unittest.TestCase):
 
     def test_too_long_raises_value_error(self):
         from texthumanize import humanize
-        with self.assertRaises(ValueError):
-            humanize("x" * 600_000)
+        from texthumanize.exceptions import InputTooLargeError
+        with self.assertRaises((ValueError, InputTooLargeError)):
+            humanize("x" * 1_100_000)
 
 
 # ── H6: Pipeline profiling ───────────────────────────────────

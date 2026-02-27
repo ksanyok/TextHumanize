@@ -11,7 +11,6 @@ from texthumanize.grammar import (
     fix_grammar,
 )
 
-
 # ── check_grammar ────────────────────────────────────────────
 
 

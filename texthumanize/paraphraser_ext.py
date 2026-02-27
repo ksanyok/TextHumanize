@@ -26,11 +26,14 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import re
 from dataclasses import dataclass, field
 
 from texthumanize.sentence_split import split_sentences
+
+logger = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════
 #  Data classes
@@ -44,7 +47,6 @@ class TransformResult:
     kind: str  # e.g. "clause_reorder", "passive_to_active"
     confidence: float  # 0..1
 
-
 @dataclass
 class ParaphraseReport:
     """Full paraphrase report for a text."""
@@ -52,7 +54,6 @@ class ParaphraseReport:
     paraphrased: str
     transforms: list[TransformResult] = field(default_factory=list)
     confidence: float = 1.0
-
 
 # ═══════════════════════════════════════════════════════════════
 #  Clause reorder patterns
@@ -158,7 +159,6 @@ _CLAUSE_REORDER = {
     ],
 }
 
-
 # ═══════════════════════════════════════════════════════════════
 #  Passive ↔ Active patterns (EN only)
 # ═══════════════════════════════════════════════════════════════
@@ -178,7 +178,6 @@ _ACTIVE_SVO_RE = re.compile(
     re.IGNORECASE,
 )
 
-
 # ═══════════════════════════════════════════════════════════════
 #  EN Contractions → full / full → contractions
 # ═══════════════════════════════════════════════════════════════
@@ -194,7 +193,6 @@ _EN_IRREGULAR_PAST = {
     "set": "set", "spent": "spent", "thought": "thought",
     "understood": "understood", "won": "won",
 }
-
 
 # ═══════════════════════════════════════════════════════════════
 #  Nominalization map
@@ -246,7 +244,6 @@ _VERB_MAP = {
     for lang, mapping in _NOM_MAP.items()
 }
 
-
 # ═══════════════════════════════════════════════════════════════
 #  Split / Merge connectors
 # ═══════════════════════════════════════════════════════════════
@@ -272,7 +269,6 @@ _MERGE_CONN = {
     "es": ["y al mismo tiempo", "además de", "y a la vez"],
 }
 
-
 # ═══════════════════════════════════════════════════════════════
 #  It-cleft patterns (EN-only)
 # ═══════════════════════════════════════════════════════════════
@@ -282,7 +278,6 @@ _IT_CLEFT_RE = re.compile(
     r'^([A-Z]\w+)\s+([\w]+(?:ed|s|es)?)\s+(.+?)([.!?]?)$',
     re.IGNORECASE,
 )
-
 
 # ═══════════════════════════════════════════════════════════════
 #  There-insertion (EN existential)
@@ -314,7 +309,6 @@ _GERUND_RE = re.compile(r'\b(start|begin|continue|prefer|like|love|hate|try|'
 _INF_RE = re.compile(r'\b(start|begin|continue|prefer|like|love|hate|try|'
                       r'intend|attempt)(?:s|ed)?\s+to\s+(\w+)\b', re.I)
 
-
 # ═══════════════════════════════════════════════════════════════
 #  Conditional inversion (EN)
 # ═══════════════════════════════════════════════════════════════
@@ -325,7 +319,6 @@ _COND_INVERSION_RE = re.compile(
     r'\s*(.+)$',
     re.IGNORECASE,
 )
-
 
 # ═══════════════════════════════════════════════════════════════
 #  Engine
