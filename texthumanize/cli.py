@@ -43,6 +43,7 @@ def main() -> None:
   texthumanize --analyze input.txt
   texthumanize detect input.txt
   texthumanize detect input.txt --verbose
+  texthumanize train --samples 1000 --epochs 30
   echo "Текст" | texthumanize detect -
   echo "Текст" | texthumanize -
         """,
@@ -185,6 +186,11 @@ def main() -> None:
     # ── Handle detect subcommand ──
     if args.input == 'detect':
         _handle_detect_command(args, remaining)
+        return
+
+    # ── Handle train subcommand ──
+    if args.input == 'train':
+        _handle_train_command(args, remaining)
         return
 
     # ── Handle benchmark subcommand ──
@@ -583,6 +589,116 @@ def _output_text(text: str, args: argparse.Namespace) -> None:
             sys.exit(1)
     else:
         print(text)
+
+
+def _handle_train_command(
+    args: argparse.Namespace, remaining: list[str],
+) -> None:
+    """Handle 'texthumanize train [--samples N] [--epochs N] [--output DIR]'.
+
+    Trains the neural AI detector and/or LSTM language model using
+    the built-in training infrastructure.
+    """
+    import time
+
+    n_samples = 500
+    epochs = 20
+    lm_epochs = 3
+    output_dir = "texthumanize/weights"
+    use_json = False
+    verbose = True
+
+    i = 0
+    while i < len(remaining):
+        a = remaining[i]
+        if a in ("--samples", "-n") and i + 1 < len(remaining):
+            n_samples = int(remaining[i + 1])
+            i += 2
+        elif a in ("--epochs", "-e") and i + 1 < len(remaining):
+            epochs = int(remaining[i + 1])
+            i += 2
+        elif a == "--lm-epochs" and i + 1 < len(remaining):
+            lm_epochs = int(remaining[i + 1])
+            i += 2
+        elif a in ("--output", "-o") and i + 1 < len(remaining):
+            output_dir = remaining[i + 1]
+            i += 2
+        elif a == "--json":
+            use_json = True
+            i += 1
+        elif a == "--quiet":
+            verbose = False
+            i += 1
+        else:
+            i += 1
+
+    from texthumanize.training import Trainer
+
+    t0 = time.time()
+    trainer = Trainer(seed=42)
+
+    if not use_json and verbose:
+        print("=" * 50)
+        print("  TextHumanize Neural Training")
+        print("=" * 50)
+
+    # Generate data
+    if verbose and not use_json:
+        print(f"\n[1/4] Generating {n_samples} training samples...")
+    data_stats = trainer.generate_data(n_samples=n_samples)
+    if verbose and not use_json:
+        print(f"  Train: {data_stats['train']}, Val: {data_stats['val']}")
+
+    # Train detector
+    if verbose and not use_json:
+        print(f"\n[2/4] Training MLP detector ({epochs} epochs)...")
+    result = trainer.train_detector(epochs=epochs, verbose=verbose)
+    if verbose and not use_json:
+        print(f"  Best accuracy: {result['best_val_accuracy']:.1%}")
+        m = result["final_metrics"]
+        print(f"  Final — acc={m['accuracy']:.1%}, P={m['precision']:.2f}, R={m['recall']:.2f}, F1={m['f1']:.2f}")
+
+    # Export detector
+    if verbose and not use_json:
+        print("\n[3/4] Exporting detector weights...")
+    trainer.export_weights(output_dir)
+
+    # Train LM
+    if lm_epochs > 0:
+        if verbose and not use_json:
+            print(f"\n[4/4] Training LSTM language model ({lm_epochs} epochs)...")
+        lm_result = trainer.train_lm(epochs=lm_epochs, verbose=verbose)
+        trainer.export_lm_weights(lm_result, output_dir)
+        if verbose and not use_json:
+            last = lm_result["training_log"][-1]
+            print(f"  Final loss: {last['avg_loss']:.4f}")
+
+    elapsed = time.time() - t0
+
+    if use_json:
+        summary = {
+            "training_samples": data_stats,
+            "detector": {
+                "epochs": result["epochs_trained"],
+                "best_accuracy": result["best_val_accuracy"],
+                "final_metrics": result["final_metrics"],
+                "param_count": result["param_count"],
+            },
+            "lm": {
+                "epochs": lm_result["epochs_trained"],
+                "final_loss": lm_result["training_log"][-1]["avg_loss"],
+            } if lm_epochs > 0 else None,
+            "output_dir": output_dir,
+            "elapsed_seconds": round(elapsed, 1),
+        }
+        print(json.dumps(summary, ensure_ascii=False, indent=2, default=str))
+    else:
+        if verbose:
+            print(f"\n{'=' * 50}")
+            print(f"  Training complete in {elapsed:.1f}s")
+            print(f"  Weights saved to: {output_dir}/")
+            print(f"{'=' * 50}")
+
 
 
 if __name__ == "__main__":

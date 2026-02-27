@@ -3,6 +3,32 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.19.0] - 2025-06-30
+
+### Added
+- **Real training infrastructure** (`texthumanize/training.py`) — backpropagation with Adam optimizer, training data generation (15 AI + 15 human templates, 10 languages), augmentation, MLP trainer (BCE loss), LSTM trainer (BPTT), and weight export. All pure Python, zero dependencies.
+- **Trained MLP detector weights** — 93% accuracy, F1=0.93, 4417 params (54 KB). Trained on 500 samples, 12 epochs (early stopped).
+- **Trained LSTM language model weights** — loss 3.39→2.35, 3 epochs (428 KB). Pure character-level LSTM trained via BPTT.
+- **Weight loader** (`texthumanize/weight_loader.py`) — loads compressed `.zb85` weight files from `texthumanize/weights/`.
+- **Train CLI command** — `texthumanize train [--samples N] [--epochs N] [--lm-epochs N] [--output DIR]` for continuous training and improvement.
+- **Evaluation dashboard** (`texthumanize/dashboard.py`) — generate quality reports in JSON and HTML with detection accuracy, humanization effectiveness, confusion matrices, and neural model info.
+- **External validation framework** (`texthumanize/benchmarks.py`) — `ValidationSuite` with detection accuracy and humanization effectiveness benchmarks.
+- **Auto-retry humanization** — `humanize_until_human()` repeats humanization with increasing intensity until AI detection score drops below target.
+- **Updatable AI dictionaries** (`texthumanize/dictionaries.py`) — JSON overlay system for customizing language packs without modifying source code. `load_dict()`, `update_dict()`, `export_dict()`, `reset_overlay()`.
+- **Frozen snapshot tests** — MD5-pinned deterministic outputs with seed=42 in `test_golden.py`.
+- **New module tests** (`tests/test_new_modules.py`) — 29 tests covering training, benchmarks, dictionaries, weight_loader, dashboard, and `humanize_until_human()`.
+
+### Changed
+- **Neural detector** loads real trained weights (93% accuracy) instead of PRNG-generated heuristic initialization.
+- **Neural LM** loads real trained LSTM weights instead of domain-prior initialization.
+- **Removed fake training claims** — honest documentation replacing fabricated "trained on 50K texts" comments.
+- **Package data** now includes `weights/*.zb85` files for distribution.
+
+### Fixed
+- `FeedForwardNet.name` property accessor (was `_name` without `@property`).
+- Detector score inversion for trained weights (positive logit = AI, no negation needed).
+- Ruff lint: removed unused imports, fixed f-strings, semicolons, loop variables.
+
 ## [0.18.0] - 2025-06-29
 
 ### Added

@@ -93,6 +93,46 @@ class _OutputProjection:
         return [_dot(self.W[i], h) + self.b[i] for i in range(len(self.b))]
 
 
+def _load_trained_lm_weights(
+    embed: _EmbeddingLayer,
+    lstm: LSTMCell,
+    proj: _OutputProjection,
+) -> bool:
+    """Try to load pre-trained LSTM weights from disk.
+
+    Returns True if weights were loaded, False otherwise.
+    """
+    try:
+        from texthumanize.weight_loader import load_lm_weights
+        data = load_lm_weights()
+        if data is None:
+            return False
+
+        # Load LSTM gate weights
+        lstm_data = data["lstm"]
+        lstm.wf = lstm_data["wf"]
+        lstm.bf = lstm_data["bf"]
+        lstm.wi = lstm_data["wi"]
+        lstm.bi = lstm_data["bi"]
+        lstm.wg = lstm_data["wg"]
+        lstm.bg = lstm_data["bg"]
+        lstm.wo = lstm_data["wo"]
+        lstm.bo = lstm_data["bo"]
+
+        # Load embeddings
+        embed.W = data["embed_w"]
+
+        # Load projection
+        proj.W = data["proj_w"]
+        proj.b = data["proj_b"]
+
+        logger.info("Loaded trained LM weights (LSTM + embeddings + projection)")
+        return True
+    except Exception as e:
+        logger.warning("Could not load trained LM weights: %s", e)
+        return False
+
+
 def _init_pretrained_weights(
     embed: _EmbeddingLayer,
     lstm: LSTMCell,
@@ -212,13 +252,16 @@ class NeuralPerplexity:
         )
         self._proj = _OutputProjection(_HIDDEN_DIM, _VOCAB_SIZE, seed=42)
 
-        # Apply pre-trained weights
-        _init_pretrained_weights(self._embed, self._lstm, self._proj, seed=31415)
+        # Try to load real trained weights; fall back to domain priors
+        loaded = _load_trained_lm_weights(self._embed, self._lstm, self._proj)
+        if not loaded:
+            logger.info("Using domain-prior initialization for LM")
+            _init_pretrained_weights(self._embed, self._lstm, self._proj, seed=31415)
 
         self._hidden_dim = _HIDDEN_DIM
         logger.info(
-            "NeuralPerplexity initialized: vocab=%d, embed=%d, hidden=%d",
-            _VOCAB_SIZE, _EMBED_DIM, _HIDDEN_DIM,
+            "NeuralPerplexity initialized: vocab=%d, embed=%d, hidden=%d, trained=%s",
+            _VOCAB_SIZE, _EMBED_DIM, _HIDDEN_DIM, loaded,
         )
 
     def _forward_sequence(self, text: str, max_chars: int = 2000) -> list[float]:

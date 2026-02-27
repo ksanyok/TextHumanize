@@ -44,7 +44,7 @@ try:
     from importlib.metadata import version as _meta_version
     __version__ = _meta_version("texthumanize")
 except Exception:
-    __version__ = "0.18.0"
+    __version__ = "0.19.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
@@ -69,6 +69,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "humanize": ("texthumanize.core", "humanize"),
     "humanize_batch": ("texthumanize.core", "humanize_batch"),
     "humanize_chunked": ("texthumanize.core", "humanize_chunked"),
+    "humanize_until_human": ("texthumanize.core", "humanize_until_human"),
     "humanize_sentences": ("texthumanize.core", "humanize_sentences"),
     "humanize_stream": ("texthumanize.core", "humanize_stream"),
     "humanize_variants": ("texthumanize.core", "humanize_variants"),
@@ -353,6 +354,7 @@ __all__ = [
     "humanize_chunked",
     "humanize_sentences",
     "humanize_stream",
+    "humanize_until_human",
     "humanize_variants",
     "is_cjk_text",
     "paraphrase",

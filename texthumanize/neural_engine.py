@@ -211,6 +211,11 @@ class FeedForwardNet:
         self.layers = layers
         self._name = name
 
+    @property
+    def name(self) -> str:
+        """Network name."""
+        return self._name
+
     def forward(self, x: Vec) -> Vec:
         """Forward pass through all layers."""
         for layer in self.layers:

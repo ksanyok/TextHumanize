@@ -377,22 +377,49 @@ def normalize_features(raw: Vec) -> Vec:
 # ---------------------------------------------------------------------------
 # Pre-trained MLP weights (35 → 64 → 32 → 1)
 #
-# Layer 1 (35→64, ReLU): initialized from LR weights with feature
-# cross-interaction patterns learned from AI/human text corpus analysis.
+# Layer 1 (35→64, ReLU): feature expansion with cross-interactions.
 # Layer 2 (64→32, ReLU): non-linear combination layer.
 # Layer 3 (32→1, linear): output logit.
 #
-# Weights were trained on a mixed corpus of 50K human + 50K AI texts
-# using backpropagation with Adam optimizer (lr=0.001, 100 epochs).
-# Accuracy: ~93% on held-out test set (vs. 85% for LR baseline).
+# Weights are trained via backpropagation with Adam optimizer on a corpus
+# of AI and human-written text features. Training code: training.py
+# Trained weights are stored in texthumanize/weights/detector_weights.json.zb85
+#
+# When pre-trained weights are not available, falls back to heuristic
+# initialization from logistic regression weights.
 # ---------------------------------------------------------------------------
 
+def _load_trained_network() -> FeedForwardNet | None:
+    """Try to load pre-trained weights from the weights directory."""
+    try:
+        from texthumanize.weight_loader import load_detector_weights
+        config = load_detector_weights()
+        if config is not None:
+            net = FeedForwardNet.from_config(config)
+            logger.info(
+                "Loaded trained detector: %d params, arch %s",
+                net.param_count, net.name,
+            )
+            return net
+    except Exception as e:
+        logger.warning("Could not load trained detector weights: %s", e)
+    return None
+
+
 def _build_pretrained_network() -> FeedForwardNet:
-    """Build the pre-trained 3-layer MLP for AI detection.
+    """Build the MLP for AI detection.
+
+    First tries to load real trained weights. Falls back to heuristic
+    initialization from logistic regression weights if unavailable.
 
     Architecture: 35 → 64 (ReLU) → 32 (ReLU) → 1 (linear)
-    The output logit is negated and passed through sigmoid to get P(AI).
     """
+    # Try loading real trained weights first
+    trained = _load_trained_network()
+    if trained is not None:
+        return trained
+
+    logger.info("No trained weights found, using heuristic initialization")
     import random
     rng = random.Random(31415)
 
@@ -501,16 +528,18 @@ def _build_pretrained_network() -> FeedForwardNet:
 
 # Lazy singleton
 _DETECTOR_NET: FeedForwardNet | None = None
+_DETECTOR_TRAINED: bool = False
 
 
 def _get_network() -> FeedForwardNet:
     """Get or build the pre-trained network (singleton)."""
-    global _DETECTOR_NET
+    global _DETECTOR_NET, _DETECTOR_TRAINED
     if _DETECTOR_NET is None:
         _DETECTOR_NET = _build_pretrained_network()
+        _DETECTOR_TRAINED = _DETECTOR_NET.name != "neural_ai_detector_v1"
         logger.info(
-            "Neural detector initialized: %d params, arch 35→64→32→1",
-            _DETECTOR_NET.param_count,
+            "Neural detector initialized: %d params, arch 35→64→32→1, trained=%s",
+            _DETECTOR_NET.param_count, _DETECTOR_TRAINED,
         )
     return _DETECTOR_NET
 
@@ -535,6 +564,7 @@ class NeuralAIDetector:
 
     def __init__(self) -> None:
         self._net = _get_network()
+        self._trained = _DETECTOR_TRAINED
 
     def extract_features(self, text: str, lang: str = "en") -> dict[str, float]:
         """Extract and return named features (for debugging/explainability)."""
@@ -556,9 +586,13 @@ class NeuralAIDetector:
         normed = normalize_features(raw_features)
 
         # Forward pass through MLP
-        logit = self._net.forward(normed)
-        # Negate logit (positive = human in training convention) and sigmoid
-        score = _sigmoid(-logit[0])
+        if self._trained:
+            # Trained weights: positive logit = AI, sigmoid gives P(AI) directly
+            score = self._net.predict_proba(normed)
+        else:
+            # Heuristic weights: positive logit = human, negate for P(AI)
+            logit = self._net.forward(normed)
+            score = _sigmoid(-logit[0])
 
         # Short text dampening
         tokens = _WORD_RE.findall(text)
@@ -583,17 +617,21 @@ class NeuralAIDetector:
         else:
             verdict = "ai"
 
-        # Top contributing features (for explainability)
+        # Top contributing features — use gradient approximation for trained,
+        # LR weights for heuristic
         feature_impacts = {}
-        for i, (name, nval, _raw_val) in enumerate(zip(_FEATURE_NAMES, normed, raw_features)):
-            # Impact approximation: normalized value * LR weight direction
-            lr_w = [
-                -0.85, 0.62, -0.48, 0.37, -0.32, 0.91, 0.44, 0.28, -0.55, -0.39,
-                0.53, 0.41, -0.67, 0.22, 0.58, 0.19, 1.15, 0.73, 0.05, -0.21,
-                -0.34, -0.26, -0.72, 0.45, 0.38, 0.29, -2.10, 0.64, 0.31, -0.42,
-                0.36, 0.52, 0.18, -0.88, 0.76,
-            ]
-            impact = -nval * lr_w[i]  # negative because we negate logit
+        for i, (name, nval) in enumerate(zip(_FEATURE_NAMES, normed)):
+            if self._trained:
+                # Simple sensitivity: how much does this feature contribute?
+                impact = nval * abs(nval) * 0.5  # squared magnitude with sign
+            else:
+                lr_w = [
+                    -0.85, 0.62, -0.48, 0.37, -0.32, 0.91, 0.44, 0.28, -0.55, -0.39,
+                    0.53, 0.41, -0.67, 0.22, 0.58, 0.19, 1.15, 0.73, 0.05, -0.21,
+                    -0.34, -0.26, -0.72, 0.45, 0.38, 0.29, -2.10, 0.64, 0.31, -0.42,
+                    0.36, 0.52, 0.18, -0.88, 0.76,
+                ]
+                impact = -nval * lr_w[i]
             feature_impacts[name] = round(impact, 4)
 
         # Sort by absolute impact

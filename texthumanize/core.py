@@ -501,6 +501,83 @@ def explain(
     return "\n".join(lines)
 
 
+def humanize_until_human(
+    text: str,
+    lang: str = "auto",
+    profile: str = "web",
+    intensity: int = 60,
+    target_score: float = 0.35,
+    max_attempts: int = 5,
+    intensity_step: int = 10,
+    seed: int | None = None,
+    verbose: bool = False,
+) -> HumanizeResult:
+    """Humanize text repeatedly until AI detection score drops below target.
+
+    Each attempt increases intensity by ``intensity_step`` (up to 100).
+    Returns the best result within ``max_attempts``.
+
+    Args:
+        text: Text to humanize.
+        lang: Language code.
+        profile: Humanization profile.
+        intensity: Starting intensity.
+        target_score: Target AI score (stop when below this).
+        max_attempts: Maximum retry attempts.
+        intensity_step: Intensity increase per retry.
+        seed: Random seed for reproducibility.
+        verbose: Log each attempt.
+
+    Returns:
+        HumanizeResult from the best (lowest AI score) attempt.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    best_result: HumanizeResult | None = None
+    best_score = float("inf")
+    current_text = text
+    current_intensity = min(intensity, 100)
+
+    for attempt in range(max_attempts):
+        # Humanize
+        result = humanize(
+            current_text, lang=lang, profile=profile,
+            intensity=current_intensity, seed=seed,
+        )
+
+        # Detect AI score on humanized text
+        detection = detect_ai(result.text, lang=lang)
+        score = detection.get("combined_score", detection.get("score", 0.5))
+
+        if verbose:
+            logger.info(
+                "Attempt %d/%d: intensity=%d, ai_score=%.3f (target <%.3f)",
+                attempt + 1, max_attempts, current_intensity, score, target_score,
+            )
+
+        if score < best_score:
+            best_score = score
+            best_result = result
+
+        # Check if we've reached the target
+        if score <= target_score:
+            if verbose:
+                logger.info("Target reached at attempt %d", attempt + 1)
+            break
+
+        # Increase intensity for next attempt
+        current_intensity = min(current_intensity + intensity_step, 100)
+        # Use the humanized text as input for next round
+        current_text = result.text
+
+    if best_result is None:
+        # Should not happen, but fallback
+        best_result = humanize(text, lang=lang, profile=profile, intensity=intensity)
+
+    return best_result
+
+
 def humanize_chunked(
     text: str,
     chunk_size: int = 5000,

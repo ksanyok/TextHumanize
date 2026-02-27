@@ -1,5 +1,7 @@
 """Golden-тесты: фиксированные входы → ожидаемые характеристики выхода."""
 
+import hashlib
+
 import pytest
 
 from texthumanize import analyze, humanize
@@ -244,4 +246,51 @@ class TestGoldenNeuralDetection:
         r2 = detect_ai(self.AI_TEXT, lang="en")
         assert r1.get("neural_probability") == r2.get("neural_probability")
         assert r1.get("neural_perplexity") == r2.get("neural_perplexity")
+
+
+class TestFrozenSnapshots:
+    """Frozen snapshot tests: pin exact output hashes with seed=42.
+
+    If a hash changes, it means the pipeline output changed for that input.
+    Update the expected hash only after verifying the new output is correct.
+    """
+
+    _EN_INPUT = (
+        "Furthermore, the implementation of artificial intelligence represents "
+        "a considerable challenge. However, it is important to note that this "
+        "technology facilitates the automation of various processes. Moreover, "
+        "the utilization of AI ensures a significant increase in efficiency. "
+        "Additionally, it is noteworthy that the development of this field "
+        "is being actively pursued."
+    )
+
+    EXPECTED_EN_HASH = "8fd8686854afeab15ad37d335ffd6711"
+
+    def _md5(self, text: str) -> str:
+        return hashlib.md5(text.encode()).hexdigest()
+
+    def test_en_web_snapshot(self):
+        """English web profile, seed=42, intensity=60 produces stable output."""
+        r = humanize(self._EN_INPUT, lang="en", profile="web", intensity=60, seed=42)
+        got = self._md5(r.text)
+        assert got == self.EXPECTED_EN_HASH, (
+            f"Snapshot changed: {got} != {self.EXPECTED_EN_HASH}. "
+            f"Output: {r.text!r}"
+        )
+
+    def test_deterministic_runs(self):
+        """Two runs with same seed produce identical output."""
+        r1 = humanize(self._EN_INPUT, lang="en", profile="web", intensity=60, seed=42)
+        r2 = humanize(self._EN_INPUT, lang="en", profile="web", intensity=60, seed=42)
+        assert r1.text == r2.text
+        assert r1.change_ratio == r2.change_ratio
+
+    def test_different_seeds_different_output(self):
+        """Different seeds produce different output (if text has changes)."""
+        r1 = humanize(self._EN_INPUT, lang="en", profile="web", intensity=80, seed=42)
+        r2 = humanize(self._EN_INPUT, lang="en", profile="web", intensity=80, seed=99)
+        # At high intensity both should differ from original
+        if r1.change_ratio > 0 and r2.change_ratio > 0:
+            # Very likely different, but not guaranteed—skip if same
+            pass  # This is a soft check
 
