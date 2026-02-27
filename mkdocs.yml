@@ -4,6 +4,7 @@ site_url: https://ksanyok.github.io/TextHumanize/
 repo_url: https://github.com/ksanyok/TextHumanize
 repo_name: ksanyok/TextHumanize
 edit_uri: edit/main/docs-src/
+docs_dir: docs-src/
 
 theme:
   name: material

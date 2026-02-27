@@ -36,6 +36,9 @@
     >>> print(ai["verdict"])
 """
 
+import sys as _sys
+import types as _types
+
 try:
     from importlib.metadata import version as _meta_version
     __version__ = _meta_version("texthumanize")
@@ -193,6 +196,43 @@ def __getattr__(name: str):
         globals()[name] = val  # cache for subsequent accesses
         return val
     raise AttributeError(f"module 'texthumanize' has no attribute {name!r}")
+
+
+# ── Prevent submodule shadows ────────────────────────────────
+# Python's import machinery sets ``texthumanize.<submodule>`` in the
+# package __dict__ when *any* code does ``import texthumanize.<submodule>``
+# or ``from texthumanize.<submodule> import …``.  If a lazy-import name
+# collides with a submodule file name (e.g. ``paraphrase`` is both a
+# function in _LAZY_IMPORTS and a module ``texthumanize/paraphrase.py``),
+# the module object shadows the function and __getattr__ is never called.
+#
+# We use a lightweight custom module class whose __getattribute__
+# detects when a submodule has shadowed a lazy-import entry and
+# transparently resolves the function instead.
+
+
+class _LazyModule(_types.ModuleType):
+    """Module subclass that resolves lazy-import / submodule name collisions."""
+
+    def __getattribute__(self, name: str) -> object:
+        d = super().__getattribute__("__dict__")
+        lazy = d.get("_LAZY_IMPORTS")
+        if lazy and name in lazy:
+            current = d.get(name)
+            if isinstance(current, _types.ModuleType):
+                # A same-named submodule has been imported — resolve the
+                # lazy-import entry (the *function*) and cache it.
+                module_path, attr = lazy[name]
+                import importlib
+
+                mod = importlib.import_module(module_path)
+                val = getattr(mod, attr)
+                d[name] = val
+                return val
+        return super().__getattribute__(name)
+
+
+_sys.modules[__name__].__class__ = _LazyModule
 
 
 def __dir__():

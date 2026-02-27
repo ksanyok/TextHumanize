@@ -11,7 +11,8 @@ import unittest
 from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
-from texthumanize import analyze, detect_ai, humanize, paraphrase
+from texthumanize import analyze, detect_ai, humanize
+from texthumanize.core import paraphrase
 from texthumanize.utils import HumanizeResult
 
 # Common settings: no deadline, suppress filter health check
