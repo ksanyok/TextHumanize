@@ -38,6 +38,7 @@
 
 import sys as _sys
 import types as _types
+from typing import Any
 
 try:
     from importlib.metadata import version as _meta_version
@@ -186,7 +187,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
 }
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     """PEP 562: lazy-load heavy modules on first attribute access."""
     if name in _LAZY_IMPORTS:
         module_path, attr = _LAZY_IMPORTS[name]
@@ -235,7 +236,7 @@ class _LazyModule(_types.ModuleType):
 _sys.modules[__name__].__class__ = _LazyModule
 
 
-def __dir__():
+def __dir__() -> list[str]:
     """Include lazy-loaded names in dir() output."""
     return list(set(globals().keys()) | set(_LAZY_IMPORTS.keys()))
 

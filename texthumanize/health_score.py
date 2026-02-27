@@ -141,7 +141,7 @@ def content_health(
         try:
             from texthumanize.core import detect_ai
             ai = detect_ai(text, lang=lang)
-            ai_prob = ai.get("ai_probability", 0.5)
+            ai_prob = float(ai.get("ai_probability", 0.5))  # type: ignore[arg-type]
             ai_score = (1.0 - ai_prob) * 100
             verdict = ai.get("verdict", "unknown")
             components.append(HealthComponent(

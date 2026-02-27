@@ -1501,29 +1501,29 @@ class POSTagger:
             self._verb_sfx = _EN_VERB_SUFFIXES
             self._adv_sfx = (_EN_ADV_SUFFIX,)
         elif self._lang == "ru":
-            self._exceptions = _RU_EXCEPTIONS
-            self._noun_sfx = _RU_NOUN_SUFFIXES
-            self._adj_sfx = _RU_ADJ_SUFFIXES
-            self._verb_sfx = ()
-            self._adv_sfx = _RU_ADV_SUFFIXES
+            self._exceptions = _RU_EXCEPTIONS  # type: ignore[assignment]
+            self._noun_sfx = _RU_NOUN_SUFFIXES  # type: ignore[assignment]
+            self._adj_sfx = _RU_ADJ_SUFFIXES  # type: ignore[assignment]
+            self._verb_sfx = ()  # type: ignore[assignment]
+            self._adv_sfx = _RU_ADV_SUFFIXES  # type: ignore[assignment]
             self._verb_inf_sfx = _RU_VERB_INF_SUFFIXES
             self._verb_pres_sfx = _RU_VERB_PRES_SUFFIXES
             self._verb_past_sfx = _RU_VERB_PAST_SUFFIXES
         elif self._lang == "uk":
-            self._exceptions = _UK_EXCEPTIONS
-            self._noun_sfx = _UK_NOUN_SUFFIXES
-            self._adj_sfx = _UK_ADJ_SUFFIXES
-            self._verb_sfx = ()
-            self._adv_sfx = _UK_ADV_SUFFIXES
+            self._exceptions = _UK_EXCEPTIONS  # type: ignore[assignment]
+            self._noun_sfx = _UK_NOUN_SUFFIXES  # type: ignore[assignment]
+            self._adj_sfx = _UK_ADJ_SUFFIXES  # type: ignore[assignment]
+            self._verb_sfx = ()  # type: ignore[assignment]
+            self._adv_sfx = _UK_ADV_SUFFIXES  # type: ignore[assignment]
             self._verb_inf_sfx = _UK_VERB_INF_SUFFIXES
             self._verb_pres_sfx = _UK_VERB_PRES_SUFFIXES
             self._verb_past_sfx = _UK_VERB_PAST_SUFFIXES
         elif self._lang == "de":
-            self._exceptions = _DE_EXCEPTIONS
-            self._noun_sfx = _DE_NOUN_SUFFIXES
-            self._adj_sfx = _DE_ADJ_SUFFIXES
-            self._verb_sfx = _DE_VERB_SUFFIXES
-            self._adv_sfx = _DE_ADV_SUFFIXES
+            self._exceptions = _DE_EXCEPTIONS  # type: ignore[assignment]
+            self._noun_sfx = _DE_NOUN_SUFFIXES  # type: ignore[assignment]
+            self._adj_sfx = _DE_ADJ_SUFFIXES  # type: ignore[assignment]
+            self._verb_sfx = _DE_VERB_SUFFIXES  # type: ignore[assignment]
+            self._adv_sfx = _DE_ADV_SUFFIXES  # type: ignore[assignment]
         else:
             raise ValueError(
                 f"Unsupported language: {self._lang!r}. "

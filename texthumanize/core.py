@@ -7,6 +7,7 @@ import re
 import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import TYPE_CHECKING, Any, cast
 
 from texthumanize.analyzer import TextAnalyzer
 from texthumanize.cache import result_cache
@@ -14,6 +15,11 @@ from texthumanize.exceptions import ConfigError, InputTooLargeError
 from texthumanize.lang_detect import detect_language
 from texthumanize.pipeline import Pipeline
 from texthumanize.utils import AnalysisReport, DetectionReport, HumanizeOptions, HumanizeResult
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from texthumanize.stylistic import StylisticFingerprint
 
 logger = logging.getLogger(__name__)
 
@@ -45,35 +51,35 @@ def _lazy_import(module_path: str) -> object:
         return mod
 
 
-def _get_detectors():
+def _get_detectors() -> Any:
     return _lazy_import("texthumanize.detectors")
 
 
-def _get_paraphrase():
+def _get_paraphrase() -> Any:
     return _lazy_import("texthumanize.paraphrase")
 
 
-def _get_tone():
+def _get_tone() -> Any:
     return _lazy_import("texthumanize.tone")
 
 
-def _get_watermark():
+def _get_watermark() -> Any:
     return _lazy_import("texthumanize.watermark")
 
 
-def _get_spinner():
+def _get_spinner() -> Any:
     return _lazy_import("texthumanize.spinner")
 
 
-def _get_stat_detector():
+def _get_stat_detector() -> Any:
     return _lazy_import("texthumanize.statistical_detector")
 
 
-def _get_ai_backend():
+def _get_ai_backend() -> Any:
     return _lazy_import("texthumanize.ai_backend")
 
 
-def _get_coherence():
+def _get_coherence() -> Any:
     return _lazy_import("texthumanize.coherence")
 
 
@@ -197,7 +203,7 @@ def humanize(
             text, lang=detected_lang, profile=profile, intensity=intensity, seed=seed,
         )
         if cached is not None:
-            return cached
+            return cast(HumanizeResult, cached)
 
     # Запускаем пайплайн
     pipeline = Pipeline(options=options)
@@ -218,6 +224,10 @@ def humanize(
         )
 
     return result
+
+
+_ai_cache: dict[Any, Any] = {}
+_ai_order: list[Any] = []
 
 
 def humanize_ai(
@@ -243,21 +253,18 @@ def humanize_ai(
     # LRU cache for backend instances (preserves circuit breaker state,
     # bounded to 16 entries to prevent memory leaks in server contexts)
     _cache_key = (openai_api_key, openai_model, enable_oss)
-    if not hasattr(humanize_ai, '_instances'):
-        humanize_ai._instances: dict = {}
-        humanize_ai._order: list = []
-    if _cache_key not in humanize_ai._instances:
+    if _cache_key not in _ai_cache:
         _MAX_CACHE = 16
-        if len(humanize_ai._order) >= _MAX_CACHE:
-            _evict = humanize_ai._order.pop(0)
-            humanize_ai._instances.pop(_evict, None)
-        humanize_ai._instances[_cache_key] = ab.AIBackend(
+        if len(_ai_order) >= _MAX_CACHE:
+            _evict = _ai_order.pop(0)
+            _ai_cache.pop(_evict, None)
+        _ai_cache[_cache_key] = ab.AIBackend(
             openai_api_key=openai_api_key,
             openai_model=openai_model,
             enable_oss=enable_oss,
         )
-        humanize_ai._order.append(_cache_key)
-    backend = humanize_ai._instances[_cache_key]
+        _ai_order.append(_cache_key)
+    backend = _ai_cache[_cache_key]
     result_text = backend.paraphrase(text, lang=lang, style=profile)
 
     # Run through pipeline for cleanup
@@ -395,7 +402,7 @@ def analyze(text: str, lang: str = "auto") -> AnalysisReport:
 def explain(
     result: HumanizeResult,
     fmt: str = "text",
-    **kwargs,
+    **kwargs: Any,
 ) -> str:
     """Объяснить что было изменено — в нескольких форматах.
 
@@ -777,7 +784,7 @@ def detect_ai(text: str, lang: str = "auto") -> DetectionReport:
     }
 
 
-def detect_ai_batch(texts: list[str], lang: str = "auto") -> list[dict]:
+def detect_ai_batch(texts: list[str], lang: str = "auto") -> list[DetectionReport]:
     """Пакетная проверка текстов на AI-генерацию.
 
     Args:
@@ -1159,9 +1166,11 @@ def detect_ab(
     before = detect_ai(original, lang=lang)
     after = detect_ai(processed, lang=lang)
 
-    deltas = {}
-    for key in before["metrics"]:
-        deltas[key] = round(after["metrics"][key] - before["metrics"][key], 4)
+    before_metrics = cast(dict[str, float], before["metrics"])
+    after_metrics = cast(dict[str, float], after["metrics"])
+    deltas: dict[str, float] = {}
+    for key in before_metrics:
+        deltas[key] = round(after_metrics[key] - before_metrics[key], 4)
 
     return {
         "before": {
@@ -1196,7 +1205,7 @@ def evasion_resistance(text: str, lang: str = "auto") -> dict:
         Dict with resistance score, triggered metrics, and details.
     """
     result = detect_ai(text, lang=lang)
-    metrics = result["metrics"]
+    metrics = cast(dict[str, float], result["metrics"])
 
     # Count how many metrics flag the text as AI
     ai_threshold = 0.55
@@ -1272,7 +1281,7 @@ def adversarial_calibrate(
             current_text,
             lang=lang,
             intensity=min(intensity, 100),
-        )
+        ).text
 
         # Increase intensity slightly for next round
         intensity = min(intensity + 10, 100)
@@ -1426,7 +1435,7 @@ def humanize_variants(
         lang = detect_language(text)
 
     base_seed = seed if seed is not None else _rnd.randint(0, 2**31)
-    results = []
+    results: list[dict[str, Any]] = []
 
     for i in range(variants):
         variant_seed = base_seed + i * 7919  # prime offset
@@ -1468,7 +1477,7 @@ def humanize_stream(
     preserve: dict | None = None,
     seed: int | None = None,
     chunk_size: int = 500,
-):
+) -> Generator[dict[str, Any], None, None]:
     """Stream humanized text in chunks (generator).
 
     Processes text paragraph-by-paragraph and yields results
@@ -1544,7 +1553,7 @@ def humanize_stream(
 def anonymize_style(
     text: str,
     lang: str = "auto",
-    target: object | str | None = None,
+    target: StylisticFingerprint | str | None = None,
     seed: int | None = None,
 ) -> dict:
     """Анонимизировать стилистический отпечаток текста.

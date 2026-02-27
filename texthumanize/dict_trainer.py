@@ -76,7 +76,7 @@ def train_from_corpus(
     # N-gram analysis
     ngram_counts: dict[int, Counter] = {}
     for n in range(2, max_ngram + 1):
-        ngrams = Counter()
+        ngrams: Counter[str] = Counter()
         for text in texts:
             words = re.findall(r'\b\w+\b', text.lower())
             for i in range(len(words) - n + 1):
@@ -92,7 +92,7 @@ def train_from_corpus(
                 overused[phrase] = count
 
     # Find repeated sentence starters
-    starters = Counter()
+    starters: Counter[str] = Counter()
     for sent in all_sentences:
         words = sent.split()
         if len(words) >= 2:

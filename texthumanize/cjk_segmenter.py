@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import unicodedata
+from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -882,7 +883,7 @@ def _ko_segment(text: str) -> list[str]:
 
 
 def _split_mixed(
-    text: str, pred
+    text: str, pred: Callable[[str], bool]
 ) -> list[tuple[str, bool]]:
     """Split text into runs of pred-True / False."""
     if not text:

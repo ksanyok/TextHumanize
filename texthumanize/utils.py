@@ -39,7 +39,7 @@ class HumanizeOptions:
     # Пользовательский словарь замен: {"слово": "замена"} или {"слово": ["вар1", "вар2"]}
     custom_dict: dict[str, str | list[str]] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.intensity < 0:
             self.intensity = 0
         elif self.intensity > 100:

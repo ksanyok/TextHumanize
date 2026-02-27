@@ -152,7 +152,7 @@ class QualityValidator:
 class ValidationResult:
     """Результат валидации."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.is_valid: bool = True
         self.should_rollback: bool = False
         self.change_ratio: float = 0.0

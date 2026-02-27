@@ -145,7 +145,7 @@ def _handle_detect_ai(data: dict) -> dict:
     if texts and isinstance(texts, list):
         return {"results": detect_ai_batch(texts, lang=data.get("lang", "auto"))}
     if text:
-        return detect_ai(text, lang=data.get("lang", "auto"))
+        return detect_ai(text, lang=data.get("lang", "auto"))  # type: ignore[return-value]
     raise ValueError("Поле 'text' или 'texts' обязательно")
 
 def _handle_paraphrase(data: dict) -> dict:

@@ -233,7 +233,7 @@ class BenchmarkSuite:
                 continue
             try:
                 res = semantic_similarity(
-                    orig, hum, lang=self.lang,
+                    orig, hum,
                 )
                 sim = res.overall if hasattr(res, 'overall') else 0.5
                 scores.append(sim)

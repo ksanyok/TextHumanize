@@ -89,7 +89,7 @@ def check_file(path: str, config: GateConfig | None = None) -> GateResult:
     # 1) AI score
     try:
         ai = detect_ai(text, lang="auto")
-        result.ai_score = ai.get("ai_score", 0)
+        result.ai_score = float(ai.get("ai_score", 0))  # type: ignore[arg-type]
         if result.ai_score > cfg.ai_threshold:
             result.passed = False
             result.issues.append(
@@ -116,9 +116,7 @@ def check_file(path: str, config: GateConfig | None = None) -> GateResult:
     if cfg.watermark_zero:
         try:
             wm = detect_watermarks(text)
-            result.watermark_count = sum(
-                1 for f in wm.findings if f.get("severity") in ("high", "critical")
-            )
+            result.watermark_count = len(wm.get("watermark_types", []))
             if result.watermark_count > 0:
                 result.passed = False
                 result.issues.append(

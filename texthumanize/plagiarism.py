@@ -75,7 +75,7 @@ def check_originality(
 
     # Compare against reference texts if provided
     ref_overlap = 0.0
-    ref_matches = []
+    ref_matches: list[dict] = []
     if reference_texts:
         ref_overlap, ref_matches = _compare_against_refs(
             text, reference_texts, ngram_size, min_match_length
@@ -228,7 +228,7 @@ def _find_self_repetitions(
     self_sim = min(1.0, repeated_word_count / max(1, len(words)))
 
     # Sort by count
-    repeated.sort(key=lambda x: -x["count"])
+    repeated.sort(key=lambda x: -int(x["count"]))  # type: ignore[call-overload]
 
     return self_sim, repeated[:10]
 

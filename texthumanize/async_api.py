@@ -21,7 +21,7 @@ from __future__ import annotations
 import asyncio
 import functools
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from texthumanize.utils import AnalysisReport, HumanizeResult
@@ -61,7 +61,7 @@ async def async_humanize(
     """
     from texthumanize.core import humanize
 
-    return await _run_in_executor(
+    return cast("HumanizeResult", await _run_in_executor(
         humanize,
         text,
         lang=lang,
@@ -73,7 +73,7 @@ async def async_humanize(
         target_style=target_style,
         only_flagged=only_flagged,
         custom_dict=custom_dict,
-    )
+    ))
 
 
 async def async_detect_ai(
@@ -91,7 +91,7 @@ async def async_detect_ai(
     """
     from texthumanize.core import detect_ai
 
-    return await _run_in_executor(detect_ai, text, lang=lang)
+    return cast(dict, await _run_in_executor(detect_ai, text, lang=lang))  # type: ignore[type-arg]
 
 
 async def async_analyze(
@@ -109,7 +109,7 @@ async def async_analyze(
     """
     from texthumanize.core import analyze
 
-    return await _run_in_executor(analyze, text, lang=lang)
+    return cast("AnalysisReport", await _run_in_executor(analyze, text, lang=lang))
 
 
 async def async_paraphrase(
@@ -131,9 +131,9 @@ async def async_paraphrase(
     """
     from texthumanize.core import paraphrase
 
-    return await _run_in_executor(
+    return cast(str, await _run_in_executor(
         paraphrase, text, lang=lang, intensity=intensity, seed=seed,
-    )
+    ))
 
 
 async def async_humanize_batch(
@@ -162,7 +162,7 @@ async def async_humanize_batch(
     """
     from texthumanize.core import humanize_batch
 
-    return await _run_in_executor(
+    return cast(list, await _run_in_executor(
         humanize_batch,
         texts,
         lang=lang,
@@ -170,7 +170,7 @@ async def async_humanize_batch(
         intensity=intensity,
         max_workers=max_workers,
         seed=seed,
-    )
+    ))  # type: ignore[return-value]
 
 
 async def async_detect_ai_batch(
@@ -188,4 +188,4 @@ async def async_detect_ai_batch(
     """
     from texthumanize.core import detect_ai_batch
 
-    return await _run_in_executor(detect_ai_batch, texts, lang=lang)
+    return cast(list, await _run_in_executor(detect_ai_batch, texts, lang=lang))  # type: ignore[return-value]

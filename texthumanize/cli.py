@@ -27,7 +27,7 @@ from texthumanize.core import (
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main() -> None:
     """Точка входа CLI."""
     parser = argparse.ArgumentParser(
         prog="texthumanize",
@@ -352,7 +352,7 @@ def main():
             print(f"Ошибка записи отчёта: {e}", file=sys.stderr)
 
 
-def _handle_detect_command(args, remaining: list[str]) -> None:
+def _handle_detect_command(args: argparse.Namespace, remaining: list[str]) -> None:
     """Handle 'texthumanize detect [file] [--verbose] [--json]' command."""
     detect_input = "-"
     use_json = False
@@ -397,7 +397,8 @@ def _handle_detect_command(args, remaining: list[str]) -> None:
     if verbose:
         print("\n  Metrics (0.0=human, 1.0=AI):")
         for metric, val in result["metrics"].items():
-            bar = "█" * int(val * 20) + "░" * (20 - int(val * 20))
+            fval = float(val)  # type: ignore[arg-type]
+            bar = "█" * int(fval * 20) + "░" * (20 - int(fval * 20))
             print(f"    {metric:25s} {bar} {val:.2f}")
 
         if result.get("explanations"):
@@ -409,7 +410,7 @@ def _handle_detect_command(args, remaining: list[str]) -> None:
     print()
 
 
-def _handle_benchmark_command(args, remaining: list[str]) -> None:
+def _handle_benchmark_command(args: argparse.Namespace, remaining: list[str]) -> None:
     """Handle 'texthumanize benchmark' — run comprehensive quality/speed benchmarks."""
     import time as _time
 
@@ -570,7 +571,7 @@ def _handle_benchmark_command(args, remaining: list[str]) -> None:
         print("=" * 60)
 
 
-def _output_text(text: str, args) -> None:
+def _output_text(text: str, args: argparse.Namespace) -> None:
     """Output text to file or stdout."""
     if args.output:
         try:

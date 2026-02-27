@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
@@ -292,7 +293,7 @@ class Segmenter:
             escaped = re.escape(term)
             pattern = re.compile(r'\b' + escaped + r'\b', re.IGNORECASE)
 
-            def make_replacer(t: str):
+            def make_replacer(t: str) -> Callable[[re.Match[str]], str]:
                 def replacer(match: re.Match) -> str:
                     placeholder = self._make_placeholder("brand_term")
                     segments.append(ProtectedSegment(

@@ -553,7 +553,7 @@ class Pipeline:
         if has_deep_support(lang):
             # 3. Деканцеляризация
             text = self._run_plugins("debureaucratization", text, lang, is_before=True)
-            def _run_debureau():
+            def _run_debureau() -> tuple[str, list]:
                 d = Debureaucratizer(
                     lang=lang,
                     profile=effective_options.profile,
@@ -572,7 +572,7 @@ class Pipeline:
 
             # 4. Разнообразие структуры
             text = self._run_plugins("structure", text, lang, is_before=True)
-            def _run_structure():
+            def _run_structure() -> tuple[str, list]:
                 s = StructureDiversifier(
                     lang=lang,
                     profile=effective_options.profile,
@@ -588,7 +588,7 @@ class Pipeline:
 
             # 5. Уменьшение повторов
             text = self._run_plugins("repetitions", text, lang, is_before=True)
-            def _run_repetitions():
+            def _run_repetitions() -> tuple[str, list]:
                 r = RepetitionReducer(
                     lang=lang,
                     profile=effective_options.profile,
@@ -604,7 +604,7 @@ class Pipeline:
 
             # 6. Инъекция «живости»
             text = self._run_plugins("liveliness", text, lang, is_before=True)
-            def _run_liveliness():
+            def _run_liveliness() -> tuple[str, list]:
                 li = LivelinessInjector(
                     lang=lang,
                     profile=effective_options.profile,
@@ -621,7 +621,7 @@ class Pipeline:
         # 7. Семантическое перефразирование (для языков с полным словарём)
         if has_deep_support(lang):
             text = self._run_plugins("paraphrasing", text, lang, is_before=True)
-            def _run_paraphrasing():
+            def _run_paraphrasing() -> tuple[str, list]:
                 p = SemanticParaphraser(
                     lang=lang,
                     intensity=effective_options.intensity / 100.0,
@@ -645,7 +645,7 @@ class Pipeline:
         # 7b. Syntax rewriting (sentence-level structural transforms)
         if has_deep_support(lang):
             text = self._run_plugins("syntax_rewriting", text, lang, is_before=True)
-            def _run_syntax_rewrite():
+            def _run_syntax_rewrite() -> tuple[str, list]:
                 import re as _re_sr
                 sr = SyntaxRewriter(
                     lang=lang,
@@ -686,7 +686,7 @@ class Pipeline:
 
         # 8. Гармонизация тона (для ВСЕХ языков)
         text = self._run_plugins("tone", text, lang, is_before=True)
-        def _run_tone():
+        def _run_tone() -> tuple[str, list]:
             th = ToneHarmonizer(
                 lang=lang,
                 profile=effective_options.profile,
@@ -702,7 +702,7 @@ class Pipeline:
 
         # 9. Универсальная обработка (для ВСЕХ языков)
         text = self._run_plugins("universal", text, lang, is_before=True)
-        def _run_universal():
+        def _run_universal() -> tuple[str, list]:
             u = UniversalProcessor(
                 profile=effective_options.profile,
                 intensity=effective_options.intensity,
@@ -717,7 +717,7 @@ class Pipeline:
 
         # 10. Натурализация стиля (КЛЮЧЕВОЙ ЭТАП — для ВСЕХ языков)
         text = self._run_plugins("naturalization", text, lang, is_before=True)
-        def _run_naturalization():
+        def _run_naturalization() -> tuple[str, list]:
             n = TextNaturalizer(
                 lang=lang,
                 profile=effective_options.profile,
@@ -756,7 +756,7 @@ class Pipeline:
 
         # 11. Оптимизация читаемости (для ВСЕХ языков)
         text = self._run_plugins("readability", text, lang, is_before=True)
-        def _run_readability():
+        def _run_readability() -> tuple[str, list]:
             ro = ReadabilityOptimizer(
                 lang=lang,
                 profile=effective_options.profile,
@@ -772,7 +772,7 @@ class Pipeline:
 
         # 12. Грамматическая коррекция (для ВСЕХ языков — финальная полировка)
         text = self._run_plugins("grammar", text, lang, is_before=True)
-        def _run_grammar():
+        def _run_grammar() -> tuple[str, list]:
             g = GrammarCorrector(
                 lang=lang,
                 profile=effective_options.profile,
@@ -788,7 +788,7 @@ class Pipeline:
 
         # 13. Коррекция когерентности (для ВСЕХ языков)
         text = self._run_plugins("coherence", text, lang, is_before=True)
-        def _run_coherence():
+        def _run_coherence() -> tuple[str, list]:
             c = CoherenceRepairer(
                 lang=lang,
                 profile=effective_options.profile,

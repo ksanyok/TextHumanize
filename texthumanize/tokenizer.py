@@ -62,7 +62,7 @@ class Tokenizer:
         self.abbreviations = set(abbreviations or [])
         self._build_patterns()
 
-    def _build_patterns(self):
+    def _build_patterns(self) -> None:
         """Построить регулярные выражения для разбора."""
         # Паттерн для разделения абзацев
         self._para_split = re.compile(r'\n\s*\n')

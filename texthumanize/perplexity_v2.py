@@ -53,7 +53,7 @@ _CHAR_TRIGRAM_MODELS: dict[str, dict[str, float]] = {
 def _build_char_trigrams(text: str) -> Counter:
     """Build character trigram counter from text."""
     text = text.lower()
-    trigrams = Counter()
+    trigrams: Counter[str] = Counter()
     for i in range(len(text) - 2):
         trigrams[text[i:i+3]] += 1
     return trigrams
