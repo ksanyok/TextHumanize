@@ -44,7 +44,7 @@ try:
     from importlib.metadata import version as _meta_version
     __version__ = _meta_version("texthumanize")
 except Exception:
-    __version__ = "0.17.0"
+    __version__ = "0.18.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
@@ -168,6 +168,19 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "WordLanguageModel": ("texthumanize.word_lm", "WordLanguageModel"),
     "word_perplexity": ("texthumanize.word_lm", "word_perplexity"),
     "word_naturalness": ("texthumanize.word_lm", "word_naturalness"),
+    # neural_engine.py
+    "FeedForwardNet": ("texthumanize.neural_engine", "FeedForwardNet"),
+    "LSTMCell": ("texthumanize.neural_engine", "LSTMCell"),
+    "EmbeddingTable": ("texthumanize.neural_engine", "EmbeddingTable"),
+    "HMM": ("texthumanize.neural_engine", "HMM"),
+    # neural_detector.py
+    "NeuralAIDetector": ("texthumanize.neural_detector", "NeuralAIDetector"),
+    # neural_lm.py
+    "NeuralPerplexity": ("texthumanize.neural_lm", "NeuralPerplexity"),
+    # word_embeddings.py
+    "WordVec": ("texthumanize.word_embeddings", "WordVec"),
+    # hmm_tagger.py
+    "HMMTagger": ("texthumanize.hmm_tagger", "HMMTagger"),
     # collocation_engine.py
     "CollocEngine": ("texthumanize.collocation_engine", "CollocEngine"),
     "collocation_score": ("texthumanize.collocation_engine", "collocation_score"),
@@ -241,8 +254,8 @@ def __dir__() -> list[str]:
     return list(set(globals().keys()) | set(_LAZY_IMPORTS.keys()))
 
 __all__ = [
+    "HMM",
     "STYLE_PRESETS",
-    # AI Backend
     "AIBackend",
     "AIBackendError",
     "AIBackendRateLimitError",
@@ -252,28 +265,28 @@ __all__ = [
     "AutoTuner",
     "BenchmarkReport",
     "BenchmarkResult",
-    # Benchmark Suite
     "BenchmarkSuite",
-    # CJK Segmenter
     "CJKSegmenter",
-    # Collocation Engine
     "CollocEngine",
     "ConfigError",
     "ContentHealthReport",
     "DetectionError",
     "DetectionMetrics",
     "DetectionReport",
-    # Fingerprint Randomizer
+    "EmbeddingTable",
+    "FeedForwardNet",
     "FingerprintRandomizer",
     "GrammarIssue",
     "GrammarReport",
+    "HMMTagger",
     "HealthComponent",
     "HumanizeOptions",
     "HumanizeResult",
     "InputTooLargeError",
-    # POS Tagger
+    "LSTMCell",
+    "NeuralAIDetector",
+    "NeuralPerplexity",
     "POSTagger",
-    # Infrastructure
     "Pipeline",
     "PipelineError",
     "PlagiarismReport",
@@ -282,77 +295,58 @@ __all__ = [
     "SentenceScore",
     "SimilarityReport",
     "StageError",
-    # Statistical Detector
     "StatisticalDetector",
     "StylisticAnalyzer",
     "StylisticFingerprint",
     "StylometricAnonymizer",
-    # Syntax Rewriter
     "SyntaxRewriter",
-    # Exceptions
     "TextHumanizeError",
     "TrainingResult",
     "UniquenessReport",
     "UnsupportedLanguageError",
-    # Word Language Model
     "WordLanguageModel",
+    "WordVec",
     "__version__",
     "adjust_tone",
-    # Adversarial Calibration
     "adversarial_calibrate",
     "analyze",
-    # Coherence
     "analyze_coherence",
-    # Tone
     "analyze_tone",
-    # Stylometric Anonymization
     "anonymize_style",
     "async_analyze",
     "async_detect_ai",
     "async_detect_ai_batch",
-    # Async API
     "async_humanize",
     "async_humanize_batch",
     "async_paraphrase",
     "best_synonym_in_context",
-    # Author Fingerprint
     "build_author_profile",
-    # Grammar
     "check_grammar",
-    # Plagiarism Detection
     "check_originality",
     "clean_watermarks",
     "collocation_score",
     "compare_fingerprint",
     "compare_originality",
     "compare_texts",
-    # Content Health Score
     "content_health",
     "cross_entropy",
-    # A/B Detection
     "detect_ab",
-    # AI Detection
     "detect_ai",
     "detect_ai_batch",
     "detect_ai_mixed",
     "detect_ai_sentences",
     "detect_ai_statistical",
     "detect_cjk_lang",
-    # Watermarks
     "detect_watermarks",
     "diversify_text",
-    # Evasion Resistance
     "evasion_resistance",
     "explain",
-    # Diff Reports
     "explain_html",
     "explain_json_patch",
     "explain_side_by_side",
     "export_custom_dict",
     "fix_grammar",
-    # Readability
     "full_readability",
-    # Core
     "humanize",
     "humanize_ai",
     "humanize_batch",
@@ -361,23 +355,16 @@ __all__ = [
     "humanize_stream",
     "humanize_variants",
     "is_cjk_text",
-    # Paraphrase
     "paraphrase",
-    # Perplexity v2
     "perplexity_score",
     "quick_benchmark",
     "segment_cjk",
-    # Semantic Similarity
     "semantic_similarity",
-    # Sentence Readability
     "sentence_readability",
-    # Spinner
     "spin",
     "spin_variants",
     "text_fingerprint",
-    # Dictionary Training
     "train_from_corpus",
-    # Uniqueness
     "uniqueness_score",
     "word_naturalness",
     "word_perplexity",

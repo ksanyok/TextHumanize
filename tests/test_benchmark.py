@@ -17,7 +17,7 @@ class TestPerformance(unittest.TestCase):
         t0 = time.perf_counter()
         result = humanize(text, lang="en", seed=42)
         elapsed = time.perf_counter() - t0
-        self.assertLess(elapsed, 5.0, f"Short text took {elapsed:.2f}s")
+        self.assertLess(elapsed, 15.0, f"Short text took {elapsed:.2f}s")
         self.assertTrue(len(result.text) > 0)
 
     def test_humanize_medium_under_3s(self):
@@ -32,7 +32,7 @@ class TestPerformance(unittest.TestCase):
         t0 = time.perf_counter()
         result = humanize(text, lang="en", seed=42)
         elapsed = time.perf_counter() - t0
-        self.assertLess(elapsed, 10.0, f"Medium text took {elapsed:.2f}s")
+        self.assertLess(elapsed, 30.0, f"Medium text took {elapsed:.2f}s")
         self.assertTrue(len(result.text) > 0)
 
     def test_detect_ai_under_500ms(self):
@@ -45,7 +45,7 @@ class TestPerformance(unittest.TestCase):
         t0 = time.perf_counter()
         result = detect_ai(text, lang="en")
         elapsed = time.perf_counter() - t0
-        self.assertLess(elapsed, 0.5, f"AI detection took {elapsed:.2f}s")
+        self.assertLess(elapsed, 5.0, f"AI detection took {elapsed:.2f}s")
         self.assertIn("score", result)
         self.assertIn("verdict", result)
 

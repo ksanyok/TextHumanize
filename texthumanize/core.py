@@ -83,6 +83,22 @@ def _get_coherence() -> Any:
     return _lazy_import("texthumanize.coherence")
 
 
+def _get_neural_detector() -> Any:
+    return _lazy_import("texthumanize.neural_detector")
+
+
+def _get_neural_lm() -> Any:
+    return _lazy_import("texthumanize.neural_lm")
+
+
+def _get_word_embeddings() -> Any:
+    return _lazy_import("texthumanize.word_embeddings")
+
+
+def _get_hmm_tagger() -> Any:
+    return _lazy_import("texthumanize.hmm_tagger")
+
+
 def humanize(
     text: str,
     lang: str = "auto",
@@ -744,18 +760,57 @@ def detect_ai(text: str, lang: str = "auto") -> DetectionReport:
     try:
         sd = _get_stat_detector()
         stat_result = sd.detect_ai_statistical(text, lang=lang)
-        # Weighted merge: 60% heuristic, 40% statistical
-        combined_score = result.ai_probability * 0.6 + stat_result.get("probability", 0.5) * 0.4
-        # Override if statistical detector is confident
         stat_prob = stat_result.get("probability", 0.5)
     except Exception:
-        combined_score = result.ai_probability
         stat_prob = None
+
+    # Enhance with neural MLP detector (35→64→32→1)
+    neural_prob = None
+    neural_details: dict = {}
+    try:
+        nd_mod = _get_neural_detector()
+        nd = nd_mod.NeuralAIDetector()
+        neural_result = nd.detect(text, lang=lang)
+        neural_prob = neural_result.get("score")
+        neural_details = {
+            "neural_score": neural_prob,
+            "neural_verdict": neural_result.get("verdict"),
+            "neural_confidence": neural_result.get("confidence"),
+            "neural_top_features": neural_result.get("top_features"),
+        }
+    except Exception:
+        pass
+
+    # Enhance with neural perplexity (character-level LSTM)
+    neural_ppl = None
+    neural_ppl_score = None
+    try:
+        nlm_mod = _get_neural_lm()
+        nlm = nlm_mod.get_neural_lm()
+        neural_ppl = nlm.perplexity(text, max_chars=2000)
+        neural_ppl_score = nlm.perplexity_score(text, max_chars=2000)
+    except Exception:
+        pass
+
+    # Ensemble: weighted merge of 3 signals
+    # Heuristic (18 metrics): 40%, Statistical (LR): 25%, Neural (MLP): 35%
+    heuristic_score = result.ai_probability
+    stat_score = stat_prob if stat_prob is not None else heuristic_score
+    neural_score = neural_prob if neural_prob is not None else heuristic_score
+
+    combined_score = (
+        heuristic_score * 0.40
+        + stat_score * 0.25
+        + neural_score * 0.35
+    )
 
     return {
         "score": result.ai_probability,
         "combined_score": combined_score,
         "stat_probability": stat_prob,
+        "neural_probability": neural_prob,
+        "neural_perplexity": neural_ppl,
+        "neural_perplexity_score": neural_ppl_score,
         "verdict": result.verdict,
         "confidence": result.confidence,
         "metrics": {
@@ -778,6 +833,7 @@ def detect_ai(text: str, lang: str = "auto") -> DetectionReport:
             "voice": result.voice_score,
             "topic_sentence": result.topic_sent_score,
         },
+        "neural_details": neural_details,
         "explanations": result.explanations,
         "domain": result.detected_domain,
         "lang": lang,

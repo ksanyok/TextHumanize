@@ -181,3 +181,67 @@ class TestPropertyBased:
         assert isinstance(result.text, str)
         # Markdown-ссылка должна сохраниться
         assert "https://example.com" in result.text
+
+
+class TestGoldenNeuralDetection:
+    """Frozen tests for neural AI detection integration."""
+
+    AI_TEXT = (
+        "Furthermore, it is essential to understand that the comprehensive "
+        "implementation of machine learning algorithms demonstrates significant "
+        "potential for optimization across various domains. Additionally, the "
+        "robust framework facilitates seamless integration of diverse data "
+        "sources, thereby enabling holistic analysis. Moreover, the innovative "
+        "approach underscores the transformative impact of artificial intelligence "
+        "on contemporary research methodologies."
+    )
+
+    HUMAN_TEXT = (
+        "I remember walking through the old market on that rainy Tuesday. "
+        "The stalls were half-empty — most vendors had packed up early. "
+        "I grabbed a coffee from this tiny place with no sign. Best espresso "
+        "I'd had in months, honestly. The barista was chatting about football "
+        "with some guy in a leather jacket."
+    )
+
+    def test_detect_ai_has_neural_fields(self):
+        """detect_ai() now includes neural detector fields."""
+        from texthumanize import detect_ai
+        result = detect_ai(self.AI_TEXT, lang="en")
+        assert "neural_probability" in result
+        assert "neural_perplexity" in result
+        assert "neural_perplexity_score" in result
+        assert "neural_details" in result
+
+    def test_neural_probability_in_range(self):
+        """Neural probability must be in [0, 1]."""
+        from texthumanize import detect_ai
+        result = detect_ai(self.AI_TEXT, lang="en")
+        np = result.get("neural_probability")
+        if np is not None:
+            assert 0.0 <= np <= 1.0
+
+    def test_neural_perplexity_positive(self):
+        """Neural perplexity must be positive."""
+        from texthumanize import detect_ai
+        result = detect_ai(self.AI_TEXT, lang="en")
+        ppl = result.get("neural_perplexity")
+        if ppl is not None:
+            assert ppl > 0
+
+    def test_combined_score_uses_neural(self):
+        """Combined score should incorporate neural signal."""
+        from texthumanize import detect_ai
+        result = detect_ai(self.AI_TEXT, lang="en")
+        # combined_score should exist and be in range
+        assert "combined_score" in result
+        assert 0.0 <= result["combined_score"] <= 1.0
+
+    def test_seed_determinism(self):
+        """Same text always produces same neural scores."""
+        from texthumanize import detect_ai
+        r1 = detect_ai(self.AI_TEXT, lang="en")
+        r2 = detect_ai(self.AI_TEXT, lang="en")
+        assert r1.get("neural_probability") == r2.get("neural_probability")
+        assert r1.get("neural_perplexity") == r2.get("neural_perplexity")
+

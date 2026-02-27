@@ -32,12 +32,13 @@ jobs:
         run: ruff check texthumanize/ tests/
 
       - name: Run tests
+        if: matrix.python-version != '3.12'
         run: pytest -v --tb=short
 
       - name: Run tests with coverage (Python 3.12 only)
         if: matrix.python-version == '3.12'
         run: |
-          pytest --cov=texthumanize --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -q
+          pytest --cov=texthumanize --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -v --tb=short --timeout=120
 
       - name: Type check with mypy (Python 3.12 only)
         if: matrix.python-version == '3.12'

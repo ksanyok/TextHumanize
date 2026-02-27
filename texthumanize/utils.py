@@ -316,3 +316,7 @@ class DetectionReport(TypedDict, total=False):
     explanations: list[str]
     domain: str
     lang: str
+    neural_probability: float | None
+    neural_perplexity: float | None
+    neural_perplexity_score: float | None
+    neural_details: dict[str, object] | None

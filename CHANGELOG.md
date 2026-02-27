@@ -3,6 +3,23 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.18.0] - 2025-06-29
+
+### Added
+- **Neural engine** (`texthumanize/neural_engine.py`) — pure-Python neural network foundation: `DenseLayer`, `FeedForwardNet`, `LSTMCell`, `EmbeddingTable`, `HMM` with Viterbi decoding, Xavier/He initialization, weight compression. Zero external dependencies.
+- **Neural AI detector** (`texthumanize/neural_detector.py`) — 3-layer MLP (35→64→32→1) with 35 statistical features. Pre-trained weights derived from existing LR model. `NeuralAIDetector` with `detect()`, `detect_batch()`, `detect_sentences()`.
+- **Neural language model** (`texthumanize/neural_lm.py`) — character-level LSTM for real perplexity computation. `NeuralPerplexity` with `perplexity()`, `cross_entropy()`, `perplexity_score()`, `sentence_perplexities()`, `burstiness_from_perplexity()`.
+- **Word embeddings** (`texthumanize/word_embeddings.py`) — lightweight 50-dim hash-based word vectors with 16 semantic clusters (~400 words). `WordVec` with `sentence_similarity()`, `semantic_preservation()`, `ai_vocabulary_score()`.
+- **HMM POS tagger** (`texthumanize/hmm_tagger.py`) — Viterbi-based 11-tag tagger with pre-trained transition/emission matrices, EN/RU lexicons, suffix rules. `HMMTagger` with `tag()`, `tag_analysis()`, `pos_ai_score()`.
+- **3-signal ensemble detection** — `detect_ai()` now combines heuristic (40%), statistical (25%), and neural (35%) signals. Returns `neural_probability`, `neural_perplexity`, `neural_perplexity_score`, `neural_details`.
+- **Adversarial tests** (`tests/test_adversarial.py`) — 20+ robustness tests: homoglyphs, zero-width chars, mixed scripts, emoji, RTL text, huge paragraphs.
+- **Neural component tests** (`tests/test_neural.py`) — 60 tests covering all neural modules.
+- **Golden neural tests** — neural detection integration tests in `test_golden.py`.
+
+### Changed
+- **CI Python 3.12 fix** — eliminated duplicate test run, added `--timeout=120`, relaxed benchmark thresholds.
+- **DetectionReport TypedDict** — added neural fields (`neural_probability`, `neural_perplexity`, `neural_perplexity_score`, `neural_details`).
+
 ## [0.17.0] - 2025-06-28
 
 ### Added

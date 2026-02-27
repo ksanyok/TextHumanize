@@ -48,3 +48,4 @@ node_modules/
 # Backups
 *.bak
 site/
+coverage.xml
