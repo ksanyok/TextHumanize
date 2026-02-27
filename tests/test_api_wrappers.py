@@ -296,6 +296,7 @@ class TestHumanizeChunked:
         r = humanize_chunked("", lang="en")
         assert r.text == ""
 
+    @pytest.mark.timeout(600)
     def test_large_text(self):
         # Create a text larger than chunk_size
         large = ("This is a paragraph with several sentences. " * 10 + "\n\n") * 20

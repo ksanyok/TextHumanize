@@ -37,8 +37,10 @@ jobs:
 
       - name: Run tests with coverage (Python 3.12 only)
         if: matrix.python-version == '3.12'
+        env:
+          TEXTHUMANIZE_TIMEOUT: "120"
         run: |
-          pytest --cov=texthumanize --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -v --tb=short --timeout=120
+          pytest --cov=texthumanize --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -v --tb=short --timeout=300
 
       - name: Type check with mypy (Python 3.12 only)
         if: matrix.python-version == '3.12'

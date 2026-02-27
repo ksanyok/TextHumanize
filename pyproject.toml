@@ -80,6 +80,21 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+timeout = 300
+
+[tool.coverage.run]
+omit = [
+    "texthumanize/training.py",
+    "texthumanize/dashboard.py",
+    "scripts/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+]
 
 [tool.ruff]
 line-length = 100

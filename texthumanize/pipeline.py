@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from difflib import SequenceMatcher
 from typing import Callable, Protocol
@@ -209,7 +210,8 @@ class Pipeline:
         return text, changes
 
     # Maximum allowed time for a single pipeline run (seconds).
-    PIPELINE_TIMEOUT: float = 30.0
+    # Can be overridden via TEXTHUMANIZE_TIMEOUT env var (useful for CI with coverage).
+    PIPELINE_TIMEOUT: float = float(os.environ.get("TEXTHUMANIZE_TIMEOUT", "30"))
 
     def run(self, text: str, lang: str) -> HumanizeResult:
         """Запустить пайплайн обработки.
