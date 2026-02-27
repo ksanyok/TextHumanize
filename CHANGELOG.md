@@ -3,6 +3,22 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.15.4] - 2025-06-27
+
+### Added
+- **Benchmark CLI** — `texthumanize benchmark -l en [--json] [--verbose]` runs comprehensive quality/speed benchmarks with 3 sample texts (short/medium/long), measures throughput, AI score before/after, determinism check. JSON output mode for CI integration.
+- **17 benchmark tests** (`tests/test_benchmark.py`) — performance gates (humanize <2s/<3s, detect <500ms), quality gates (change ratio, meaning preservation via Jaccard, length preservation, AI detection accuracy), multi-language smoke tests (RU, UK, DE, FR, ES), CLI integration test.
+- **Dockerfile** — python:3.12-slim, non-root user, healthcheck, EXPOSE 8080 for API server deployment.
+- **`.dockerignore`** — excludes tests, docs, JS/PHP code, .git, .venv from Docker builds.
+
+### Changed
+- **README rewritten** — 3,043 → 533 lines (82% reduction). Removed all v0.5–v0.8 changelog, redundant feature deep-dives, Russian text, full API reference. Single unified competitor comparison table. Accurate metrics: 42,375 LOC, 75 modules, 1,802 tests.
+- **Old README archived** to `docs/FULL_REFERENCE.md` for complete API reference.
+
+### Fixed
+- **8 ruff lint errors** in `texthumanize/cli.py` — 7 E501 (line-too-long) and 1 F841 (unused variable) resolved. `ruff check texthumanize/` now passes cleanly.
+- Total tests: 1,785 → 1,802.
+
 ## [0.15.3] - 2025-02-28
 
 ### Added

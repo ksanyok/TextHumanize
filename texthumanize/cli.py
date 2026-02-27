@@ -187,6 +187,11 @@ def main():
         _handle_detect_command(args, remaining)
         return
 
+    # ── Handle benchmark subcommand ──
+    if args.input == 'benchmark':
+        _handle_benchmark_command(args, remaining)
+        return
+
     # API-сервер (не требует input)
     if getattr(args, 'api', False):
         from texthumanize.api import run_server
@@ -402,6 +407,167 @@ def _handle_detect_command(args, remaining: list[str]) -> None:
                     print(f"    • {exp}")
 
     print()
+
+
+def _handle_benchmark_command(args, remaining: list[str]) -> None:
+    """Handle 'texthumanize benchmark' — run comprehensive quality/speed benchmarks."""
+    import time as _time
+
+    use_json = "--json" in remaining
+    lang = args.lang if hasattr(args, "lang") and args.lang != "auto" else "en"
+
+    # --- Sample texts for benchmarking ---
+    _en_short = (
+        "Furthermore, it is important to note that the "
+        "implementation of this approach facilitates optimization."
+    )
+    _en_medium = (
+        "Furthermore, it is important to note that the "
+        "implementation of cloud computing facilitates the "
+        "optimization of business processes. Additionally, the "
+        "utilization of microservices constitutes a significant "
+        "advancement. Nevertheless, considerable challenges "
+        "remain in the area of security. It is worth mentioning "
+        "that these challenges necessitate comprehensive "
+        "solutions. Moreover, the integration of artificial "
+        "intelligence provides unprecedented opportunities "
+        "for automation."
+    )
+    _ru_short = (
+        "Необходимо отметить, что данный подход является "
+        "оптимальным решением для осуществления "
+        "поставленных задач."
+    )
+    _ru_medium = (
+        "Необходимо отметить, что данный подход является "
+        "оптимальным решением для осуществления "
+        "поставленных задач. Кроме того, следует подчеркнуть "
+        "важность реализации инновационных методологий. "
+        "В рамках данного исследования было установлено, что "
+        "применение современных технологий способствует "
+        "повышению эффективности. Тем не менее, существуют "
+        "определённые ограничения, которые необходимо "
+        "учитывать."
+    )
+    samples = {
+        "en": [
+            ("short", _en_short),
+            ("medium", _en_medium),
+            ("long", (_en_medium + " ") * 3),
+        ],
+        "ru": [
+            ("short", _ru_short),
+            ("medium", _ru_medium),
+            ("long", (_ru_medium + " ") * 3),
+        ],
+    }
+
+    test_samples = samples.get(lang, samples["en"])
+
+    if not use_json:
+        print("=" * 60)
+        print(f"  TextHumanize Benchmark — v{__version__}")
+        print(f"  Language: {lang}")
+        print("=" * 60)
+
+    total_chars = 0
+    total_time_humanize = 0.0
+    total_time_detect = 0.0
+    quality_scores: list[float] = []
+    change_ratios: list[float] = []
+    ai_improvements: list[tuple[float, float]] = []
+    results_data: list[dict] = []
+
+    for label, sample_text in test_samples:
+        chars = len(sample_text)
+        total_chars += chars
+
+        # Humanize benchmark
+        t0 = _time.perf_counter()
+        result = humanize(sample_text, lang=lang, profile="web", intensity=60, seed=42)
+        t_humanize = _time.perf_counter() - t0
+        total_time_humanize += t_humanize
+
+        # AI detection benchmark (before & after)
+        t0 = _time.perf_counter()
+        ai_before = detect_ai(sample_text, lang=lang)
+        t_detect = _time.perf_counter() - t0
+        total_time_detect += t_detect
+
+        ai_after = detect_ai(result.text, lang=lang)
+
+        quality_scores.append(getattr(result, "quality_score", 0.0))
+        change_ratios.append(getattr(result, "change_ratio", 0.0))
+        ai_improvements.append((ai_before["score"], ai_after["score"]))
+
+        row = {
+            "label": label,
+            "chars": chars,
+            "humanize_ms": round(t_humanize * 1000, 1),
+            "detect_ms": round(t_detect * 1000, 1),
+            "throughput": round(chars / t_humanize) if t_humanize > 0 else 0,
+            "change_ratio": round(getattr(result, "change_ratio", 0), 3),
+            "quality_score": round(getattr(result, "quality_score", 0), 3),
+            "ai_before": round(ai_before["score"], 3),
+            "ai_after": round(ai_after["score"], 3),
+            "verdict_before": ai_before["verdict"],
+            "verdict_after": ai_after["verdict"],
+        }
+        results_data.append(row)
+
+        if not use_json:
+            print(f"\n  [{label}] {chars} chars")
+            print(f"    Humanize: {row['humanize_ms']}ms ({row['throughput']:,} chars/sec)")
+            print(f"    Detect:   {row['detect_ms']}ms")
+            print(f"    Change:   {row['change_ratio']:.1%}")
+            print(f"    Quality:  {row['quality_score']:.2f}")
+            print(
+                f"    AI score: {row['ai_before']:.0%}"
+                f" → {row['ai_after']:.0%}"
+                f" ({row['verdict_before']}"
+                f" → {row['verdict_after']})"
+            )
+
+    # Determinism check
+    r1 = humanize(test_samples[0][1], lang=lang, seed=12345)
+    r2 = humanize(test_samples[0][1], lang=lang, seed=12345)
+    deterministic = r1.text == r2.text
+
+    # Summary
+    avg_throughput = round(total_chars / total_time_humanize) if total_time_humanize > 0 else 0
+    avg_quality = round(sum(quality_scores) / len(quality_scores), 3) if quality_scores else 0
+    avg_change = round(sum(change_ratios) / len(change_ratios), 3) if change_ratios else 0
+    avg_ai_drop = round(
+        sum(b - a for b, a in ai_improvements) / len(ai_improvements), 3
+    ) if ai_improvements else 0
+
+    summary = {
+        "version": __version__,
+        "lang": lang,
+        "total_chars": total_chars,
+        "total_humanize_ms": round(total_time_humanize * 1000, 1),
+        "total_detect_ms": round(total_time_detect * 1000, 1),
+        "avg_throughput_chars_sec": avg_throughput,
+        "avg_quality_score": avg_quality,
+        "avg_change_ratio": avg_change,
+        "avg_ai_score_drop": avg_ai_drop,
+        "deterministic": deterministic,
+        "samples": results_data,
+    }
+
+    if use_json:
+        print(json.dumps(summary, ensure_ascii=False, indent=2))
+    else:
+        print("\n" + "=" * 60)
+        print("  SUMMARY")
+        print("=" * 60)
+        print(f"  Total chars processed: {total_chars:,}")
+        print(f"  Avg throughput:        {avg_throughput:,} chars/sec")
+        print(f"  Avg quality score:     {avg_quality:.2f}")
+        print(f"  Avg change ratio:      {avg_change:.1%}")
+        print(f"  Avg AI score drop:     {avg_ai_drop:+.1%}")
+        print(f"  Deterministic:         {'✅' if deterministic else '❌'}")
+        print("=" * 60)
 
 
 def _output_text(text: str, args) -> None:
