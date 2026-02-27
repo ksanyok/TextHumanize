@@ -24,9 +24,9 @@ import logging
 import os
 import subprocess
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Sequence
 
 from texthumanize.core import analyze, detect_ai, detect_watermarks
 

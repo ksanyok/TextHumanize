@@ -28,7 +28,7 @@ class TestUniversalBranch:
 
     def test_split_succeeds_and_changed_true(self):
         """Long sentence split succeeds → changed=True → join (L173-177, L183)."""
-        proc = UniversalProcessor(profile="web", intensity=100, seed=42)
+        UniversalProcessor(profile="web", intensity=100, seed=42)
         # Create a sentence with >15 words that is >1.8× avg
         short = "OK."
         long_sent = (
@@ -127,7 +127,7 @@ class TestNaturalizerBranch:
 
     def test_smart_split_long_sent(self):
         """Sentence > 25 words split succeeds (L565-569)."""
-        nat = TextNaturalizer(lang="en", intensity=100, seed=42)
+        TextNaturalizer(lang="en", intensity=100, seed=42)
         long_sent = (
             "The incredibly detailed and comprehensive analysis system processes "
             "all of the available data sets and furthermore generates extensive "
@@ -167,7 +167,7 @@ class TestNaturalizerBranch:
 
     def test_ru_clause_fronting(self):
         """RU clause fronting with comma in second half (L837-843)."""
-        nat = TextNaturalizer(lang="ru", intensity=100, seed=42)
+        TextNaturalizer(lang="ru", intensity=100, seed=42)
         # Sentences starting with same word, >7 words, comma in second half
         text = (
             "Система обеспечивает высокое качество обработки данных, используя алгоритмы. "
@@ -185,7 +185,7 @@ class TestNaturalizerBranch:
 
     def test_fragment_between_long(self):
         """Insert fragment between two >15 word sentences (L901-908)."""
-        nat = TextNaturalizer(lang="en", intensity=100, seed=42)
+        TextNaturalizer(lang="en", intensity=100, seed=42)
         # Need ≥4 sentences, with adjacent pairs >15 words
         s1 = "The incredibly sophisticated data analysis system provides comprehensive detailed reports for all users."
         s2 = "Furthermore the implementation demonstrates remarkable efficiency gains across all operational performance metrics."
@@ -307,6 +307,7 @@ class TestAPIBranch:
         handler.send_header = MagicMock()
         handler.end_headers = MagicMock()
         handler.log_message = MagicMock()
+        handler.client_address = ("127.0.0.1", 12345)
         return handler
 
     def test_detect_no_text_raises(self):
@@ -356,7 +357,7 @@ class TestRepetitionsBranch:
 
     def test_bigram_replacement(self):
         """Bigram repeated ≥2 → synonym replacement (L189-208)."""
-        r = RepetitionReducer(lang="en", intensity=100, seed=42)
+        RepetitionReducer(lang="en", intensity=100, seed=42)
         text = (
             "The system provides good data analysis here. "
             "The system provides useful results now. "
@@ -402,7 +403,7 @@ class TestStructureBranch:
 
     def test_sentence_split_at_conjunction(self):
         """Long sentence split at conjunction (L186-192, L217-218, L223-231)."""
-        s = StructureDiversifier(lang="en", intensity=100, seed=42)
+        StructureDiversifier(lang="en", intensity=100, seed=42)
         # Need sentence > 2× target max with a conjunction
         long_sent = (
             "The incredibly detailed and sophisticated analysis system processes "
@@ -552,9 +553,8 @@ class TestCLIBranch:
             f.write(b"test")
             f.close()
             os.chmod(f.name, 0o000)
-            with pytest.raises(SystemExit):
-                with patch("sys.argv", ["texthumanize", f.name]):
-                    main()
+            with pytest.raises(SystemExit), patch("sys.argv", ["texthumanize", f.name]):
+                main()
         finally:
             os.chmod(f.name, 0o644)
             os.unlink(f.name)

@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 import random
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from texthumanize.pos_tagger import POSTagger
 
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 # ─── Irregular verb table (EN) ─────────────────────────────
 # {base_form: past_participle}
-_EN_IRREGULAR: Dict[str, str] = {
+_EN_IRREGULAR: dict[str, str] = {
     "arise": "arisen",
     "awake": "awoken",
     "be": "been",
@@ -184,12 +184,12 @@ _EN_IRREGULAR: Dict[str, str] = {
 }
 
 # Reverse lookup: past_participle → base
-_EN_PP_TO_BASE: Dict[str, str] = {
+_EN_PP_TO_BASE: dict[str, str] = {
     v: k for k, v in _EN_IRREGULAR.items()
 }
 
 # ─── Irregular past simple (EN) ────────────────────────────
-_EN_PAST_SIMPLE: Dict[str, str] = {
+_EN_PAST_SIMPLE: dict[str, str] = {
     "arise": "arose",
     "awake": "awoke",
     "be": "was",
@@ -299,7 +299,7 @@ _EN_PAST_SIMPLE: Dict[str, str] = {
 }
 
 # ─── Nominalization → verb mapping ─────────────────────────
-_EN_NOMINALIZATION: Dict[str, str] = {
+_EN_NOMINALIZATION: dict[str, str] = {
     "investigation": "investigate",
     "implementation": "implement",
     "evaluation": "evaluate",
@@ -457,7 +457,7 @@ _SENT_SPLIT_RE = re.compile(
 
 # ─── Helpers ────────────────────────────────────────────────
 
-def _tokenize(text: str) -> List[str]:
+def _tokenize(text: str) -> list[str]:
     """Split text into word and punctuation tokens."""
     return _WORD_RE.findall(text)
 
@@ -473,22 +473,20 @@ def _lower_first(s: str) -> str:
         return s
     return s[0].lower() + s[1:]
 
-def _strip_trailing_punct(s: str) -> Tuple[str, str]:
+def _strip_trailing_punct(s: str) -> tuple[str, str]:
     """Separate trailing sentence punctuation."""
     s = s.rstrip()
     if s and s[-1] in ".!?":
         return s[:-1].rstrip(), s[-1]
     return s, ""
 
-def _join_tokens(tokens: List[str]) -> str:
+def _join_tokens(tokens: list[str]) -> str:
     """Join tokens back into text with spacing."""
     if not tokens:
         return ""
-    parts: List[str] = [tokens[0]]
+    parts: list[str] = [tokens[0]]
     for tok in tokens[1:]:
-        if tok in ".,;:!?)]}\"'":
-            parts.append(tok)
-        elif parts and parts[-1] in "([{\"'":
+        if tok in ".,;:!?)]}\"'" or (parts and parts[-1] in "([{\"'"):
             parts.append(tok)
         else:
             parts.append(" " + tok)
@@ -527,11 +525,10 @@ def _get_past_participle_en(verb: str) -> str:
     # Regular verbs
     if low.endswith("e"):
         return low + "d"
-    if low.endswith("y") and len(low) > 2:
-        if low[-2:] not in (
-            "ay", "ey", "oy", "uy",
-        ):
-            return low[:-1] + "ied"
+    if low.endswith("y") and len(low) > 2 and low[-2:] not in (
+        "ay", "ey", "oy", "uy",
+    ):
+        return low[:-1] + "ied"
     # CVC doubling (only for short monosyllables)
     if (
         len(low) > 2
@@ -648,7 +645,7 @@ class SyntaxRewriter:
         Random seed for deterministic output.
     """
 
-    __slots__ = ("_lang", "_tagger", "_rng")
+    __slots__ = ("_lang", "_rng", "_tagger")
 
     def __init__(
         self,
@@ -670,7 +667,7 @@ class SyntaxRewriter:
         self,
         sentence: str,
         max_variants: int = 3,
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate structural variants of *sentence*.
 
         Returns up to *max_variants* distinct rewrites.
@@ -690,7 +687,7 @@ class SyntaxRewriter:
             self._split_sentence,
         ]
 
-        variants: List[str] = []
+        variants: list[str] = []
         seen = {sentence.strip()}
         for method in methods:
             if len(variants) >= max_variants:
@@ -1008,8 +1005,8 @@ class SyntaxRewriter:
         # Object = tokens after verb
         # Separate trailing modifiers (ADV, PREP phrases)
         obj_idx_start = verb_idx + 1
-        obj_toks: List[str] = []
-        mod_toks: List[str] = []
+        obj_toks: list[str] = []
+        mod_toks: list[str] = []
         in_modifier = False
         for j in range(obj_idx_start, len(tags)):
             w_j, t_j = tags[j]
@@ -1198,7 +1195,7 @@ class SyntaxRewriter:
 
         # Find verb
         verb_idx = None
-        for i, (w, t) in enumerate(tags):
+        for i, (_w, t) in enumerate(tags):
             if t == "VERB" and i > 0:
                 verb_idx = i
                 break
@@ -1336,11 +1333,8 @@ class SyntaxRewriter:
         if (
             last_a.endswith("а")
             or last_a.endswith("я")
-        ):
-            if verb.endswith("ал"):
-                verb = verb + "а"
-            elif verb.endswith("ил"):
-                verb = verb + "а"
+        ) and (verb.endswith("ал") or verb.endswith("ил")):
+            verb = verb + "а"
 
         result = (
             f"{_capitalize_first(agent)} "
@@ -1371,7 +1365,7 @@ class SyntaxRewriter:
         words = [w for w, _ in tags]
 
         verb_idx = None
-        for i, (w, t) in enumerate(tags):
+        for i, (_w, t) in enumerate(tags):
             if t == "VERB" and i > 0:
                 verb_idx = i
                 break
@@ -1462,7 +1456,7 @@ class SyntaxRewriter:
 
         # German V2: verb is usually at position 1
         verb_idx = None
-        for i, (w, t) in enumerate(tags):
+        for i, (_w, t) in enumerate(tags):
             if t == "VERB" and i > 0:
                 verb_idx = i
                 break
@@ -1676,8 +1670,8 @@ class SyntaxRewriter:
 
     def _front_prep_phrase(
         self,
-        tokens: List[str],
-        tags: List[Tuple[str, str]],
+        tokens: list[str],
+        tags: list[tuple[str, str]],
         punct: str,
     ) -> Optional[str]:
         """Move a trailing prepositional phrase to front."""
@@ -1717,8 +1711,8 @@ class SyntaxRewriter:
 
     def _front_single_adverb(
         self,
-        tokens: List[str],
-        tags: List[Tuple[str, str]],
+        tokens: list[str],
+        tags: list[tuple[str, str]],
         punct: str,
     ) -> Optional[str]:
         """Move a single adverb to sentence front."""
@@ -1903,7 +1897,7 @@ class SyntaxRewriter:
 
         # Find verb in first clause
         v_idx1 = None
-        for i, (w, t) in enumerate(tags1):
+        for i, (_w, t) in enumerate(tags1):
             if t == "VERB" and i > 0:
                 v_idx1 = i
                 break
@@ -1973,7 +1967,7 @@ class SyntaxRewriter:
         words1 = [w for w, _ in tags1]
 
         verb_idx = None
-        for i, (w, t) in enumerate(tags1):
+        for i, (_w, t) in enumerate(tags1):
             if t == "VERB" and i > 0:
                 verb_idx = i
                 break

@@ -579,7 +579,7 @@ class TestNaturalizerFinal:
 
     def test_burstiness_long_sentence_split(self):
         """L565-569: sentence >25 words triggers _smart_split."""
-        nat = TextNaturalizer(lang="en", intensity=100, seed=0)
+        TextNaturalizer(lang="en", intensity=100, seed=0)
         # Build a very long sentence (>25 words)
         long = (
             "The incredibly sophisticated and advanced data analysis system "
@@ -597,37 +597,33 @@ class TestNaturalizerFinal:
 
     def test_parenthetical_into_exclamation(self):
         """L745-749: parenthetical in sentence ending with !."""
-        nat = TextNaturalizer(lang="en", intensity=100, seed=0)
+        TextNaturalizer(lang="en", intensity=100, seed=0)
         text = (
             "Results are amazing! This works great! "
             "Performance improves! Users love it! "
             "Quality is high! Future looks bright! "
             "Team succeeds! Everything works!"
         )
-        found = False
         for seed in range(500):
             nat2 = TextNaturalizer(lang="en", intensity=100, seed=seed)
             result = nat2._boost_perplexity(text, 1.0)
             if result != text and '(' in result:
-                found = True
                 break
         assert isinstance(result, str)
 
     def test_parenthetical_into_question(self):
         """L745-749: parenthetical in sentence ending with ?."""
-        nat = TextNaturalizer(lang="en", intensity=100, seed=0)
+        TextNaturalizer(lang="en", intensity=100, seed=0)
         text = (
             "Is this working? Can we proceed? "
             "Are results good? Will it continue? "
             "Does it work? Should we go? "
             "Has progress been made? Were goals met?"
         )
-        found = False
         for seed in range(500):
             nat2 = TextNaturalizer(lang="en", intensity=100, seed=seed)
             result = nat2._boost_perplexity(text, 1.0)
             if result != text:
-                found = True
                 break
         assert isinstance(result, str)
 
@@ -645,7 +641,7 @@ class TestNaturalizerFinal:
 
     def test_en_adverb_fronting_in_structure(self):
         """L837-843: -ly adverb fronting in _vary_sentence_structure."""
-        nat = TextNaturalizer(lang="en", intensity=100, seed=0)
+        TextNaturalizer(lang="en", intensity=100, seed=0)
         text = (
             "The system operates efficiently. "
             "The system processes data remarkably. "
@@ -654,12 +650,10 @@ class TestNaturalizerFinal:
             "The system delivers outcomes brilliantly. "
             "The system handles tasks beautifully."
         )
-        found = False
         for seed in range(500):
             nat2 = TextNaturalizer(lang="en", intensity=100, seed=seed)
             result = nat2._vary_sentence_structure(text, 1.0)
             if result != text:
-                found = True
                 break
         assert isinstance(result, str)
 
@@ -817,7 +811,7 @@ from texthumanize.universal import UniversalProcessor
 class TestUniversalFinal:
     def test_vary_sentence_length_split(self):
         """L154, L173-177, L183: sentence length variation with splits."""
-        u = UniversalProcessor(intensity=100, seed=0)
+        UniversalProcessor(intensity=100, seed=0)
         # Need varied sentences - some very long
         text = (
             "Short one. A medium length sentence here today. "
@@ -826,18 +820,16 @@ class TestUniversalFinal:
             "important metric and key performance indicator daily. "
             "Another short sentence."
         )
-        found = False
         for seed in range(200):
             u2 = UniversalProcessor(intensity=100, seed=seed)
             result = u2._vary_sentence_lengths(text, 1.0)
             if result != text:
-                found = True
                 break
         assert isinstance(result, str)
 
     def test_vary_punctuation(self):
         """L311+: _vary_punctuation with semicolons and colons."""
-        u = UniversalProcessor(intensity=100, seed=0)
+        UniversalProcessor(intensity=100, seed=0)
         text = (
             "The system works; it provides features; users love it. "
             "Data flows: systems process: results appear: quality improves."
@@ -851,7 +843,7 @@ class TestUniversalFinal:
 
     def test_break_paragraph_rhythm(self):
         """L331-341: paragraph break adjustment — merge small paragraphs."""
-        u = UniversalProcessor(intensity=100, seed=0)
+        UniversalProcessor(intensity=100, seed=0)
         # Multiple paragraphs of similar small size (low CV)
         text = (
             "First short paragraph here.\n\n"
@@ -1187,7 +1179,8 @@ class TestParaphraseRound2:
             r'^(Although)\s+(.+?),\s+(.+)$', re_mod.I
         )
         # Lambda accesses group(5) which doesn't exist → IndexError
-        bad_lambda = lambda m: m.group(5)
+        def bad_lambda(m):
+            return m.group(5)
         p._clause_patterns = [
             (bad_pattern, bad_lambda),
         ]
@@ -1356,7 +1349,7 @@ class TestUniversalRound2:
 
     def test_vary_sentence_lengths_actual_split(self):
         """L173-177, L183: actual sentence split in _vary_sentence_lengths."""
-        u = UniversalProcessor(intensity=100, seed=0)
+        UniversalProcessor(intensity=100, seed=0)
         # ≥4 sentences, uniform length, one >1.8x avg + >15 words with comma
         text = (
             "Short sentence here. Another short one. A third short sentence. "
@@ -1364,44 +1357,38 @@ class TestUniversalRound2:
             "provides comprehensive performance reports covering every single "
             "important metric, and it also generates extensive dashboards daily."
         )
-        found = False
         for seed in range(200):
             u2 = UniversalProcessor(intensity=100, seed=seed)
             result = u2._vary_sentence_lengths(text, 1.0)
             if result != text:
-                found = True
                 break
-        assert found or True  # May not find due to RNG
+        assert True  # May not find due to RNG
 
     def test_vary_punctuation_semicolon(self):
         """L311: semicolon → period replacement."""
-        u = UniversalProcessor(intensity=100, seed=0)
+        UniversalProcessor(intensity=100, seed=0)
         text = "The system works; it provides features; users love it."
-        found = False
         for seed in range(100):
             u2 = UniversalProcessor(intensity=100, seed=seed)
             result = u2._vary_punctuation(text, 1.0)
             if result != text:
-                found = True
                 break
         assert isinstance(result, str)
 
     def test_vary_punctuation_colons(self):
         """L311: colon replacement when count > 2."""
-        u = UniversalProcessor(intensity=100, seed=0)
+        UniversalProcessor(intensity=100, seed=0)
         text = "First part: second part: third part: fourth part."
-        found = False
         for seed in range(100):
             u2 = UniversalProcessor(intensity=100, seed=seed)
             result = u2._vary_punctuation(text, 1.0)
             if result != text:
-                found = True
                 break
         assert isinstance(result, str)
 
     def test_break_paragraph_rhythm_merge(self):
         """L331-341: merge small paragraphs with low CV."""
-        u = UniversalProcessor(intensity=100, seed=0)
+        UniversalProcessor(intensity=100, seed=0)
         # Paragraphs of very similar small size → low CV
         text = (
             "Short paragraph one.\n\n"
@@ -1410,11 +1397,9 @@ class TestUniversalRound2:
             "Short paragraph four.\n\n"
             "Short paragraph five."
         )
-        found = False
         for seed in range(300):
             u2 = UniversalProcessor(intensity=100, seed=seed)
             result = u2._break_paragraph_rhythm(text, 1.0)
             if result != text:
-                found = True
                 break
         assert isinstance(result, str)

@@ -539,7 +539,7 @@ class AIBackend:
         remaining = [
             b for b in _FALLBACK_ORDER if b != first
         ]
-        return [first] + remaining
+        return [first, *remaining]
 
     # ── internal dispatch ──────────────────────────
 

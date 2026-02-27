@@ -41,8 +41,9 @@ class TextHumanize_WP_Plugin {
         add_action('admin_menu', [$this, 'add_settings_page']);
         add_action('admin_init', [$this, 'register_settings']);
 
-        // Meta box
+        // Meta box & editor scripts
         add_action('add_meta_boxes', [$this, 'add_meta_box']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_editor_scripts']);
 
         // AJAX handlers
         add_action('wp_ajax_th_check_ai', [$this, 'ajax_check_ai']);
@@ -52,6 +53,40 @@ class TextHumanize_WP_Plugin {
         if (get_option('th_auto_humanize', false)) {
             add_filter('the_content', [$this, 'auto_humanize'], 20);
         }
+
+        // Invalidate cache on post save
+        add_action('save_post', [$this, 'invalidate_cache']);
+    }
+
+    /**
+     * Enqueue editor scripts on post/page edit screens.
+     */
+    public function enqueue_editor_scripts(string $hook): void {
+        if (!in_array($hook, ['post.php', 'post-new.php'], true)) {
+            return;
+        }
+
+        wp_enqueue_script(
+            'texthumanize-editor',
+            plugin_dir_url(__FILE__) . 'assets/js/texthumanize-editor.js',
+            ['jquery'],
+            '1.0.0',
+            true
+        );
+
+        wp_localize_script('texthumanize-editor', 'thData', [
+            'nonce' => wp_create_nonce('th_nonce'),
+            'i18n'  => [
+                'aiScore'      => __('AI Score', 'texthumanize'),
+                'humanized'    => __('Humanized!', 'texthumanize'),
+                'changed'      => __('Changed', 'texthumanize'),
+                'error'        => __('Error', 'texthumanize'),
+                'checking'     => __('Checking…', 'texthumanize'),
+                'processing'   => __('Humanizing…', 'texthumanize'),
+                'noContent'    => __('No content to process', 'texthumanize'),
+                'networkError' => __('Network request failed', 'texthumanize'),
+            ],
+        ]);
     }
 
     /**
@@ -67,12 +102,19 @@ class TextHumanize_WP_Plugin {
     }
 
     /**
-     * Auto-humanize content filter.
+     * Auto-humanize content filter with Transients caching.
      */
     public function auto_humanize(string $content): string {
         $th = $this->get_th();
         if (!$th || empty($content) || is_admin()) {
             return $content;
+        }
+
+        // Transients cache: avoid re-humanizing the same content
+        $cache_key = 'th_' . md5($content);
+        $cached = get_transient($cache_key);
+        if ($cached !== false) {
+            return $cached;
         }
 
         try {
@@ -85,9 +127,24 @@ class TextHumanize_WP_Plugin {
                 'intensity' => $intensity,
             ]);
 
-            return $result['text'] ?? $content;
+            $humanized = $result['text'] ?? $content;
+
+            // Cache for 24 hours
+            set_transient($cache_key, $humanized, DAY_IN_SECONDS);
+
+            return $humanized;
         } catch (\Exception $e) {
             return $content;
+        }
+    }
+
+    /**
+     * Invalidate cache when a post is updated.
+     */
+    public function invalidate_cache(int $post_id): void {
+        $content = get_post_field('post_content', $post_id);
+        if ($content) {
+            delete_transient('th_' . md5($content));
         }
     }
 
@@ -170,18 +227,17 @@ class TextHumanize_WP_Plugin {
 
     public function render_meta_box($post): void {
         wp_nonce_field('th_nonce', 'th_nonce_field');
-        $nonce = wp_create_nonce('th_nonce');
         ?>
         <div id="th-panel">
             <p>
                 <button type="button" class="button" onclick="thCheckAI()">
-                    🔍 Check AI Score
+                    🔍 <?php esc_html_e('Check AI Score', 'texthumanize'); ?>
                 </button>
             </p>
             <p>
                 <button type="button" class="button button-primary"
                         onclick="thHumanize()">
-                    ✨ Humanize Content
+                    ✨ <?php esc_html_e('Humanize Content', 'texthumanize'); ?>
                 </button>
             </p>
             <div id="th-result"
@@ -189,70 +245,6 @@ class TextHumanize_WP_Plugin {
                         background:#f0f0f1; display:none;">
             </div>
         </div>
-        <script>
-        function thCheckAI() {
-            var content = '';
-            if (typeof wp !== 'undefined' && wp.data) {
-                content = wp.data.select('core/editor')
-                              .getEditedPostContent();
-            } else {
-                var el = document.getElementById('content');
-                content = el ? el.value : '';
-            }
-
-            jQuery.post(ajaxurl, {
-                action: 'th_check_ai',
-                nonce: '<?php echo esc_js($nonce); ?>',
-                text: content
-            }, function(res) {
-                var el = document.getElementById('th-result');
-                el.style.display = 'block';
-                if (res.success) {
-                    var pct = (res.data.score * 100).toFixed(0);
-                    el.innerHTML = '<b>AI Score:</b> ' + pct +
-                                   '% — ' + res.data.verdict;
-                } else {
-                    el.innerHTML = '<b>Error:</b> ' + res.data;
-                }
-            });
-        }
-
-        function thHumanize() {
-            var content = '';
-            if (typeof wp !== 'undefined' && wp.data) {
-                content = wp.data.select('core/editor')
-                              .getEditedPostContent();
-            } else {
-                var el = document.getElementById('content');
-                content = el ? el.value : '';
-            }
-
-            jQuery.post(ajaxurl, {
-                action: 'th_humanize',
-                nonce: '<?php echo esc_js($nonce); ?>',
-                text: content
-            }, function(res) {
-                var el = document.getElementById('th-result');
-                el.style.display = 'block';
-                if (res.success) {
-                    // Update editor content
-                    if (typeof wp !== 'undefined' && wp.data) {
-                        wp.data.dispatch('core/editor').editPost({
-                            content: res.data.text
-                        });
-                    } else {
-                        var ed = document.getElementById('content');
-                        if (ed) ed.value = res.data.text;
-                    }
-                    var pct = (res.data.change_ratio * 100).toFixed(0);
-                    el.innerHTML = '<b>✅ Humanized!</b> Changed: ' +
-                                   pct + '%';
-                } else {
-                    el.innerHTML = '<b>Error:</b> ' + res.data;
-                }
-            });
-        }
-        </script>
         <?php
     }
 
@@ -284,12 +276,12 @@ class TextHumanize_WP_Plugin {
         ];
         ?>
         <div class="wrap">
-            <h1>TextHumanize Settings</h1>
+            <h1><?php esc_html_e('TextHumanize Settings', 'texthumanize'); ?></h1>
             <form method="post" action="options.php">
                 <?php settings_fields('texthumanize_settings'); ?>
                 <table class="form-table">
                     <tr>
-                        <th>Language</th>
+                        <th><?php esc_html_e('Language', 'texthumanize'); ?></th>
                         <td>
                             <select name="th_lang">
                             <?php foreach ($langs as $l): ?>
@@ -302,7 +294,7 @@ class TextHumanize_WP_Plugin {
                         </td>
                     </tr>
                     <tr>
-                        <th>Profile</th>
+                        <th><?php esc_html_e('Profile', 'texthumanize'); ?></th>
                         <td>
                             <select name="th_profile">
                             <?php foreach ($profiles as $p): ?>
@@ -315,7 +307,7 @@ class TextHumanize_WP_Plugin {
                         </td>
                     </tr>
                     <tr>
-                        <th>Intensity (0-100)</th>
+                        <th><?php esc_html_e('Intensity (0-100)', 'texthumanize'); ?></th>
                         <td>
                             <input type="number" name="th_intensity"
                                 value="<?php echo esc_attr(get_option('th_intensity', 60)); ?>"
@@ -323,13 +315,13 @@ class TextHumanize_WP_Plugin {
                         </td>
                     </tr>
                     <tr>
-                        <th>Auto-humanize posts</th>
+                        <th><?php esc_html_e('Auto-humanize posts', 'texthumanize'); ?></th>
                         <td>
                             <input type="checkbox" name="th_auto_humanize"
                                 value="1"
                                 <?php checked(get_option('th_auto_humanize')); ?>>
                             <span class="description">
-                                Automatically humanize content on display
+                                <?php esc_html_e('Automatically humanize content on display', 'texthumanize'); ?>
                             </span>
                         </td>
                     </tr>

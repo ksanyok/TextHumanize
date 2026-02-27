@@ -29,7 +29,7 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Lint with ruff
-        run: ruff check texthumanize/
+        run: ruff check texthumanize/ tests/
 
       - name: Run tests
         run: pytest -v --tb=short

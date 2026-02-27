@@ -130,7 +130,7 @@ class TestTextNaturalizer:
                 "They are working on it right now. "
                 "There is nothing to add here.")
         ad = TextNaturalizer(lang="en", profile="chat", intensity=100, seed=42)
-        result = ad.process(text)
+        ad.process(text)
         # Должны появиться сокращения
         contraction_changes = [
             c for c in ad.changes if c["type"] == "naturalize_contraction"
@@ -141,7 +141,7 @@ class TestTextNaturalizer:
         """Сокращения НЕ применяются для formal профиля."""
         text = "We do not need this. It is not relevant."
         ad = TextNaturalizer(lang="en", profile="formal", intensity=100, seed=42)
-        result = ad.process(text)
+        ad.process(text)
         contraction_changes = [
             c for c in ad.changes if c["type"] == "naturalize_contraction"
         ]
@@ -152,7 +152,7 @@ class TestTextNaturalizer:
         text = ("It is important to note that this approach works. "
                 "In today's world, technology plays a crucial role.")
         ad = TextNaturalizer(lang="en", profile="web", intensity=100, seed=42)
-        result = ad.process(text)
+        ad.process(text)
         phrase_changes = [
             c for c in ad.changes if c["type"] == "naturalize_phrase"
         ]

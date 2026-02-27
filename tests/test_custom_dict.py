@@ -51,7 +51,7 @@ class TestCustomDict:
             intensity=10,
             seed=42,
         )
-        custom_changes = [c for c in result.changes if c.get("type") == "custom_dict"]
+        [c for c in result.changes if c.get("type") == "custom_dict"]
         # May or may not have changes depending on pipeline flow
         # but should not crash
         assert isinstance(result.changes, list)

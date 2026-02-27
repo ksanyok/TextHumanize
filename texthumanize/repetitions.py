@@ -184,7 +184,7 @@ class RepetitionReducer:
             return text
 
         # Заменяем одно из слов в повторяющейся биграмме
-        for (w1, w2), count in repeated.items():
+        for (w1, w2), _count in repeated.items():
             if not coin_flip(prob * 0.4, self.rng):
                 continue
 

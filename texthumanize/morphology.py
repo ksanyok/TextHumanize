@@ -579,14 +579,14 @@ class MorphologyEngine:
             return word
 
         # Прилагательные
-        for ending, base in sorted(
+        for ending, _base in sorted(
             _DE_ADJ_ENDINGS.items(), key=lambda x: len(x[0]), reverse=True
         ):
             if word.endswith(ending) and len(word) > len(ending) + 3:
                 return word[:-len(ending)]
 
         # Глаголы
-        for ending, base in sorted(
+        for ending, _base in sorted(
             _DE_VERB_ENDINGS.items(), key=lambda x: len(x[0]), reverse=True
         ):
             if word.endswith(ending) and len(word) > len(ending) + 2:
@@ -629,10 +629,9 @@ class MorphologyEngine:
                 return synonym_lemma + ending
 
         for ending in sorted(_DE_VERB_ENDINGS.keys(), key=len, reverse=True):
-            if orig_lower.endswith(ending):
-                if synonym_lemma.endswith("en"):
-                    stem = synonym_lemma[:-2]
-                    return stem + ending
+            if orig_lower.endswith(ending) and synonym_lemma.endswith("en"):
+                stem = synonym_lemma[:-2]
+                return stem + ending
 
         return synonym_lemma
 
@@ -671,10 +670,8 @@ class MorphologyEngine:
         w = word.lower()
 
         # Наречия
-        if w.endswith(("о", "е", "и")) and len(w) > 3:
-            # Оканчивающиеся на -ски, -ически
-            if w.endswith(("ски", "чески", "ично", "ально")):
-                return "adv"
+        if w.endswith(("о", "е", "и")) and len(w) > 3 and w.endswith(("ски", "чески", "ично", "ально")):
+            return "adv"
 
         # Прилагательные
         adj_endings = ("ый", "ий", "ой", "ая", "яя", "ое", "ее",

@@ -580,10 +580,7 @@ class TestAnalyzerReadability:
 
     def test_smog_index(self):
         a = TextAnalyzer(lang="en")
-        words = ("The comprehensive implementation demonstrates significant "
-                 "methodological sophistication throughout experimental framework "
-                 "and empirical observations consistently corroborate theoretical "
-                 "predictions established in preliminary comprehensive analyses").split()
+        words = ["The", "comprehensive", "implementation", "demonstrates", "significant", "methodological", "sophistication", "throughout", "experimental", "framework", "and", "empirical", "observations", "consistently", "corroborate", "theoretical", "predictions", "established", "in", "preliminary", "comprehensive", "analyses"]
         sentences = ["Sentence one.", "Sentence two.", "Sentence three."]
         smog = a.calc_smog_index(words, sentences)
         assert isinstance(smog, float)
@@ -594,7 +591,7 @@ class TestAnalyzerReadability:
 
     def test_gunning_fog(self):
         a = TextAnalyzer(lang="en")
-        words = "the comprehensive implementation demonstrates significant results".split()
+        words = ["the", "comprehensive", "implementation", "demonstrates", "significant", "results"]
         sentences = ["Sentence."]
         fog = a.calc_gunning_fog(words, sentences)
         assert isinstance(fog, float)

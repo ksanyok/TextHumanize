@@ -1199,7 +1199,7 @@ class TextNaturalizer:
                     elif self.rng.random() < 0.5:
                         starters = self.pack.get("sentence_starters", {})
                         first_word = words[0].rstrip('.,;:')
-                        if first_word in starters and starters[first_word]:
+                        if starters.get(first_word):
                             new_start = self.rng.choice(starters[first_word])
                             rest = " ".join(words[1:])
                             result[i] = f"{new_start} {rest}"

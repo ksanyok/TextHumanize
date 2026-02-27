@@ -44,7 +44,7 @@ class TestGoldenRussian:
     def test_bureaucratic_reduced(self):
         """Канцеляризмы уменьшены."""
         result = humanize(AI_TEXT_RU, lang="ru", profile="chat", intensity=80, seed=42)
-        text_lower = result.text.lower()
+        result.text.lower()
         # Хотя бы некоторые канцеляризмы должны быть заменены
         # Не все обязательно заменятся (зависит от random), но текст должен отличаться
         assert result.text != AI_TEXT_RU

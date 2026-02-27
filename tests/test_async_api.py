@@ -7,7 +7,7 @@ import asyncio
 import pytest
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_text_en():
     return (
         "Furthermore, it is important to note that the implementation "
@@ -16,7 +16,7 @@ def sample_text_en():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_text_ru():
     return (
         "Данный текст является примером использования канцелярского стиля, "

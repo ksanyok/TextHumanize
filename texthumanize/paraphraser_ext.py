@@ -683,7 +683,7 @@ class SemanticParaphraser:
                 else:
                     gerund = verb + "ing"
                 # Remove "the <noun> of" → replace with gerund
-                new_words = words[:i - 1] + [gerund] + words[i + 2:]
+                new_words = [*words[:i - 1], gerund, *words[i + 2:]]
                 result = " ".join(new_words)
                 if result and result[0].islower():
                     result = result[0].upper() + result[1:]

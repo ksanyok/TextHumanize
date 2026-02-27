@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 import re
 import threading
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ _EN_COMP_REGULAR: frozenset[str] = frozenset({
     "later", "earlier", "higher", "lower", "brighter",
 })
 
-_EN_EXCEPTIONS: Dict[str, str] = {}
+_EN_EXCEPTIONS: dict[str, str] = {}
 
 # ── Determiners ───────────────────────────────────────────────
 for _w in (
@@ -764,7 +764,7 @@ _EN_ADV_SUFFIX = "ly"
 # Russian data
 # ═══════════════════════════════════════════════════════════════
 
-_RU_EXCEPTIONS: Dict[str, str] = {}
+_RU_EXCEPTIONS: dict[str, str] = {}
 
 # ── Prepositions ──────────────────────────────────────────────
 for _w in (
@@ -959,7 +959,7 @@ _RU_ADV_SUFFIXES = ("ски", "ьно", "ки")
 # Ukrainian data
 # ═══════════════════════════════════════════════════════════════
 
-_UK_EXCEPTIONS: Dict[str, str] = {}
+_UK_EXCEPTIONS: dict[str, str] = {}
 
 # ── Prepositions ──────────────────────────────────────────────
 for _w in (
@@ -1151,7 +1151,7 @@ _DE_T_NOUNS: frozenset[str] = frozenset({
     "knecht", "fracht", "schlacht", "tracht",
 })
 
-_DE_EXCEPTIONS: Dict[str, str] = {}
+_DE_EXCEPTIONS: dict[str, str] = {}
 
 # ── Articles / Determiners ────────────────────────────────────
 for _w in (
@@ -1475,24 +1475,24 @@ class POSTagger:
     """
 
     __slots__ = (
-        "_lang",
-        "_exceptions",
-        "_noun_sfx",
         "_adj_sfx",
-        "_verb_sfx",
         "_adv_sfx",
-        "_verb_inf_sfx",
-        "_verb_pres_sfx",
-        "_verb_past_sfx",
+        "_exceptions",
+        "_lang",
         "_lock",
+        "_noun_sfx",
+        "_verb_inf_sfx",
+        "_verb_past_sfx",
+        "_verb_pres_sfx",
+        "_verb_sfx",
     )
 
     def __init__(self, lang: str = "en") -> None:
         self._lang = lang.lower().strip()
         self._lock = threading.Lock()
-        self._verb_inf_sfx: Tuple[str, ...] = ()
-        self._verb_pres_sfx: Tuple[str, ...] = ()
-        self._verb_past_sfx: Tuple[str, ...] = ()
+        self._verb_inf_sfx: tuple[str, ...] = ()
+        self._verb_pres_sfx: tuple[str, ...] = ()
+        self._verb_past_sfx: tuple[str, ...] = ()
 
         if self._lang == "en":
             self._exceptions = _EN_EXCEPTIONS
@@ -1539,7 +1539,7 @@ class POSTagger:
 
     def tag(
         self, text: str,
-    ) -> List[Tuple[str, str]]:
+    ) -> list[tuple[str, str]]:
         """Tag all tokens in *text*.
 
         Returns a list of ``(word, tag)`` tuples.
@@ -1549,7 +1549,7 @@ class POSTagger:
         if not tokens:
             return []
 
-        result: List[Tuple[str, str]] = []
+        result: list[tuple[str, str]] = []
         prev_word: Optional[str] = None
         prev_tag: Optional[str] = None
 
@@ -1781,9 +1781,8 @@ class POSTagger:
         if (
             low.startswith("ge")
             and length > 4
-        ):
-            if low.endswith("t") or low.endswith("en"):
-                return VERB
+        ) and (low.endswith("t") or low.endswith("en")):
+            return VERB
 
         # Noun suffixes (longest first)
         for sfx in _DE_NOUN_SUFFIXES:
@@ -1861,12 +1860,10 @@ class POSTagger:
                 return NOUN
             if tag == ADJ:
                 return ADJ  # DET + ADJ is fine
-        if prev_tag == PREP:
-            if tag in (X, VERB, ADV):
-                return NOUN
-        if prev_tag == ADV:
-            if tag == X:
-                return ADJ
+        if prev_tag == PREP and tag in (X, VERB, ADV):
+            return NOUN
+        if prev_tag == ADV and tag == X:
+            return ADJ
 
         return tag
 
@@ -1897,24 +1894,20 @@ class POSTagger:
             return VERB
 
         # After DET → prefer NOUN or ADJ
-        if prev_tag == DET:
-            if tag in (X, VERB, ADV):
-                return NOUN
+        if prev_tag == DET and tag in (X, VERB, ADV):
+            return NOUN
 
         # After PREP → prefer NOUN
-        if prev_tag == PREP:
-            if tag in (X, VERB, ADV):
-                return NOUN
+        if prev_tag == PREP and tag in (X, VERB, ADV):
+            return NOUN
 
         # After ADV → prefer ADJ or VERB
-        if prev_tag == ADV:
-            if tag == X:
-                return ADJ
+        if prev_tag == ADV and tag == X:
+            return ADJ
 
         # After ADJ → prefer NOUN
-        if prev_tag == ADJ:
-            if tag in (X,):
-                return NOUN
+        if prev_tag == ADJ and tag in (X,):
+            return NOUN
 
         return tag
 

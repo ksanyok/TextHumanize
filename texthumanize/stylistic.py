@@ -221,9 +221,10 @@ class StylisticAnalyzer:
         ) / len(sentences)
 
         # ─── Лексика ─────────────────────────────────────────
+        _punct_chars = '.,;:!?"\'()[]{}' + '\u00ab\u00bb\u201c\u201d'
         clean_words = [
-            w.strip('.,;:!?"\'()[]{}«»""')
-            for w in words if len(w.strip('.,;:!?"\'()[]{}«»""')) > 0
+            w.strip(_punct_chars)
+            for w in words if len(w.strip(_punct_chars)) > 0
         ]
         if clean_words:
             fp.avg_word_length = sum(len(w) for w in clean_words) / len(clean_words)

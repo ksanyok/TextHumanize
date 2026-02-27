@@ -226,10 +226,7 @@ class SentenceSplitter:
 
     def _in_protected(self, pos: int, zones: list[tuple[int, int]]) -> bool:
         """Проверить, попадает ли позиция в защищённую зону."""
-        for start, end in zones:
-            if start <= pos < end:
-                return True
-        return False
+        return any(start <= pos < end for start, end in zones)
 
     def _get_word_before_dot(self, text: str, dot_pos: int) -> str:
         """Извлечь слово перед точкой."""

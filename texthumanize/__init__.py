@@ -40,12 +40,12 @@ try:
     from importlib.metadata import version as _meta_version
     __version__ = _meta_version("texthumanize")
 except Exception:
-    __version__ = "0.16.0"
+    __version__ = "0.17.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
 # Exceptions — always available (lightweight module, no heavy deps)
-from texthumanize.exceptions import (  # noqa: F401, E402
+from texthumanize.exceptions import (
     AIBackendError,
     AIBackendRateLimitError,
     AIBackendUnavailableError,
@@ -200,144 +200,144 @@ def __dir__():
     return list(set(globals().keys()) | set(_LAZY_IMPORTS.keys()))
 
 __all__ = [
+    "STYLE_PRESETS",
+    # AI Backend
+    "AIBackend",
+    "AIBackendError",
+    "AIBackendRateLimitError",
+    "AIBackendUnavailableError",
+    "AnalysisReport",
+    "AnonymizeResult",
+    "AutoTuner",
+    "BenchmarkReport",
+    "BenchmarkResult",
+    # Benchmark Suite
+    "BenchmarkSuite",
+    # CJK Segmenter
+    "CJKSegmenter",
+    # Collocation Engine
+    "CollocEngine",
+    "ConfigError",
+    "ContentHealthReport",
+    "DetectionError",
+    "DetectionMetrics",
+    "DetectionReport",
+    # Fingerprint Randomizer
+    "FingerprintRandomizer",
+    "GrammarIssue",
+    "GrammarReport",
+    "HealthComponent",
+    "HumanizeOptions",
+    "HumanizeResult",
+    "InputTooLargeError",
+    # POS Tagger
+    "POSTagger",
+    # Infrastructure
+    "Pipeline",
+    "PipelineError",
+    "PlagiarismReport",
+    "SemanticReport",
+    "SentenceReadabilityReport",
+    "SentenceScore",
+    "SimilarityReport",
+    "StageError",
+    # Statistical Detector
+    "StatisticalDetector",
+    "StylisticAnalyzer",
+    "StylisticFingerprint",
+    "StylometricAnonymizer",
+    # Syntax Rewriter
+    "SyntaxRewriter",
+    # Exceptions
+    "TextHumanizeError",
+    "TrainingResult",
+    "UniquenessReport",
+    "UnsupportedLanguageError",
+    # Word Language Model
+    "WordLanguageModel",
+    "__version__",
+    "adjust_tone",
+    # Adversarial Calibration
+    "adversarial_calibrate",
+    "analyze",
+    # Coherence
+    "analyze_coherence",
+    # Tone
+    "analyze_tone",
+    # Stylometric Anonymization
+    "anonymize_style",
+    "async_analyze",
+    "async_detect_ai",
+    "async_detect_ai_batch",
+    # Async API
+    "async_humanize",
+    "async_humanize_batch",
+    "async_paraphrase",
+    "best_synonym_in_context",
+    # Author Fingerprint
+    "build_author_profile",
+    # Grammar
+    "check_grammar",
+    # Plagiarism Detection
+    "check_originality",
+    "clean_watermarks",
+    "collocation_score",
+    "compare_fingerprint",
+    "compare_originality",
+    "compare_texts",
+    # Content Health Score
+    "content_health",
+    "cross_entropy",
+    # A/B Detection
+    "detect_ab",
+    # AI Detection
+    "detect_ai",
+    "detect_ai_batch",
+    "detect_ai_mixed",
+    "detect_ai_sentences",
+    "detect_ai_statistical",
+    "detect_cjk_lang",
+    # Watermarks
+    "detect_watermarks",
+    "diversify_text",
+    # Evasion Resistance
+    "evasion_resistance",
+    "explain",
+    # Diff Reports
+    "explain_html",
+    "explain_json_patch",
+    "explain_side_by_side",
+    "export_custom_dict",
+    "fix_grammar",
+    # Readability
+    "full_readability",
     # Core
     "humanize",
+    "humanize_ai",
     "humanize_batch",
     "humanize_chunked",
     "humanize_sentences",
     "humanize_stream",
     "humanize_variants",
-    "analyze",
-    "explain",
-    # AI Detection
-    "detect_ai",
-    "detect_ai_batch",
-    "detect_ai_sentences",
-    "detect_ai_mixed",
-    # Author Fingerprint
-    "build_author_profile",
-    "compare_fingerprint",
-    # A/B Detection
-    "detect_ab",
-    # Evasion Resistance
-    "evasion_resistance",
-    # Adversarial Calibration
-    "adversarial_calibrate",
-    # Stylometric Anonymization
-    "anonymize_style",
-    "StylometricAnonymizer",
-    "AnonymizeResult",
+    "is_cjk_text",
     # Paraphrase
     "paraphrase",
-    # Tone
-    "analyze_tone",
-    "adjust_tone",
-    # Watermarks
-    "detect_watermarks",
-    "clean_watermarks",
+    # Perplexity v2
+    "perplexity_score",
+    "quick_benchmark",
+    "segment_cjk",
+    # Semantic Similarity
+    "semantic_similarity",
+    # Sentence Readability
+    "sentence_readability",
     # Spinner
     "spin",
     "spin_variants",
-    # Coherence
-    "analyze_coherence",
-    # Readability
-    "full_readability",
-    # Diff Reports
-    "explain_html",
-    "explain_json_patch",
-    "explain_side_by_side",
-    # Infrastructure
-    "Pipeline",
-    "HumanizeOptions",
-    "HumanizeResult",
-    "AnalysisReport",
-    "DetectionReport",
-    "DetectionMetrics",
-    "StylisticFingerprint",
-    "StylisticAnalyzer",
-    "STYLE_PRESETS",
-    "AutoTuner",
-    # Grammar
-    "check_grammar",
-    "fix_grammar",
-    "GrammarIssue",
-    "GrammarReport",
-    # Uniqueness
-    "uniqueness_score",
-    "compare_texts",
     "text_fingerprint",
-    "UniquenessReport",
-    "SimilarityReport",
-    # Content Health Score
-    "content_health",
-    "ContentHealthReport",
-    "HealthComponent",
-    # Semantic Similarity
-    "semantic_similarity",
-    "SemanticReport",
-    # Sentence Readability
-    "sentence_readability",
-    "SentenceReadabilityReport",
-    "SentenceScore",
-    # Perplexity v2
-    "perplexity_score",
-    "cross_entropy",
     # Dictionary Training
     "train_from_corpus",
-    "export_custom_dict",
-    "TrainingResult",
-    # Plagiarism Detection
-    "check_originality",
-    "compare_originality",
-    "PlagiarismReport",
-    # AI Backend
-    "AIBackend",
-    "humanize_ai",
-    # POS Tagger
-    "POSTagger",
-    # CJK Segmenter
-    "CJKSegmenter",
-    "segment_cjk",
-    "is_cjk_text",
-    "detect_cjk_lang",
-    # Syntax Rewriter
-    "SyntaxRewriter",
-    # Statistical Detector
-    "StatisticalDetector",
-    "detect_ai_statistical",
-    # Word Language Model
-    "WordLanguageModel",
-    "word_perplexity",
+    # Uniqueness
+    "uniqueness_score",
     "word_naturalness",
-    # Collocation Engine
-    "CollocEngine",
-    "collocation_score",
-    "best_synonym_in_context",
-    # Fingerprint Randomizer
-    "FingerprintRandomizer",
-    "diversify_text",
-    # Benchmark Suite
-    "BenchmarkSuite",
-    "BenchmarkReport",
-    "BenchmarkResult",
-    "quick_benchmark",
-    # Async API
-    "async_humanize",
-    "async_detect_ai",
-    "async_analyze",
-    "async_paraphrase",
-    "async_humanize_batch",
-    "async_detect_ai_batch",
-    # Exceptions
-    "TextHumanizeError",
-    "PipelineError",
-    "StageError",
-    "DetectionError",
-    "ConfigError",
-    "UnsupportedLanguageError",
-    "InputTooLargeError",
-    "AIBackendError",
-    "AIBackendUnavailableError",
-    "AIBackendRateLimitError",
-    "__version__",
+    "word_perplexity",
 ]

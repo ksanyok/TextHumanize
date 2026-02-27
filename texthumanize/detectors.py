@@ -324,8 +324,8 @@ class AIDetector:
 
         # Code/tech docs
         if (text.count('```') >= 2 or text.count('`') > 5
-                or "function" in text_lower and "return" in text_lower
-                or "class " in text_lower and "def " in text_lower):
+                or ("function" in text_lower and "return" in text_lower)
+                or ("class " in text_lower and "def " in text_lower)):
             return "code_docs"
 
         # Social media / informal
@@ -500,9 +500,7 @@ class AIDetector:
                        "entity", "grammar", "opening", "discourse"]
         n_ai_leaning = sum(1 for m in key_metrics if scores.get(m, 0.5) > 0.55)
 
-        if result.ai_probability > 0.60:
-            result.verdict = "ai"
-        elif result.ai_probability > 0.42 and n_ai_leaning >= 4:
+        if result.ai_probability > 0.60 or (result.ai_probability > 0.42 and n_ai_leaning >= 4):
             result.verdict = "ai"
         elif result.ai_probability > 0.38 and n_ai_leaning >= 5:
             # Higher agreement needed for lower scores
@@ -542,7 +540,7 @@ class AIDetector:
 
     def detect_sentences(
         self, text: str, lang: str | None = None, *, window: int = 3,
-    ) -> list["AIDetector.SentenceScore"]:
+    ) -> list[AIDetector.SentenceScore]:
         """Per-sentence AI detection via sliding window.
 
         Each sentence gets a score computed from a window of
@@ -573,7 +571,7 @@ class AIDetector:
                 for s in spans
             ]
 
-        _lang_pack = get_lang_pack(effective_lang)  # noqa: F841
+        _lang_pack = get_lang_pack(effective_lang)
         half = max(window // 2, 1)
 
         # Pre-compute fast per-sentence features
@@ -630,7 +628,7 @@ class AIDetector:
 
     def detect_mixed(
         self, text: str, lang: str | None = None,
-    ) -> list["AIDetector.TextSegment"]:
+    ) -> list[AIDetector.TextSegment]:
         """Detect mixed AI/human text by finding boundaries.
 
         Groups consecutive sentences that share the same label
@@ -1478,7 +1476,7 @@ class AIDetector:
         subject_prons = {
             "i", "he", "she", "it", "they", "we", "you", "the", "this",
             "я", "он", "она", "оно", "они", "мы", "вы", "это", "эти",
-            "я", "він", "вона", "воно", "вони", "ми", "ви", "це", "ці",
+            "він", "вона", "воно", "вони", "ми", "ви", "це", "ці",
         }
         subject_starts = sum(1 for w in first_words if w in subject_prons)
         subject_ratio = subject_starts / len(first_words) if first_words else 0
@@ -1933,7 +1931,7 @@ class AIDetector:
         # 3. Personal references (I, my, me, we, our)
         personal = {"i", "my", "me", "we", "our", "mine",
                     "я", "мой", "моя", "моё", "мне", "меня", "мы", "наш",
-                    "я", "мій", "моя", "моє", "мені", "мене", "ми", "наш"}
+                    "мій", "моє", "мені", "мене", "ми"}
         personal_count = sum(1 for w in words if w.lower() in personal)
         personal_ratio = personal_count / total
         # Has personal references = likely human
@@ -2068,7 +2066,7 @@ class AIDetector:
                 continue
 
             first_sent = para_sentences[0].lower()
-            _rest = ' '.join(para_sentences[1:]).lower()  # noqa: F841
+            _rest = ' '.join(para_sentences[1:]).lower()
 
             # Topic sentence indicators:
             # 1. First sentence contains abstract/general words
@@ -2150,9 +2148,7 @@ class AIDetector:
         vote_ratio = n_ai / n_total if n_total > 0 else 0.5
 
         # Нелинейное преобразование голосов
-        if vote_ratio > 0.6:
-            vote_score = 0.5 + (vote_ratio - 0.5) * 1.5
-        elif vote_ratio < 0.4:
+        if vote_ratio > 0.6 or vote_ratio < 0.4:
             vote_score = 0.5 + (vote_ratio - 0.5) * 1.5
         else:
             vote_score = vote_ratio
@@ -2252,7 +2248,7 @@ class AIDetector:
         ]
         if human_features:
             explanations.append("")
-            for feature, score in human_features[:3]:
+            for feature, _score in human_features[:3]:
                 names_human_en = {
                     "entropy": "Natural text entropy",
                     "burstiness": "Good sentence length variation",

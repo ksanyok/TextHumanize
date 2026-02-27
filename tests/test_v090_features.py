@@ -383,6 +383,6 @@ class TestIntegration:
     def test_watermark_then_humanize(self):
         """Detect watermarks, then humanize."""
         detector = WatermarkDetector()
-        report = detector.detect(_AI_TEXT_EN)
+        detector.detect(_AI_TEXT_EN)
         result = humanize(_AI_TEXT_EN, lang="en")
         assert result.text != _AI_TEXT_EN or result.change_ratio == 0

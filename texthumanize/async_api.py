@@ -21,12 +21,15 @@ from __future__ import annotations
 import asyncio
 import functools
 import logging
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from texthumanize.utils import AnalysisReport, HumanizeResult
 
 logger = logging.getLogger(__name__)
 
 
-async def _run_in_executor(func, *args, **kwargs):
+async def _run_in_executor(func, *args, **kwargs):  # type: ignore[no-untyped-def]
     """Run a sync function in the default thread pool executor."""
     loop = asyncio.get_running_loop()
     partial = functools.partial(func, *args, **kwargs)
@@ -44,7 +47,7 @@ async def async_humanize(
     target_style: object | str | None = None,
     only_flagged: bool = False,
     custom_dict: dict[str, str | list[str]] | None = None,
-) -> Any:
+) -> HumanizeResult:
     """Async version of humanize().
 
     Runs the synchronous humanize() in a thread pool executor,
@@ -94,7 +97,7 @@ async def async_detect_ai(
 async def async_analyze(
     text: str,
     lang: str = "auto",
-) -> Any:
+) -> AnalysisReport:
     """Async version of analyze().
 
     Args:
@@ -140,7 +143,7 @@ async def async_humanize_batch(
     intensity: int = 60,
     max_workers: int = 4,
     seed: int | None = None,
-) -> list[Any]:
+) -> list[HumanizeResult]:
     """Async version of humanize_batch().
 
     For true async parallelism, consider using asyncio.gather()

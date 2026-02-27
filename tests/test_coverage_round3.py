@@ -91,7 +91,6 @@ class TestToneR3(unittest.TestCase):
         text = "The system works correctly and efficiently here today now."
 
         # Делаем так чтобы ToneLevel() бросал ValueError для любого значения
-        original_tl = ToneLevel
 
         def bad_tone_level(value):
             raise ValueError(f"bad: {value}")
@@ -506,7 +505,7 @@ class TestContextR3(unittest.TestCase):
             top = [("word_a", 0.5), ("word_b", 0.3)]
             min_score = min(s for _, s in top)
             weights = [max(s - min_score + 0.1, 0.1) for _, s in top]
-            total = sum(weights)
+            sum(weights)
             r = 999.0  # > total → fallback
             cumulative = 0
             result = None
@@ -934,7 +933,7 @@ class TestDetectorsR3(unittest.TestCase):
         from texthumanize.lang import get_lang_pack
         det = AIDetector("en")
         lp = get_lang_pack("en")
-        result = det._calc_zipf("short text here".split(), lp)
+        result = det._calc_zipf(["short", "text", "here"], lp)
         self.assertIsInstance(result, float)
 
     def test_stylometric_few_words(self):
@@ -1007,10 +1006,9 @@ class TestToneR3Extra(unittest.TestCase):
     def test_analyze_with_patched_scores_invalid_key(self):
         """L289-290: патчим scores чтобы max → невалидный ToneLevel."""
         from texthumanize.tone import ToneAnalyzer, ToneLevel, ToneReport
-        analyzer = ToneAnalyzer("en")
+        ToneAnalyzer("en")
         text = "The quick brown fox jumps over the lazy dog here now."
 
-        original_analyze = analyzer.analyze
 
         def patched_analyze(t):
             report = ToneReport()

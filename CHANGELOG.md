@@ -3,6 +3,40 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.17.0] - 2025-06-28
+
+### Added
+- **LRU result cache** (`texthumanize/cache.py`) — thread-safe SHA-256 keyed cache (256 entries), integrated into `humanize()` for deterministic calls with `seed`. ~11× speedup on cache hit.
+- **Benchmark suite** (`benchmarks/run_benchmark.py`) — measures latency, memory, cache hit speedup for `humanize()`, `detect_ai()`, `analyze()`, `paraphrase()`. Real numbers in README.
+- **Property-based tests** (`tests/test_property.py`) — Hypothesis-powered fuzzing: 10 property tests covering `humanize`, `detect_ai`, `analyze`, `paraphrase` invariants (result types, score bounds, determinism, round-trip AI score reduction).
+- **PyPI publish workflow** (`.github/workflows/publish.yml`) — trusted publisher via `pypa/gh-action-pypi-publish`, triggers on GitHub Release.
+- **PEP 561 `py.typed` marker** — downstream users get type-checking support.
+
+### Changed
+- **Security hardened API**:
+  - Removed `traceback.format_exc()` leak — errors now return generic message, full traceback logged server-side.
+  - Added `_TokenBucketLimiter` — 10 req/s per IP, burst 20. Returns HTTP 429 on exceed.
+  - Added `Pipeline.PIPELINE_TIMEOUT = 30s` — raises `TimeoutError` on long-running pipelines.
+- **SSE improvements** — added `id:`, `event: chunk/done/error` fields per SSE spec; errors no longer leak exception messages.
+- **Ruff config expanded** — 10 rule groups (`E,F,W,I,B,SIM,UP,RUF,PT`), comprehensive ignores for Cyrillic and test patterns. **0 errors** across `texthumanize/` and `tests/`.
+- **mypy strict mode** — `disallow_untyped_defs = true` enforced.
+- **Async API types** — `Any` return types → proper `HumanizeResult`/`AnalysisReport` with `TYPE_CHECKING` guard.
+- **core.py refactored** — 8 copy-paste lazy loaders replaced with generic `_lazy_import()` using `importlib.import_module()`.
+- **CI: ruff now lints `tests/`** in addition to `texthumanize/`.
+- **WordPress plugin improved**:
+  - Transients API caching (24h) for auto-humanize filter, with `save_post` invalidation.
+  - Inline JS extracted to `assets/js/texthumanize-editor.js` with `wp_enqueue_script()`.
+  - Full i18n: all strings wrapped in `__()` / `esc_html_e()` with `texthumanize` text domain.
+- **Deprecated typing imports** — `Dict/List/Tuple` → `dict/list/tuple` with `from __future__ import annotations`.
+- Version: 0.16.0 → 0.17.0.
+
+### Fixed
+- 153 ruff lint errors → 0 (auto-fixed 131, manually fixed 22).
+- 42 F841 unused variables in test files removed.
+- B005 strip warning in `stylistic.py`.
+- SIM102 collapsible if in `morphology.py`.
+- B007 unused loop variables in `coherence_repair.py`, `detectors.py`.
+
 ## [0.16.0] - 2025-06-28
 
 ### Added

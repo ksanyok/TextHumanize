@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texthumanize"
-version = "0.16.0"
+version = "0.17.0"
 description = "Algorithmic text humanization with AI detection, tone analysis, paraphrasing, and spinning — 17-stage pipeline, 14 languages, zero dependencies"
 readme = "README.md"
 license = {text = "Dual License — Free for personal use, commercial license required for business"}
@@ -84,12 +84,41 @@ line-length = 100
 target-version = "py39"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I"]
+select = ["E", "F", "W", "I", "B", "SIM", "UP", "RUF", "PT"]
+ignore = [
+    "E501",   # line-too-long — managed by formatter, not lint
+    "E741",   # ambiguous-variable-name — common in math/nlp code
+    "UP007",  # Use X | Y for union — we support py39 which needs Optional
+    "UP006",  # non-pep585-annotation — py39 compat (use list[] not List[])
+    "UP045",  # non-pep604-annotation-optional — py39 compat
+    "SIM108", # Use ternary — sometimes if/else is clearer
+    "SIM105", # suppressible-exception — contextlib.suppress not always better
+    "SIM115", # open-file-with-context-handler — sometimes impractical
+    "B905",   # zip without strict — py39 compat
+    "RUF001", # ambiguous-unicode-character-string — we use Cyrillic/i18n strings
+    "RUF002", # ambiguous-unicode-character-docstring — Russian docstrings
+    "RUF003", # ambiguous-unicode-character-comment — Russian comments
+    "RUF012", # Mutable class-var without ClassVar — too noisy
+    "RUF059", # unused-unpacked-variable — sometimes needed for API shape
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "E402",   # module-level imports — tests often import after setup
+    "B011",   # assert False — used in tests
+    "PT009",  # pytest-unittest-assertion — progressive migration from unittest to pytest
+    "PT006",  # pytest-parametrize-names-wrong-type — cosmetic
+    "PT011",  # pytest-raises-too-broad — progressive adoption
+    "PT012",  # pytest-raises-with-multiple-statements — acceptable in tests
+    "PT027",  # pytest-unittest-raises-assertion — progressive migration
+    "SIM117", # multiple-with-statements — sometimes more readable nested
+    "RUF043", # pytest-raises-ambiguous-pattern
+]
 
 [tool.mypy]
 python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = false
+disallow_untyped_defs = true
 check_untyped_defs = true
 ignore_missing_imports = true

@@ -27,6 +27,7 @@ class TestAPIHTTPHandler:
         handler.send_header = MagicMock()
         handler.end_headers = MagicMock()
         handler.log_message = MagicMock()
+        handler.client_address = ("127.0.0.1", 12345)
         return handler
 
     def test_json_response(self):

@@ -410,7 +410,7 @@ class CoherenceRepairer:
         varied = 0
         result = text
 
-        for fw, indices in first_words.items():
+        for _fw, indices in first_words.items():
             if len(indices) < 3:
                 continue  # Повторение менее 3 раз — ок
 

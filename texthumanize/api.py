@@ -27,7 +27,6 @@ from __future__ import annotations
 import json
 import logging
 import time
-import traceback
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
@@ -63,6 +62,30 @@ def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200
     handler.wfile.write(body)
 
 MAX_REQUEST_BODY = 5_000_000  # 5 MB
+
+# ─── Rate Limiter ─────────────────────────────────────────────
+
+class _TokenBucketLimiter:
+    """Simple per-IP token bucket rate limiter (in-memory)."""
+
+    def __init__(self, rate: float = 10.0, burst: int = 20) -> None:
+        self._rate = rate      # tokens per second
+        self._burst = burst    # max tokens
+        self._buckets: dict[str, tuple[float, float]] = {}  # ip -> (tokens, last_time)
+
+    def allow(self, ip: str) -> bool:
+        now = time.monotonic()
+        tokens, last = self._buckets.get(ip, (float(self._burst), now))
+        elapsed = now - last
+        tokens = min(self._burst, tokens + elapsed * self._rate)
+        if tokens >= 1.0:
+            self._buckets[ip] = (tokens - 1.0, now)
+            return True
+        self._buckets[ip] = (tokens, now)
+        return False
+
+
+_rate_limiter = _TokenBucketLimiter(rate=10.0, burst=20)
 
 def _read_json(handler: BaseHTTPRequestHandler) -> dict:
     """Прочитать JSON из тела запроса."""
@@ -242,6 +265,12 @@ class TextHumanizeHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         """POST endpoints."""
+        # Rate limiting
+        client_ip = self.client_address[0] if self.client_address else "unknown"
+        if not _rate_limiter.allow(client_ip):
+            _json_response(self, {"error": "Rate limit exceeded. Try again later."}, status=429)
+            return
+
         path = self.path.rstrip("/")
 
         # SSE streaming endpoint
@@ -264,10 +293,10 @@ class TextHumanizeHandler(BaseHTTPRequestHandler):
         except ValueError as exc:
             _json_response(self, {"error": str(exc)}, status=400)
         except Exception as exc:
+            logger.exception("Unhandled error in %s", path)
             _json_response(self, {
-                "error": str(exc),
+                "error": "Internal server error",
                 "type": type(exc).__name__,
-                "traceback": traceback.format_exc(),
             }, status=500)
 
     def _handle_sse_humanize(self) -> None:
@@ -296,33 +325,36 @@ class TextHumanizeHandler(BaseHTTPRequestHandler):
         try:
             from texthumanize.core import humanize_stream
             idx = 0
+            time.monotonic()
             for chunk in humanize_stream(
                 text, lang=lang, profile=profile,
                 intensity=intensity, seed=seed,
             ):
-                event = json.dumps(
+                event_data = json.dumps(
                     {"chunk": chunk, "index": idx},
                     ensure_ascii=False,
                 )
                 self.wfile.write(
-                    f"data: {event}\n\n".encode("utf-8"),
+                    f"id: {idx}\nevent: chunk\ndata: {event_data}\n\n".encode(),
                 )
                 self.wfile.flush()
                 idx += 1
+                time.monotonic()
 
             done = json.dumps(
                 {"done": True, "total_chunks": idx},
             )
             self.wfile.write(
-                f"data: {done}\n\n".encode("utf-8"),
+                f"id: {idx}\nevent: done\ndata: {done}\n\n".encode(),
             )
             self.wfile.flush()
-        except Exception as exc:
+        except Exception:
+            logger.exception("SSE streaming error")
             err = json.dumps(
-                {"error": str(exc)}, ensure_ascii=False,
+                {"error": "Internal server error"}, ensure_ascii=False,
             )
             self.wfile.write(
-                f"data: {err}\n\n".encode("utf-8"),
+                f"event: error\ndata: {err}\n\n".encode(),
             )
             self.wfile.flush()
 

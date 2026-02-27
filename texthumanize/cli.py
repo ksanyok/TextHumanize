@@ -203,7 +203,7 @@ def main():
         text = sys.stdin.read()
     else:
         try:
-            with open(args.input, "r", encoding="utf-8") as f:
+            with open(args.input, encoding="utf-8") as f:
                 text = f.read()
         except FileNotFoundError:
             print(f"Ошибка: файл '{args.input}' не найден", file=sys.stderr)
@@ -370,7 +370,7 @@ def _handle_detect_command(args, remaining: list[str]) -> None:
         text = sys.stdin.read()
     else:
         try:
-            with open(detect_input, "r", encoding="utf-8") as f:
+            with open(detect_input, encoding="utf-8") as f:
                 text = f.read()
         except FileNotFoundError:
             print(f"Error: file '{detect_input}' not found", file=sys.stderr)

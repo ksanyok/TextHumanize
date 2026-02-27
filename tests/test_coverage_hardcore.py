@@ -25,7 +25,7 @@ class TestNaturalizerHardcore:
 
     def test_long_sentence_smart_split(self):
         """Sentence >25 words, _smart_split succeeds (L565-569)."""
-        nat = TextNaturalizer(lang="en", intensity=100, seed=0)
+        TextNaturalizer(lang="en", intensity=100, seed=0)
         # Force low CV by making all sentences medium except one very long one
         long_s = (
             "The system provides data and the system generates reports "
@@ -43,7 +43,7 @@ class TestNaturalizerHardcore:
 
     def test_parenthetical_exclamation(self):
         """Parenthetical insertion into sentence ending ! (L745-747)."""
-        nat = TextNaturalizer(lang="en", intensity=100, seed=0)
+        TextNaturalizer(lang="en", intensity=100, seed=0)
         # Need ≥4 sentences, at least one with !
         text = (
             "The results are amazing! This works so well! "
@@ -60,7 +60,7 @@ class TestNaturalizerHardcore:
 
     def test_parenthetical_question(self):
         """Parenthetical insertion into sentence ending ? (L745-747)."""
-        nat = TextNaturalizer(lang="en", intensity=100, seed=0)
+        TextNaturalizer(lang="en", intensity=100, seed=0)
         text = (
             "Is this system working well? Can users access data? "
             "Are results being generated? Will improvements continue? "
@@ -76,7 +76,7 @@ class TestNaturalizerHardcore:
 
     def test_en_adverb_fronting_ly(self):
         """EN -ly adverb fronting (L837-843, actually EN -ly)."""
-        nat = TextNaturalizer(lang="en", intensity=100, seed=0)
+        TextNaturalizer(lang="en", intensity=100, seed=0)
         # Need repeated starts, >6 words, last word ending in -ly
         text = (
             "The system operates incredibly efficiently. "
@@ -95,7 +95,7 @@ class TestNaturalizerHardcore:
 
     def test_fragment_between_long_sentences(self):
         """Fragment insertion between two >15 word sentences (L901-908)."""
-        nat = TextNaturalizer(lang="en", intensity=100, seed=0)
+        TextNaturalizer(lang="en", intensity=100, seed=0)
         # Need ≥4 sentences, all >15 words, to maximize probability
         s = (
             "The incredibly detailed and sophisticated analysis system provides "

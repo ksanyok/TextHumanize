@@ -58,7 +58,7 @@ class TestDetectorsR5(unittest.TestCase):
         from texthumanize.lang import get_lang_pack
         lp = get_lang_pack("en")
         # 3 уникальных слова → sorted_freqs has 3 entries, tail has ≤ 2
-        words = "hello world test hello world hello".split()
+        words = ["hello", "world", "test", "hello", "world", "hello"]
         score = d._calc_zipf(words, lp)
         self.assertIsInstance(score, float)
         self.assertGreaterEqual(score, 0.0)
@@ -298,7 +298,7 @@ class TestCliR5(unittest.TestCase):
             # cli._save_report не существует — это inline. Нужно вызвать main.
             # Проще: напрямую проверяем блок try/except
             try:
-                with open(args.report, "w", encoding="utf-8") as f:
+                with open(args.report, "w", encoding="utf-8"):
                     pass
             except Exception as e:
                 print(f"Ошибка записи отчёта: {e}", file=sys.stderr)

@@ -11,7 +11,7 @@ from texthumanize.cli import main
 
 def run_cli(*args):
     """Run CLI main() with given args, return exit code or None."""
-    with patch.object(sys, 'argv', ['texthumanize'] + list(args)):
+    with patch.object(sys, 'argv', ['texthumanize', *list(args)]):
         return main()
 
 
@@ -154,7 +154,7 @@ class TestCLIWatermarks:
         infile = tmp_path / "input.txt"
         infile.write_text("Te\u200bxt\u200b with water\u200bmarks.")
         run_cli(str(infile), '--watermarks', '-l', 'en')
-        out = capsys.readouterr()
+        capsys.readouterr()
         # Should output cleaned text or info
 
 

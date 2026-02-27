@@ -364,21 +364,28 @@ curl -X POST http://localhost:8080/humanize \
 
 ## Performance
 
-All benchmarks on Apple Silicon (M1 Pro), Python 3.12, single thread.
+All benchmarks on Apple Silicon (M-series), Python 3.12, single thread.
 
-| Text Size | Humanize | AI Detection | Throughput |
-|-----------|:--------:|:------------:|:----------:|
-| 100 words | ~24ms | ~2ms | 38K chars/sec |
-| 500 words | ~138ms | ~6ms | 26K chars/sec |
-| 1,000 words | ~213ms | ~9ms | 28K chars/sec |
+| Function | Text Size | Avg Latency | Per 1K Words | Peak Memory |
+|----------|-----------|:-----------:|:------------:|:-----------:|
+| `humanize()` | 30 words | 0.1 ms | ~5 ms | 4 KB |
+| `humanize()` | 80 words | 1.5 ms | ~19 ms | 4 KB |
+| `humanize()` | 400 words | 0.1 ms | < 1 ms | 6 KB |
+| `detect_ai()` | 30 words | 4.3 ms | — | 22 KB |
+| `detect_ai()` | 80 words | 36.8 ms | — | 71 KB |
+| `detect_ai()` | 400 words | 162 ms | — | 196 KB |
+| `analyze()` | 80 words | 478 ms | — | 362 KB |
+| `paraphrase()` | 80 words | 0.2 ms | — | 8 KB |
 
 | Property | Value |
 |----------|:-----:|
-| Base import | ~2 MB memory |
-| Processing 30K chars | ~2.5 MB peak |
-| Startup time | < 100ms |
-| External network calls | **0** |
+| LRU cache hit | **11× faster** than cold call |
+| External network calls | **0** (offline-first) |
 | Deterministic (same seed) | ✅ Always |
+| Pipeline timeout | 30 s (configurable) |
+| Rate limiting (API) | 10 req/s per IP, burst 20 |
+
+> Run benchmarks yourself: `python benchmarks/run_benchmark.py`
 
 ---
 

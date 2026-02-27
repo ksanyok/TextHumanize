@@ -20,11 +20,11 @@ LANG_TR = {
         "den", "dan", "ne", "ya", "hem", "ama", "fakat", "ancak",
         "çünkü", "eğer", "gibi", "kadar", "daha", "en", "çok",
         "az", "her", "hiç", "bazı", "tüm", "bütün", "olan",
-        "olan", "olarak", "üzere", "göre", "karşı", "sonra",
+        "olarak", "üzere", "göre", "karşı", "sonra",
         "önce", "arasında", "üzerinde", "altında", "yanında",
         "içinde", "dışında", "hakkında", "tarafından", "dolayı",
         "rağmen", "beri", "boyunca", "ise", "ki", "mi", "mı",
-        "mu", "mü", "bile", "sadece", "yalnız", "ancak",
+        "mu", "mü", "bile", "sadece", "yalnız",
     },
 
     # Bureaucratic / overly formal words -> simpler alternatives

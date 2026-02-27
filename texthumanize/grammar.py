@@ -228,9 +228,8 @@ def _check_brackets(text: str) -> list[GrammarIssue]:
     for i, ch in enumerate(text):
         if ch in openers:
             stack.append((ch, i))
-        elif ch in openers.values():
-            if stack and openers.get(stack[-1][0]) == ch:
-                stack.pop()
+        elif ch in openers.values() and stack and openers.get(stack[-1][0]) == ch:
+            stack.pop()
 
     for opener, pos in stack:
         issues.append(GrammarIssue(

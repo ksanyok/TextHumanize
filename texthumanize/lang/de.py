@@ -28,8 +28,8 @@ LANG_DE = {
         "sehr", "mehr", "viel", "gut", "neu", "alle",
         "diese", "dieser", "dieses", "jede", "jeder", "jedes",
         "sein", "seine", "seinem", "seinen", "seiner",
-        "ihr", "ihre", "ihrem", "ihren", "ihrer",
-        "was", "wer", "wo", "wie", "warum", "welche",
+        "ihre", "ihrem", "ihren", "ihrer",
+        "was", "wer", "wo", "warum", "welche",
     },
 
     # Канцеляризмы (бюрократический стиль)

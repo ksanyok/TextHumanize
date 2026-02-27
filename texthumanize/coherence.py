@@ -169,10 +169,8 @@ class CoherenceAnalyzer:
 
         if "paragraph_uniform_length" in report.issues:
             suggestions.append(
-                "Paragraph lengths are too uniform (CV={:.2f}). "
-                "Vary paragraph sizes for more natural reading rhythm.".format(
-                    report.paragraph_length_cv
-                )
+                f"Paragraph lengths are too uniform (CV={report.paragraph_length_cv:.2f}). "
+                "Vary paragraph sizes for more natural reading rhythm."
             )
 
         if "few_transitions" in report.issues:

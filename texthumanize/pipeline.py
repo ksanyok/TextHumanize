@@ -208,6 +208,9 @@ class Pipeline:
                 })
         return text, changes
 
+    # Maximum allowed time for a single pipeline run (seconds).
+    PIPELINE_TIMEOUT: float = 30.0
+
     def run(self, text: str, lang: str) -> HumanizeResult:
         """Запустить пайплайн обработки.
 
@@ -217,15 +220,30 @@ class Pipeline:
 
         Returns:
             HumanizeResult с обработанным текстом и метаданными.
+
+        Raises:
+            TimeoutError: If processing exceeds PIPELINE_TIMEOUT seconds.
         """
+
         max_change = self.options.constraints.get("max_change_ratio", 0.4)
+        deadline = time.monotonic() + self.PIPELINE_TIMEOUT
+
+        def _check_deadline() -> None:
+            if time.monotonic() > deadline:
+                raise TimeoutError(
+                    f"Pipeline processing exceeded {self.PIPELINE_TIMEOUT}s timeout"
+                )
+
+        self._check_deadline = _check_deadline
 
         result = self._run_pipeline(text, lang, intensity_factor=1.0)
+        _check_deadline()
 
         # Graduated retry: если change_ratio слишком высокий,
         # повторяем с пониженной интенсивностью
         if result.change_ratio > max_change:
             for factor in (0.4, 0.15):
+                _check_deadline()
                 retry = self._run_pipeline(text, lang, intensity_factor=factor)
                 if retry.change_ratio <= max_change:
                     return retry
@@ -250,7 +268,7 @@ class Pipeline:
         self,
         text: str,
         lang: str,
-        metrics_before: "AnalysisReport",
+        metrics_before: AnalysisReport,
         changes: list[dict],
         *,
         preserve_config: dict | None = None,

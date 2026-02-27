@@ -22,7 +22,7 @@ LANG_FR = {
         "son", "sa", "ses", "notre", "votre", "leur", "leurs",
         "dans", "sur", "sous", "avec", "pour", "par", "sans",
         "ne", "pas", "plus", "que", "qui", "quoi", "dont",
-        "si", "bien", "très", "plus", "moins", "aussi",
+        "si", "bien", "très", "moins", "aussi",
         "tout", "tous", "toute", "toutes", "autre", "autres",
         "ici", "là", "où", "quand", "comme", "même",
     },

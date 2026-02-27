@@ -9,6 +9,7 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from texthumanize.analyzer import TextAnalyzer
+from texthumanize.cache import result_cache
 from texthumanize.exceptions import ConfigError, InputTooLargeError
 from texthumanize.lang_detect import detect_language
 from texthumanize.pipeline import Pipeline
@@ -16,96 +17,64 @@ from texthumanize.utils import AnalysisReport, DetectionReport, HumanizeOptions,
 
 logger = logging.getLogger(__name__)
 
-# Ленивый импорт новых модулей (для обратной совместимости)
-_detectors = None
-_paraphrase = None
-_tone = None
-_watermark = None
-_spinner = None
-_coherence = None
-_stat_detector = None
-_ai_backend = None
+# ─── Generic lazy module loader ──────────────────────────────
+
 _lazy_lock = threading.Lock()
+_lazy_modules: dict[str, object] = {}
+
+
+def _lazy_import(module_path: str) -> object:
+    """Thread-safe lazy import with double-checked locking.
+
+    Args:
+        module_path: Fully qualified module name (e.g. 'texthumanize.detectors').
+
+    Returns:
+        The imported module object (cached after first import).
+    """
+    mod = _lazy_modules.get(module_path)
+    if mod is not None:
+        return mod
+    with _lazy_lock:
+        mod = _lazy_modules.get(module_path)
+        if mod is not None:
+            return mod
+        import importlib
+        mod = importlib.import_module(module_path)
+        _lazy_modules[module_path] = mod
+        return mod
 
 
 def _get_detectors():
-    global _detectors
-    if _detectors is None:
-        with _lazy_lock:
-            if _detectors is None:
-                import texthumanize.detectors as _d
-                _detectors = _d
-    return _detectors
+    return _lazy_import("texthumanize.detectors")
 
 
 def _get_paraphrase():
-    global _paraphrase
-    if _paraphrase is None:
-        with _lazy_lock:
-            if _paraphrase is None:
-                import texthumanize.paraphrase as _p
-                _paraphrase = _p
-    return _paraphrase
+    return _lazy_import("texthumanize.paraphrase")
 
 
 def _get_tone():
-    global _tone
-    if _tone is None:
-        with _lazy_lock:
-            if _tone is None:
-                import texthumanize.tone as _t
-                _tone = _t
-    return _tone
+    return _lazy_import("texthumanize.tone")
 
 
 def _get_watermark():
-    global _watermark
-    if _watermark is None:
-        with _lazy_lock:
-            if _watermark is None:
-                import texthumanize.watermark as _w
-                _watermark = _w
-    return _watermark
+    return _lazy_import("texthumanize.watermark")
 
 
 def _get_spinner():
-    global _spinner
-    if _spinner is None:
-        with _lazy_lock:
-            if _spinner is None:
-                import texthumanize.spinner as _s
-                _spinner = _s
-    return _spinner
+    return _lazy_import("texthumanize.spinner")
 
 
 def _get_stat_detector():
-    global _stat_detector
-    if _stat_detector is None:
-        with _lazy_lock:
-            if _stat_detector is None:
-                import texthumanize.statistical_detector as _sd
-                _stat_detector = _sd
-    return _stat_detector
+    return _lazy_import("texthumanize.statistical_detector")
 
 
 def _get_ai_backend():
-    global _ai_backend
-    if _ai_backend is None:
-        with _lazy_lock:
-            if _ai_backend is None:
-                import texthumanize.ai_backend as _ab
-                _ai_backend = _ab
-    return _ai_backend
+    return _lazy_import("texthumanize.ai_backend")
 
 
 def _get_coherence():
-    global _coherence
-    if _coherence is None:
-        with _lazy_lock:
-            if _coherence is None:
-                import texthumanize.coherence as _c
-                _coherence = _c
-    return _coherence
+    return _lazy_import("texthumanize.coherence")
 
 
 def humanize(
@@ -222,6 +191,14 @@ def humanize(
     if constraints:
         options.constraints.update(constraints)
 
+    # ── Cache lookup ────────────────────────────────────────────
+    if seed is not None:
+        cached = result_cache.get(
+            text, lang=detected_lang, profile=profile, intensity=intensity, seed=seed,
+        )
+        if cached is not None:
+            return cached
+
     # Запускаем пайплайн
     pipeline = Pipeline(options=options)
 
@@ -232,6 +209,13 @@ def humanize(
         )
 
     result = pipeline.run(text, detected_lang)
+
+    # ── Cache result (only deterministic calls with seed) ─────
+    if seed is not None:
+        result_cache.put(
+            text, result, lang=detected_lang, profile=profile,
+            intensity=intensity, seed=seed,
+        )
 
     return result
 

@@ -368,9 +368,9 @@ class TestParaphraserUnit:
         from texthumanize.paraphraser_ext import SemanticParaphraser
         p = SemanticParaphraser(lang="en", intensity=1.0, seed=42)
         sent = "Although the task was difficult, the team succeeded."
-        result = p.process(sent)
+        p.process(sent)
         # Should reorder to main clause first
-        assert result != sent or True  # may not always trigger
+        assert True  # may not always trigger
 
     def test_clause_reorder_ru(self):
         """Russian clause reorder."""

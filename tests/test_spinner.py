@@ -49,8 +49,8 @@ class TestContentSpinner:
         """Разные seed → разные результаты (с высокой вероятностью)."""
         s1 = ContentSpinner(lang="en", seed=1, intensity=1.0)
         s2 = ContentSpinner(lang="en", seed=999, intensity=1.0)
-        r1 = s1.spin(SAMPLE_TEXT)
-        r2 = s2.spin(SAMPLE_TEXT)
+        s1.spin(SAMPLE_TEXT)
+        s2.spin(SAMPLE_TEXT)
         # Не гарантировано, но при intensity=1.0 очень вероятно
         # Если оба равны — это OK, просто совпадение
 
