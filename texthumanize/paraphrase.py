@@ -16,6 +16,7 @@ import re
 from dataclasses import dataclass
 
 from texthumanize.morphology import get_morphology
+from texthumanize.sentence_split import split_sentences
 
 logger = logging.getLogger(__name__)
 
@@ -374,8 +375,8 @@ class Paraphraser:
         return sent, "", 0.0
 
     def _split_sentences(self, text: str) -> list[str]:
-        """Базовое разбиение на предложения."""
-        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+        """Базовое разбиение на предложения (email/URL safe)."""
+        sentences = split_sentences(text.strip(), self.lang)
         return [s.strip() for s in sentences if s.strip()]
 
 

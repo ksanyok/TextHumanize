@@ -713,9 +713,9 @@ class TestV015Integration(unittest.TestCase):
     """Integration tests for v0.15.0."""
 
     def test_humanize_uses_new_pipeline(self):
-        """Pipeline now has 18 stages (including entropy_injection)."""
+        """Pipeline now has 20 stages (including paraphrase_engine, sentence_restructuring)."""
         from texthumanize.pipeline import Pipeline
-        self.assertEqual(len(Pipeline.STAGE_NAMES), 18)
+        self.assertEqual(len(Pipeline.STAGE_NAMES), 20)
         self.assertIn("syntax_rewriting", Pipeline.STAGE_NAMES)
         self.assertIn("entropy_injection", Pipeline.STAGE_NAMES)
 

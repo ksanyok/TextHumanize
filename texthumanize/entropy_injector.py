@@ -17,6 +17,8 @@ import random
 import re
 from typing import Optional
 
+from texthumanize.sentence_split import split_sentences
+
 
 class EntropyInjector:
     """Inject human-like entropy and burstiness into text.
@@ -175,30 +177,32 @@ class EntropyInjector:
             return None
 
         # Look for conjunction/transition split points
+        # NEVER split on relative pronouns (which, where, который, etc.)
+        # — they create invalid sentence fragments
         split_words_en = {
             "and", "but", "while", "whereas", "although",
-            "because", "since", "which", "where", "however",
+            "because", "since", "however",
         }
         split_words_ru = {
             "и", "но", "а", "однако", "хотя", "потому",
-            "поскольку", "причём", "который", "которая", "которое",
+            "поскольку", "причём",
         }
         split_words_de = {
             "und", "aber", "während", "obwohl", "weil",
-            "da", "jedoch", "wobei",
+            "da", "jedoch",
         }
         split_words_fr = {
             "et", "mais", "tandis", "bien", "parce",
-            "puisque", "cependant", "dont",
+            "puisque", "cependant",
         }
         split_words_es = {
             "y", "pero", "mientras", "aunque", "porque",
-            "sin", "embargo", "donde",
+            "sin", "embargo",
         }
 
         split_words_uk = {
             "і", "але", "а", "однак", "хоча", "тому",
-            "оскільки", "причому", "який", "яка", "яке",
+            "оскільки", "причому",
         }
 
         split_candidates = split_words_en
@@ -257,16 +261,16 @@ class EntropyInjector:
         if not s1 or not s2:
             return None
 
-        # Remove trailing period from first sentence
-        if s1.endswith("."):
+        # Remove trailing sentence-end punctuation from first sentence
+        if s1 and s1[-1] in ".!?":
             s1 = s1[:-1]
 
         # Choose connector based on language
         connectors = self._get_merge_connectors()
         connector = self._rng.choice(connectors)
 
-        # Lowercase start of second sentence
-        if s2 and s2[0].isupper():
+        # Lowercase start of second sentence (but not proper nouns/acronyms)
+        if s2 and s2[0].isupper() and not s2.split()[0].isupper() and not (len(s2) > 1 and s2[1:2].isupper()):
             s2 = s2[0].lower() + s2[1:]
 
         return f"{s1}{connector}{s2}"
@@ -459,8 +463,23 @@ class EntropyInjector:
             return sent
 
         aside = self._rng.choice(asides)
-        # Insert after 30-50% of the sentence
-        pos = self._rng.randint(len(words) // 3, len(words) // 2)
+        # Insert after 30-50% of the sentence, but only at a safe position
+        # (not adjacent to punctuation, which creates "(, which ..." garbage)
+        lo = max(1, len(words) // 3)
+        hi = max(lo, len(words) // 2)
+        candidates = []
+        for idx in range(lo, hi + 1):
+            prev_w = words[idx - 1] if idx > 0 else ""
+            next_w = words[idx] if idx < len(words) else ""
+            # Skip if previous word ends with punctuation or next starts with it
+            if prev_w and prev_w[-1] in ",.;:!?":
+                continue
+            if next_w and next_w[0] in ",.;:!?('\"":
+                continue
+            candidates.append(idx)
+        if not candidates:
+            return sent
+        pos = self._rng.choice(candidates)
         words.insert(pos, aside)
         return " ".join(words)
 
@@ -516,9 +535,28 @@ class EntropyInjector:
         if not words:
             return sent
 
-        # Add at beginning
+        # Skip if sentence already starts with a transition/marker/hedge
+        first_lower = words[0].lower().rstrip(".,;:")
+        _skip_starts = {
+            "however", "furthermore", "moreover", "additionally",
+            "therefore", "thus", "consequently", "meanwhile",
+            "nevertheless", "first", "second", "finally", "also",
+            "indeed", "arguably", "honestly", "frankly", "realistically",
+            "actually", "basically", "clearly", "still", "well",
+            "in", "for", "on", "from", "yet", "but", "so",
+            # RU
+            "однако", "кроме", "более", "помимо", "пожалуй",
+            "вероятно", "скорее", "надо", "по",
+            # UK
+            "однак", "крім", "більш", "окрім", "мабуть",
+            "ймовірно", "швидше", "треба",
+        }
+        if first_lower in _skip_starts:
+            return sent
+
+        # Don't lowercase proper nouns / acronyms at sentence start
         first_word = words[0]
-        if first_word[0].isupper():
+        if first_word[0].isupper() and not first_word.isupper() and not first_word[1:2].isupper():
             words[0] = first_word[0].lower() + first_word[1:]
         return f"{hedge} " + " ".join(words)
 
@@ -565,11 +603,17 @@ class EntropyInjector:
 
     def _add_intro_variation(self, sent: str) -> str:
         """Add varied introductory phrase to break sentence-start monotony."""
-        # Skip if sentence already starts with a transition
+        # Skip if sentence already starts with a transition/marker/hedge
         first_word = sent.split()[0].lower().rstrip(".,;:") if sent.split() else ""
         skip_starts = {
             "however", "furthermore", "moreover", "additionally",
-            "однако", "кроме", "более", "помимо",
+            "therefore", "thus", "consequently", "meanwhile",
+            "nevertheless", "first", "second", "finally", "also",
+            "indeed", "arguably", "honestly", "frankly", "realistically",
+            "actually", "basically", "clearly", "still", "well",
+            "in", "for", "on", "from", "yet", "but", "so",
+            "однако", "кроме", "более", "помимо", "пожалуй",
+            "вероятно", "скорее", "надо", "по", "між",
             "cependant", "de", "néanmoins", "sin", "además",
             "jedoch", "darüber", "außerdem",
         }
@@ -582,7 +626,8 @@ class EntropyInjector:
 
         intro = self._rng.choice(intros)
         words = sent.split()
-        if words and words[0][0].isupper():
+        # Don't lowercase proper nouns / acronyms at sentence start
+        if words and words[0][0].isupper() and not words[0].isupper() and not words[0][1:2].isupper():
             words[0] = words[0][0].lower() + words[0][1:]
         return f"{intro} " + " ".join(words)
 
@@ -653,9 +698,8 @@ class EntropyInjector:
 
     @staticmethod
     def _split_sentences(text: str) -> list[str]:
-        """Split text into sentences."""
-        raw = re.split(r"(?<=[.!?])\s+", text)
-        return [s.strip() for s in raw if s.strip()]
+        """Split text into sentences (email/URL safe)."""
+        return split_sentences(text)
 
     @staticmethod
     def _join_sentences(sentences: list[str]) -> str:

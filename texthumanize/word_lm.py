@@ -23,6 +23,7 @@ import math
 import re
 from typing import Any
 
+from texthumanize.sentence_split import split_sentences
 from texthumanize._word_freq_data import (
     get_de_uni,
     get_en_bi,
@@ -332,7 +333,7 @@ class WordLanguageModel:
 
         Higher = more human-like variation.
         """
-        sents = re.split(r"[.!?]+\s+", text.strip())
+        sents = split_sentences(text.strip())
         sents = [s for s in sents if len(s.split()) >= 3]
         if len(sents) < 2:
             return 0.0
@@ -369,7 +370,7 @@ class WordLanguageModel:
         burst = self.burstiness(text)
 
         # Sentence perplexities for variance
-        sents = re.split(r"[.!?]+\s+", text.strip())
+        sents = split_sentences(text.strip())
         sents = [s for s in sents if len(s.split()) >= 3]
         if len(sents) >= 2:
             pps = [

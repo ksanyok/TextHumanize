@@ -174,13 +174,16 @@ class _OpenAIProvider:
 class _OSSProvider:
     """Calls amd/gpt-oss-120b-chatbot Gradio endpoint.
 
+    Supports two Gradio API formats:
+    - ``/api/chat`` — newer format (message + system_prompt + temperature)
+    - ``/api/predict`` — legacy format (single data array)
+
     Rate-limited to avoid overwhelming the free API.
     Circuit breaker disables after consecutive failures.
     """
 
-    _DEFAULT_URL = (
+    _DEFAULT_BASE = (
         "https://amd-gpt-oss-120b-chatbot.hf.space"
-        "/api/predict"
     )
     _MAX_CONSECUTIVE_FAILURES = 3
     _CIRCUIT_COOLDOWN = 300.0  # 5 minutes
@@ -189,11 +192,16 @@ class _OSSProvider:
     def __init__(
         self,
         rate_limit: float = 10.0,
-        timeout: float = 60.0,
+        timeout: float = 90.0,
         *,
         api_url: str | None = None,
     ) -> None:
-        self._api_url = api_url or self._DEFAULT_URL
+        base = api_url or self._DEFAULT_BASE
+        # Strip trailing /api/predict or /api/chat if user passed full URL
+        for suffix in ("/api/predict", "/api/chat", "/"):
+            if base.endswith(suffix):
+                base = base[: -len(suffix)]
+        self._base_url = base
         self._rate_limit = rate_limit
         self._timeout = timeout
         self._lock = threading.Lock()
@@ -261,6 +269,9 @@ class _OSSProvider:
     ) -> str:
         """Send request to OSS Gradio endpoint.
 
+        Tries ``/api/chat`` first (newer format), then
+        falls back to ``/api/predict`` (legacy format).
+
         Args:
             system_prompt: System-level instruction.
             user_text: The user content to process.
@@ -279,87 +290,128 @@ class _OSSProvider:
 
         self._wait_for_rate_limit()
 
-        prompt = f"{system_prompt}\n\n{user_text}"
-        payload: dict[str, Any] = {
-            "data": [prompt],
+        # Try /api/chat first (Gradio ChatInterface format)
+        chat_url = f"{self._base_url}/api/chat"
+        chat_payload: dict[str, Any] = {
+            "data": {
+                "message": user_text,
+                "system_prompt": system_prompt,
+                "temperature": 0.7,
+            },
         }
-        body = json.dumps(payload).encode("utf-8")
-        headers = {
-            "Content-Type": "application/json",
+        predict_url = f"{self._base_url}/api/predict"
+        predict_payload: dict[str, Any] = {
+            "data": [
+                f"{system_prompt}\n\n{user_text}",
+            ],
         }
 
+        endpoints = [
+            (chat_url, chat_payload),
+            (predict_url, predict_payload),
+        ]
+
         last_err: Exception | None = None
-        for attempt in range(1, self._MAX_RETRIES + 1):
-            req = urllib.request.Request(
-                self._api_url,
-                data=body,
-                headers=headers,
-                method="POST",
-            )
-            try:
-                with urllib.request.urlopen(
-                    req, timeout=self._timeout
-                ) as resp:
-                    data = json.loads(
-                        resp.read().decode("utf-8")
-                    )
-                # Parse response
-                result = data.get("data", [None])[0]
-                if result is None:
-                    raise ValueError("empty response")
-                self._record_success()
-                return str(result).strip()
-            except urllib.error.HTTPError as exc:
-                last_err = exc
-                code = exc.code
-                # Retry on 5xx server errors
-                if code >= 500 and attempt < self._MAX_RETRIES:
-                    wait = 2.0 * attempt
-                    time.sleep(wait)
-                    continue
-                self._record_failure()
-                detail = ""
+
+        for url, payload in endpoints:
+            for attempt in range(
+                1, self._MAX_RETRIES + 1
+            ):
+                body = json.dumps(payload).encode("utf-8")
+                headers = {
+                    "Content-Type": "application/json",
+                }
+                req = urllib.request.Request(
+                    url,
+                    data=body,
+                    headers=headers,
+                    method="POST",
+                )
                 try:
-                    detail = exc.read().decode(
-                        "utf-8", "replace"
-                    )
-                except Exception:
-                    pass
-                raise RuntimeError(
-                    f"OSS API HTTP {exc.code}: {detail}"
-                ) from exc
-            except urllib.error.URLError as exc:
-                last_err = exc
-                if attempt < self._MAX_RETRIES:
-                    time.sleep(2.0 * attempt)
-                    continue
-                self._record_failure()
-                raise RuntimeError(
-                    f"OSS API connection error: {exc.reason}"
-                ) from exc
-            except (
-                KeyError, IndexError,
-                TypeError, ValueError,
-            ) as exc:
-                self._record_failure()
-                raise RuntimeError(
-                    "OSS API: unexpected response format"
-                ) from exc
-            except Exception as exc:
-                last_err = exc
-                if attempt < self._MAX_RETRIES:
-                    time.sleep(2.0 * attempt)
-                    continue
-                self._record_failure()
-                raise RuntimeError(
-                    f"OSS API error: {exc}"
-                ) from exc
+                    with urllib.request.urlopen(
+                        req, timeout=self._timeout
+                    ) as resp:
+                        data = json.loads(
+                            resp.read().decode("utf-8")
+                        )
+                    # Parse response — try multiple formats
+                    result = self._extract_text(data)
+                    if result:
+                        self._record_success()
+                        logger.info(
+                            "OSS response via %s "
+                            "(%d chars)",
+                            url.split("/api/")[-1],
+                            len(result),
+                        )
+                        return result
+                    raise ValueError("empty response")
+                except urllib.error.HTTPError as exc:
+                    last_err = exc
+                    code = exc.code
+                    if code == 404:
+                        # Endpoint doesn't exist, try next
+                        break
+                    if (
+                        code >= 500
+                        and attempt < self._MAX_RETRIES
+                    ):
+                        time.sleep(2.0 * attempt)
+                        continue
+                    if attempt >= self._MAX_RETRIES:
+                        break
+                except urllib.error.URLError as exc:
+                    last_err = exc
+                    if attempt < self._MAX_RETRIES:
+                        time.sleep(2.0 * attempt)
+                        continue
+                    break
+                except (
+                    KeyError, IndexError,
+                    TypeError, ValueError,
+                ) as exc:
+                    last_err = exc
+                    break
+                except Exception as exc:
+                    last_err = exc
+                    if attempt < self._MAX_RETRIES:
+                        time.sleep(2.0 * attempt)
+                        continue
+                    break
 
         self._record_failure()
         raise RuntimeError(
-            f"OSS API: all {self._MAX_RETRIES} retries failed: "
+            f"OSS API: all endpoints/retries failed: "
             f"{last_err}"
         )
+
+    @staticmethod
+    def _extract_text(data: Any) -> str | None:
+        """Extract text from various Gradio response formats."""
+        if isinstance(data, str):
+            return data.strip() or None
+
+        if isinstance(data, dict):
+            # Format: {"data": ["text"]} or {"data": [["text"]]}
+            d = data.get("data")
+            if isinstance(d, list) and d:
+                first = d[0]
+                if isinstance(first, str):
+                    return first.strip() or None
+                if isinstance(first, list) and first:
+                    return str(first[0]).strip() or None
+            # Format: {"response": "text"}
+            r = data.get("response")
+            if isinstance(r, str):
+                return r.strip() or None
+            # Format: {"output": {"data": ["text"]}}
+            o = data.get("output", {})
+            if isinstance(o, dict):
+                od = o.get("data", [])
+                if isinstance(od, list) and od:
+                    return str(od[0]).strip() or None
+
+        return None
 
 # ═══════════════════════════════════════════════════════
 #  Built-in provider (always available)

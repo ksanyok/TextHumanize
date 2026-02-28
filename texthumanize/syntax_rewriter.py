@@ -453,7 +453,7 @@ _WORD_RE = re.compile(
 
 _SENT_SPLIT_RE = re.compile(
     r'(?<=[.!?])\s+'
-)
+)  # NB: only used for intra-sentence splitting (maxsplit=1); email-safe
 
 # ─── Helpers ────────────────────────────────────────────────
 
@@ -526,6 +526,21 @@ def _get_past_participle_en(verb: str) -> str:
     # Guard: if already ends with -ed, return as-is (avoid double inflection)
     if low.endswith("ed") and len(low) > 3:
         return low
+    # Guard: if already ends with -ing, strip it first to get base form
+    if low.endswith("ing") and len(low) > 4:
+        stem = low[:-3]
+        # running → run (double consonant)
+        if len(stem) > 2 and stem[-1] == stem[-2]:
+            base = stem[:-1]
+        # making → make (restore silent e)
+        elif stem[-1] not in "aeiouy":
+            base = stem + "e"
+        else:
+            base = stem
+        # Check irregular bases
+        if base in _EN_IRREGULAR:
+            return _EN_IRREGULAR[base]
+        return _get_past_participle_en(base)
     if low.endswith("e"):
         return low + "d"
     if low.endswith("y") and len(low) > 2 and low[-2:] not in (
@@ -718,7 +733,34 @@ class SyntaxRewriter:
         )
         if not variants:
             return sentence
-        return self._rng.choice(variants)
+
+        # Quality gate: filter out obviously bad rewrites
+        good = []
+        orig_words_lower = set(sentence.lower().split())
+        # Extract numbers from original for preservation check
+        orig_numbers = set(re.findall(r'\d+', sentence))
+        for v in variants:
+            # Reject if it starts with a preposition (fronted PP is usually bad)
+            if re.match(r'^(Of|By|For|With|From|At|In|On|To)\s+\w+,', v):
+                continue
+            # Reject if the result has "by ," or ", ," or double-space
+            if re.search(r'by\s*,|,\s*,|  ', v):
+                continue
+            # Reject if numbers got split (e.g., "25%" → "2 5 %")
+            v_numbers = set(re.findall(r'\d+', v))
+            if orig_numbers and orig_numbers != v_numbers:
+                continue
+            # Reject if the result lost too many content words
+            v_words_lower = set(v.lower().split())
+            lost = orig_words_lower - v_words_lower
+            # More than 2 content words lost → bad rewrite
+            if len(lost) > 2:
+                continue
+            good.append(v)
+
+        if not good:
+            return sentence
+        return self._rng.choice(good)
 
     # ── Active → Passive ─────────────────────────────────
 
@@ -916,6 +958,20 @@ class SyntaxRewriter:
         if not punct:
             punct = "."
 
+        # Guard: reject sentences too short or too complex
+        word_count = len(body.split())
+        if word_count < 4 or word_count > 25:
+            return None
+
+        # Guard: skip sentences starting with adverb/connector + comma
+        # (e.g., "Importantly, ..." — the comma-separated prefix
+        # confuses subject extraction)
+        if re.match(r'^[A-Z]\w+(?:\s+\w+)?,\s+', body):
+            # Only allow if the part after comma is a clean SVO
+            _after_comma = re.sub(r'^[A-Z]\w+(?:\s+\w+)?,\s+', '', body)
+            if not _after_comma or len(_after_comma.split()) < 3:
+                return None
+
         tags = self._tagger.tag(body)
         if len(tags) < 3:
             return None
@@ -970,11 +1026,19 @@ class SyntaxRewriter:
             return None
 
         # Subject = tokens before aux or verb
+        # Exclude adverbs (e.g. "also") sitting between subject and verb
         first_v = (
             aux_idx if aux_idx is not None
             else verb_idx
         )
-        subj_tokens = words[:first_v]
+        subj_tokens = []
+        pre_verb_adverbs: list[str] = []
+        for k in range(first_v):
+            _w_k, _t_k = tags[k]
+            if _t_k == "ADV":
+                pre_verb_adverbs.append(_w_k)
+            else:
+                subj_tokens.append(_w_k)
         if not subj_tokens:
             return None
 
@@ -1007,7 +1071,19 @@ class SyntaxRewriter:
 
         # Object = tokens after verb
         # Separate trailing modifiers (ADV, PREP phrases)
+        # Skip adverbs immediately after verb (e.g. "also", "never")
         obj_idx_start = verb_idx + 1
+
+        # Collect pre-object adverbs ("also", "always", etc.)
+        pre_adverbs: list[str] = []
+        while obj_idx_start < len(tags):
+            w_pre, t_pre = tags[obj_idx_start]
+            if t_pre == "ADV":
+                pre_adverbs.append(w_pre)
+                obj_idx_start += 1
+            else:
+                break
+
         obj_toks: list[str] = []
         mod_toks: list[str] = []
         in_modifier = False
@@ -1023,7 +1099,7 @@ class SyntaxRewriter:
 
         if not obj_toks:
             # Fall back to simple split
-            obj_toks = words[verb_idx + 1:]
+            obj_toks = words[obj_idx_start:]
             mod_toks = []
 
         if not obj_toks:
@@ -1070,11 +1146,13 @@ class SyntaxRewriter:
 
         be = _pick_be_form(obj_text, tense)
 
-        # Build: "Obj be PP [modifier] by Subj"
-        passive = (
-            f"{_capitalize_first(obj_text)} "
-            f"{be} {pp}"
-        )
+        # Build: "Obj be [adverb] PP [modifier] by Subj"
+        all_adverbs = pre_verb_adverbs + pre_adverbs
+        adv_str = " ".join(all_adverbs)
+        passive = f"{_capitalize_first(obj_text)} {be}"
+        if adv_str:
+            passive += f" {adv_str}"
+        passive += f" {pp}"
         if mod_text:
             passive += f" {mod_text}"
         passive += (
@@ -1083,6 +1161,18 @@ class SyntaxRewriter:
         result = passive.rstrip()
         if punct:
             result += punct
+
+        # Sanity check: reject rewrites that produce garbled output
+        # (e.g., double prepositions, misplaced commas, subject fragments)
+        if re.search(r'\bby\s*,', result):
+            return None  # "by ," is always wrong
+        if re.search(r'\bof\b.*\bby\b.*\bof\b', result):
+            return None  # double "of" wrapping — broken structure
+        # If the result starts with a very short word followed by "are/is/was/were"
+        # and then an adverb, it's likely a fragmented rewrite
+        if re.match(r'^[A-Z]\w{0,3}\s+(are|is|was|were)\s+\w+ly\b', result):
+            return None
+
         return result
 
     def _en_passive_to_active(
@@ -1234,6 +1324,38 @@ class SyntaxRewriter:
     def _ru_make_passive_pp(verb: str) -> Optional[str]:
         """Build RU passive past participle."""
         low = verb.lower()
+
+        # ── Irregular / stem-changing verbs (must come first) ──
+        _RU_IRREGULAR_PP: dict[str, str] = {
+            # произвести / произвела / произвёл
+            "произвел": "произведена", "произвёл": "произведена",
+            "произвела": "произведена", "произвести": "произведена",
+            # привести / привела
+            "привел": "приведена", "привёл": "приведена",
+            "привела": "приведена", "привести": "приведена",
+            # ввести / ввела
+            "ввел": "введена", "ввёл": "введена",
+            "ввела": "введена", "ввести": "введена",
+            # провести / провела
+            "провел": "проведена", "провёл": "проведена",
+            "провела": "проведена", "провести": "проведена",
+            # найти / нашла
+            "нашел": "найдена", "нашёл": "найдена",
+            "нашла": "найдена", "найти": "найдена",
+            # принести / принесла
+            "принес": "принесена", "принёс": "принесена",
+            "принесла": "принесена", "принести": "принесена",
+        }
+        if low in _RU_IRREGULAR_PP:
+            return _RU_IRREGULAR_PP[low]
+
+        # -овать → -ован(а)
+        if low.endswith("овал") or low.endswith("овала"):
+            stem = re.sub(r'овала?$', '', low)
+            return stem + "ована"
+        if low.endswith("овать"):
+            stem = low[:-5]
+            return stem + "ована"
         # -ать → -ан(а/о/ы)
         if low.endswith("ал") or low.endswith("ала"):
             stem = re.sub(r'ала?$', '', low)
@@ -1248,13 +1370,6 @@ class SyntaxRewriter:
         if low.endswith("ить"):
             stem = low[:-3]
             return stem + "ена"
-        # -овать → -ован(а)
-        if low.endswith("овал") or low.endswith("овала"):
-            stem = re.sub(r'овала?$', '', low)
-            return stem + "ована"
-        if low.endswith("овать"):
-            stem = low[:-5]
-            return stem + "ована"
         # -еть → -ена
         if low.endswith("ел") or low.endswith("ела"):
             stem = re.sub(r'ела?$', '', low)

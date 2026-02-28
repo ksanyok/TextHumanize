@@ -23,6 +23,8 @@ import re
 from collections import Counter
 from typing import Any
 
+from texthumanize.sentence_split import split_sentences
+
 from texthumanize.ai_markers import load_ai_markers
 from texthumanize.neural_engine import (
     DenseLayer,
@@ -202,7 +204,7 @@ def extract_features(text: str, lang: str = "en") -> Vec:
     if n_tokens < 3:
         return [0.0] * 35
 
-    sentences = _SENT_RE.split(text.strip())
+    sentences = split_sentences(text.strip())
     sentences = [s.strip() for s in sentences if s.strip()]
     if not sentences:
         sentences = [text]
@@ -702,7 +704,7 @@ class NeuralAIDetector:
         self, text: str, lang: str = "en"
     ) -> list[dict[str, Any]]:
         """Per-sentence AI detection for mixed-content analysis."""
-        sentences = _SENT_RE.split(text.strip())
+        sentences = split_sentences(text.strip())
         sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
 
         results = []

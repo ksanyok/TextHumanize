@@ -202,13 +202,13 @@ class Segmenter:
         if self.preserve.get("urls", True):
             result = self._protect(result, "url", segments)
 
-        # 8. Bare domains (site.com.ua, example.kh.ua, etc.)
-        if self.preserve.get("urls", True):
-            result = self._protect(result, "bare_domain", segments)
-
-        # 9. Email
+        # 8. Email (BEFORE bare_domain so full email is protected as one unit)
         if self.preserve.get("emails", True):
             result = self._protect(result, "email", segments)
+
+        # 9. Bare domains (site.com.ua, example.kh.ua, etc.)
+        if self.preserve.get("urls", True):
+            result = self._protect(result, "bare_domain", segments)
 
         # 10. HTML-теги (individual opening/closing tags)
         if self.preserve.get("html", True):

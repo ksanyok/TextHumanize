@@ -336,9 +336,8 @@ class NeuralPerplexity:
 
         Useful for detecting mixed AI/human content.
         """
-        import re
-        sent_re = re.compile(r'(?<=[.!?])\s+(?=[A-ZА-ЯЁ])')
-        sentences = sent_re.split(text.strip())
+        from texthumanize.sentence_split import split_sentences
+        sentences = split_sentences(text.strip())
         sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
 
         results = []

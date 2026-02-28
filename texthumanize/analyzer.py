@@ -8,6 +8,7 @@ from collections import Counter
 
 from texthumanize.lang import get_lang_pack
 from texthumanize.perplexity import PerplexityEstimator
+from texthumanize.sentence_split import split_sentences
 from texthumanize.utils import AnalysisReport
 
 logger = logging.getLogger(__name__)
@@ -119,7 +120,7 @@ class TextAnalyzer:
 
     def _split_sentences(self, text: str) -> list[str]:
         """Разбить текст на предложения."""
-        sentences = re.split(r'(?<=[.!?…])\s+', text)
+        sentences = split_sentences(text, self.lang)
         return [s.strip() for s in sentences if s.strip() and len(s.split()) > 1]
 
     def _calc_bureaucratic_ratio(self, text: str, words: list[str]) -> float:

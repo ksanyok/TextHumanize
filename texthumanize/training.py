@@ -29,6 +29,7 @@ import random
 import re
 from typing import Any
 
+from texthumanize.sentence_split import split_sentences
 from texthumanize.neural_engine import (
     FeedForwardNet,
     LSTMCell,
@@ -326,39 +327,103 @@ class MLPTrainer:
 
 # Representative text samples for feature extraction
 _AI_TEXT_TEMPLATES: list[str] = [
+    # --- English AI (diverse styles) ---
     "Furthermore, it is important to note that the utilization of advanced methodologies has significantly contributed to the overall improvement of systemic outcomes. The implementation of comprehensive strategies ensures that all stakeholders benefit from the enhanced framework. Additionally, the integration of holistic approaches facilitates the achievement of optimal results across various domains.",
     "In conclusion, the aforementioned analysis demonstrates that a multifaceted approach is essential for addressing the complexities inherent in modern challenges. By leveraging cutting-edge technologies and fostering collaborative partnerships, organizations can effectively navigate the evolving landscape. Moreover, the systematic evaluation of performance metrics provides valuable insights for continuous improvement.",
     "The comprehensive examination of relevant literature reveals several key findings that merit consideration. Firstly, the data suggests a significant correlation between the implementation of evidence-based practices and positive outcomes. Secondly, the analysis indicates that organizational culture plays a crucial role in determining the success of strategic initiatives.",
     "It is worth noting that the systematic approach to problem-solving has yielded substantial benefits across multiple sectors. The strategic alignment of resources with organizational objectives has resulted in measurable improvements in efficiency and effectiveness. Furthermore, the adoption of best practices has facilitated the development of sustainable solutions.",
     "The research findings clearly indicate that a paradigm shift is necessary to address the emerging challenges in the field. By embracing innovative approaches and fostering a culture of continuous learning, organizations can position themselves for long-term success. The empirical evidence supports the conclusion that proactive measures are more effective than reactive strategies.",
     "Moreover, the analysis highlights the importance of maintaining a balanced perspective when evaluating the potential impact of technological advancements. The integration of diverse viewpoints contributes to a more comprehensive understanding of the underlying dynamics. Consequently, decision-makers are better equipped to formulate effective policies.",
+    # ChatGPT conversational style
+    "That's a great question! There are several key factors to consider when approaching this topic. First, it's important to understand the underlying principles that govern this area. Second, you'll want to consider the practical implications of your decisions. Finally, always remember that context matters — what works in one situation may not be the best approach in another.",
+    "I'd be happy to help you with that! Here's a step-by-step breakdown of the process. To begin with, you'll need to gather all the necessary materials and ensure you have a clear understanding of the requirements. Next, follow the outlined procedure carefully, paying close attention to each detail. If you encounter any difficulties along the way, don't hesitate to revisit the earlier steps.",
+    "Absolutely! Let me provide a comprehensive overview of this subject. The concept has evolved significantly over the past decade, driven by technological advancements and changing societal needs. Key developments include the widespread adoption of digital platforms, the emergence of data-driven methodologies, and the growing emphasis on sustainability and ethical considerations.",
+    # AI technical/instructional style
+    "To implement this feature effectively, you should follow best practices for software development. Begin by defining clear requirements and creating a detailed technical specification. Then, implement the solution using a modular architecture that promotes code reusability and maintainability. Finally, conduct thorough testing to ensure the implementation meets all specified requirements.",
+    "The optimization of database performance requires a systematic approach that addresses multiple dimensions. Query optimization involves analyzing execution plans and identifying bottlenecks. Index management ensures that frequently accessed data can be retrieved efficiently. Additionally, proper connection pooling and caching strategies significantly reduce response times.",
+    "Machine learning models have demonstrated remarkable capabilities across a wide range of applications. Natural language processing enables sophisticated text understanding and generation. Computer vision systems can accurately classify and detect objects in images. Reinforcement learning algorithms have achieved superhuman performance in strategic games.",
+    # AI essay/analysis style
+    "The impact of social media on modern communication cannot be overstated. These platforms have fundamentally transformed how individuals interact, share information, and form communities. While the benefits of increased connectivity are undeniable, it is equally important to acknowledge the challenges associated with misinformation, privacy concerns, and the potential for addiction.",
+    "Climate change represents one of the most pressing challenges of our time, requiring coordinated global action across multiple sectors. The scientific consensus is clear: human activities, particularly the burning of fossil fuels, have led to a significant increase in atmospheric greenhouse gas concentrations. Addressing this issue necessitates a comprehensive approach.",
+    "The evolution of artificial intelligence has raised important ethical questions that society must address. As AI systems become increasingly capable, concerns about bias, transparency, and accountability have come to the forefront. Establishing robust governance frameworks is essential to ensure that these technologies are developed and deployed responsibly.",
+    "Education plays a pivotal role in shaping the future of society. By equipping individuals with the knowledge and skills necessary to navigate an increasingly complex world, educational institutions serve as catalysts for personal and professional growth. The integration of technology into the classroom has opened up new possibilities for personalized learning.",
+    # AI list/structured style
+    "There are several important considerations to keep in mind. First, ensure that your approach aligns with established best practices and industry standards. Second, prioritize clear communication with all stakeholders throughout the process. Third, implement robust monitoring and evaluation mechanisms to track progress. Fourth, remain adaptable and willing to adjust your strategy based on emerging insights.",
+    "The benefits of regular physical exercise are well-documented and multifaceted. Cardiovascular health improves significantly with consistent aerobic activity. Strength training enhances muscle mass and bone density, reducing the risk of age-related conditions. Additionally, exercise has been shown to have positive effects on mental health, including reduced anxiety and improved cognitive function.",
+    # AI email/professional style
+    "Thank you for reaching out regarding this matter. I have carefully reviewed the information provided and would like to offer the following observations. The proposed approach demonstrates a clear understanding of the core objectives and incorporates several innovative elements. However, there are a few areas where additional refinement could further enhance the overall effectiveness of the solution.",
+    "I hope this message finds you well. I wanted to take a moment to summarize the key takeaways from our recent discussion. The team has made significant progress on the project, with several critical milestones achieved ahead of schedule. Moving forward, our primary focus will be on finalizing the remaining deliverables and ensuring seamless integration with existing systems.",
+
+    # --- Russian AI ---
     "Кроме того, необходимо отметить, что применение передовых методологий значительно способствовало общему улучшению системных результатов. Внедрение комплексных стратегий обеспечивает извлечение пользы всеми заинтересованными сторонами из улучшенных рамок. Интеграция целостных подходов способствует достижению оптимальных результатов.",
     "Таким образом, вышеупомянутый анализ демонстрирует, что многоаспектный подход является необходимым для решения сложностей, присущих современным вызовам. Систематическая оценка показателей эффективности предоставляет ценные сведения для постоянного улучшения процессов.",
+    "Искусственный интеллект представляет собой одну из наиболее динамично развивающихся областей современных технологий. Его применение охватывает широкий спектр задач, от обработки естественного языка до компьютерного зрения. Важно отметить, что развитие ИИ ставит перед обществом ряд этических вопросов, требующих тщательного рассмотрения.",
+    "Анализ современных тенденций в области образования показывает значительные изменения в подходах к обучению. Цифровизация образовательного процесса открывает новые возможности для персонализированного обучения. Внедрение интерактивных технологий способствует повышению вовлечённости учащихся и улучшению образовательных результатов.",
+    "В контексте глобальных экономических изменений, компании вынуждены адаптировать свои стратегии к новым реалиям. Оптимизация бизнес-процессов и внедрение инновационных решений являются ключевыми факторами конкурентоспособности. Эффективное управление ресурсами и стратегическое планирование обеспечивают устойчивое развитие организаций.",
+
+    # --- Ukrainian AI ---
+    "Крім того, необхідно зазначити, що застосування передових методологій суттєво сприяло загальному покращенню системних результатів. Впровадження комплексних стратегій забезпечує отримання користі всіма зацікавленими сторонами.",
+    "Аналіз сучасних тенденцій у сфері освіти демонструє значні зміни в підходах до навчання. Цифровізація освітнього процесу відкриває нові можливості для персоналізованого навчання. Впровадження інтерактивних технологій сприяє підвищенню залученості учнів та покращенню освітніх результатів.",
+    "Штучний інтелект є однією з найбільш динамічно розвиваючихся галузей сучасних технологій. Його застосування охоплює широкий спектр завдань, від обробки природної мови до комп'ютерного зору. Розвиток ШІ ставить перед суспільством низку етичних питань, що потребують ретельного розгляду.",
+    "У контексті глобальних економічних змін підприємства змушені адаптувати свої стратегії до нових реалій. Оптимізація бізнес-процесів та впровадження інноваційних рішень є ключовими факторами конкурентоспроможності. Ефективне управління ресурсами забезпечує сталий розвиток організацій.",
+
+    # --- Other languages ---
     "Darüber hinaus ist es wichtig festzustellen, dass die Anwendung fortschrittlicher Methoden erheblich zur allgemeinen Verbesserung der systemischen Ergebnisse beigetragen hat. Die Implementierung umfassender Strategien stellt sicher, dass alle Beteiligten von dem verbesserten Rahmen profitieren.",
     "En conclusión, el análisis mencionado anteriormente demuestra que un enfoque multifacético es esencial para abordar las complejidades inherentes a los desafíos modernos. La evaluación sistemática de métricas de rendimiento proporciona información valiosa para la mejora continua.",
     "De plus, il convient de noter que l'application de méthodologies avancées a contribué de manière significative à l'amélioration globale des résultats systémiques. L'intégration d'approches holistiques facilite l'obtention de résultats optimaux dans divers domaines.",
     "Inoltre, è importante notare che l'applicazione di metodologie avanzate ha contribuito in modo significativo al miglioramento complessivo dei risultati sistemici. L'implementazione di strategie comprensive assicura che tutte le parti interessate beneficino del quadro migliorato.",
     "Ponadto należy zauważyć, że zastosowanie zaawansowanych metodologii znacząco przyczyniło się do ogólnej poprawy wyników systemowych. Wdrożenie kompleksowych strategii zapewnia korzyści wszystkim zainteresowanym stronom.",
     "Além disso, é importante notar que a aplicação de metodologias avançadas contribuiu significativamente para a melhoria geral dos resultados sistêmicos. A integração de abordagens holísticas facilita a obtenção de resultados ótimos.",
-    "Крім того, необхідно зазначити, що застосування передових методологій суттєво сприяло загальному покращенню системних результатів. Впровадження комплексних стратегій забезпечує отримання користі всіма зацікавленими сторонами.",
 ]
 
 _HUMAN_TEXT_TEMPLATES: list[str] = [
+    # --- English Human (diverse styles) ---
     "So I was thinking about this the other day — you know how sometimes things just don't work the way you'd expect? Yeah, that happened again. Tried to fix the sink, ended up flooding half the kitchen. My wife wasn't thrilled, to say the least.",
     "Look, I'm not gonna pretend I have all the answers here. But from what I've seen working in this field for 15 years, the biggest mistake people make is overthinking it. Just start somewhere, make mistakes, learn from them. Simple as that.",
     "The meeting went sideways pretty fast. Tom brought up the budget issue again (surprise, surprise), and before you know it we're all arguing about whether to cut marketing or R&D. Nobody won that argument. We tabled it — again.",
     "Honestly? I think we're overcomplicating this. What if we just... asked the customers what they want? Revolutionary idea, I know. But half the time the solution is staring us right in the face and we're too busy building spreadsheets to notice.",
     "My grandmother always said — 'If you can't explain it simply, you don't understand it well enough.' She never went to college but she was smarter than most PhDs I've met. Life teaches you things no classroom can.",
     "Rain again today. Third day in a row. The garden's happy at least. But I had to cancel the barbecue we'd planned for weeks. Moved everything inside, crammed 20 people into the living room. It was actually more fun that way? Go figure.",
+    # Reddit-style casual posts
+    "Ok so I finally tried that new restaurant everyone's been raving about. Took my partner there for our anniversary. Menu looked fancy, prices were... yikes. But the food? Absolutely incredible. That mushroom risotto alone was worth the trip. Would go back in a heartbeat.",
+    "Just wanted to share a quick tip that saved me hours of debugging. If your Docker containers keep crashing silently, check the OOM killer logs first. Spent three days blaming my code when it was just a memory limit issue. Felt dumb but at least now I know.",
+    "Anyone else feel like time moves differently after 30? Swear I blinked and suddenly it's Thursday. Had plans for the week, accomplished maybe 40% of them. And somehow my to-do list got longer, not shorter. Life, man.",
+    # Blog/personal essay style
+    "I've been learning to paint for about six months now. Am I any good? Not really, no. But there's something meditative about mixing colors and watching shapes emerge on canvas. My cat seems to approve — she watches from the windowsill like a tiny art critic.",
+    "The first time I traveled alone was terrifying. Lost my luggage, got on the wrong bus, couldn't find my hotel. But somewhere between the panic and the frustration, I realized I was having the time of my life. That trip changed me more than any book ever could.",
+    "We moved to the countryside last spring. Everyone thought we were crazy — 'What about restaurants? Theaters? The nightlife?' Three months in, we don't miss any of it. The kids run around until they're exhausted, and the nearest traffic jam is 50 miles away.",
+    # News/journalism style (human-written quality)
+    "The fire broke out around 3 AM, according to witnesses. By the time crews arrived, the second floor was already engulfed. Four families displaced, one firefighter treated for smoke inhalation. The cause remains under investigation but officials suspect faulty wiring.",
+    "Sales of electric vehicles surged by 35% in the third quarter, defying analyst expectations of a seasonal slowdown. Industry insiders point to aggressive pricing by Chinese manufacturers and improved charging infrastructure as key drivers.",
+    "Local residents packed the town hall Tuesday night, many clutching hand-written signs opposing the proposed development. The project would replace 40 acres of farmland with a mixed-use commercial center. Tempers flared when the developer's representative struggled to answer questions about traffic impact.",
+    # Technical/developer blog (human style)
+    "After months of going back and forth, we finally migrated our monolith to microservices. Was it worth it? Honestly, ask me again in six months. Right now, we've got 14 services, a Kubernetes cluster that occasionally decides to eat itself, and three engineers who've forgotten what sleep is.",
+    "Here's the thing about unit tests that nobody tells you: they're not really about catching bugs. They're about giving you the confidence to change things without breaking everything. The bug-catching is just a bonus. Most of the real value comes from the design pressure they create.",
+    "I debugged a customer's production issue for 8 hours yesterday. Turns out it was a timezone problem. It's always a timezone problem. At this point I'm convinced that whoever decided the world needs 37 different timezone offsets was deliberately trolling developers.",
+    # Academic/professional human style (not AI-perfect)
+    "Our experiment yielded some unexpected results. While the primary hypothesis held, the control group showed patterns we hadn't anticipated — specifically, a non-linear response curve that doesn't fit neatly into existing models. We're running additional trials but, frankly, this might require us to rethink our approach entirely.",
+    "The patient presented with atypical symptoms that initially suggested a routine respiratory infection. However, lab results came back Wednesday and they told a different story. I've seen maybe three cases like this in twenty years of practice. We consulted with the regional center and they were equally puzzled.",
+
+    # --- Russian Human ---
     "Знаешь, я долго думал над этим вопросом, и вот что понял — нет смысла гнаться за совершенством. Сделал как получилось, посмотрел что вышло, поправил. И так по кругу. Жизнь — она не по учебнику идёт.",
     "Да ладно тебе, не всё так плохо! Помнишь, как в прошлом году было? Вот это было действительно ужасно. А сейчас — ну подумаешь, не получилось с первого раза. Зато опыт какой!",
+    "Всё утро провозился с ремонтом. Думал, быстро кран поменяю — ага, как же. В итоге залил соседей, вызвал сантехника. Тот пришёл, посмотрел, покачал головой. 'Надо было сразу звонить', говорит. Ну спасибо, кэп.",
+    "Вчера ездили с семьёй за город. Пока дети носились по лужам, мы с женой пили чай на веранде. Тишина. Никаких уведомлений, звонков, дедлайнов. Вернулись к вечеру — и словно в другой мир попали. Город шумит, торопится. А ты ещё там, в тишине.",
+    "Читаю сейчас книжку — забыл уже когда последний раз бумажную книгу в руки брал. И знаешь что? Совсем другие ощущения. Страницы шуршат, запах бумаги... как в детстве. Может старею, а может просто соскучился по простым вещам.",
+
+    # --- Ukrainian Human ---
+    "Слухай, я тобі скажу чесно — це не так просто, як здається. Але й не настільки складно, щоб здаватися. Головне — почати робити, а далі воно потроху само складається.",
+    "Сьогодні нарешті дістався до того кафе на розі. Знаєш, яке? Де ще вивіска кумедна. Кава там — то щось неймовірне. Сиджу, п'ю, дивлюсь у вікно. Дощ пішов. А мені добре.",
+    "Мій дідусь завжди казав — 'не тікай від проблем, вони бігають швидше'. Тоді я не розумів, а зараз згадую і посміхаюсь. Мудра людина була. Простий фермер, а такі речі говорив.",
+    "Весь тиждень працював над проектом, а вчора клієнт передумав. Просто зателефонував і каже — 'знаєте, ми вирішили піти в іншому напрямку'. Три тижні роботи. Ну що ж, буває. Не вперше і не востаннє.",
+
+    # --- Other languages ---
     "Also, ich sag mal so — manchmal muss man einfach machen und nicht so viel nachdenken. Klar, Planung ist wichtig und so, aber irgendwann muss man halt auch anfangen. Sonst sitzt man ewig rum und nix passiert.",
     "Mira, no soy experto en esto, pero lo que sí te puedo decir es que hay que tener paciencia. Mi abuelo siempre decía 'las cosas buenas llegan a los que saben esperar'. Suena cursi, pero es verdad.",
     "Écoute, je vais te dire un truc — ça fait 10 ans que je fais ça et j'ai toujours pas tout compris. C'est normal. Personne comprend tout. L'important c'est d'avancer, pas d'être parfait.",
     "Sai cosa ti dico? Alla fine quello che conta è la pratica, non la teoria. Ho letto mille libri sull'argomento ma la verità l'ho capita solo quando ho iniziato a fare le cose. Sbagliando, certo, ma facendo.",
     "Wiesz co, ja tam nie jestem jakimś ekspertem, ale jedno ci powiem — najważniejsze to nie poddawać się. Jak coś nie wychodzi, to trzeba spróbować inaczej. Proste? No właśnie nie zawsze.",
     "Olha, eu não vou mentir pra você — no começo foi difícil pra caramba. Mas com o tempo a gente vai pegando o jeito. O segredo é não desistir quando as coisas ficam complicadas.",
-    "Слухай, я тобі скажу чесно — це не так просто, як здається. Але й не настільки складно, щоб здаватися. Головне — почати робити, а далі воно потроху само складається.",
 ]
 
 
@@ -366,7 +431,7 @@ def _augment_text(text: str, rng: random.Random) -> str:
     """Apply random augmentations to text for data diversity."""
     # Random sentence reordering
     if rng.random() < 0.3:
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text)
         if len(sentences) > 2:
             rng.shuffle(sentences)
             text = " ".join(sentences)
@@ -383,13 +448,39 @@ def _augment_text(text: str, rng: random.Random) -> str:
 
     # Random case variation
     if rng.random() < 0.1:
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text)
         if sentences:
             idx = rng.randint(0, len(sentences) - 1)
             sentences[idx] = sentences[idx].lower()
             text = " ".join(sentences)
 
+    # Random sentence dropping (for variety)
+    if rng.random() < 0.15:
+        sentences = split_sentences(text)
+        if len(sentences) > 3:
+            drop_idx = rng.randint(0, len(sentences) - 1)
+            sentences.pop(drop_idx)
+            text = " ".join(sentences)
+
+    # Random word substitution with similar words
+    if rng.random() < 0.15:
+        words = text.split()
+        if len(words) > 5:
+            pos = rng.randint(1, min(len(words) - 1, 20))
+            # Just repeat a nearby word (creates slight repetition pattern)
+            words[pos] = words[max(0, pos - 2)]
+            text = " ".join(words)
+
     return text
+
+
+def _augment_features(norm: list[float], rng: random.Random,
+                      noise_scale: float = 0.3) -> list[float]:
+    """Add Gaussian noise to normalized feature vector for diversity."""
+    return [
+        max(-3.0, min(3.0, v + rng.gauss(0, noise_scale)))
+        for v in norm
+    ]
 
 
 def _generate_mixed_text(ai_texts: list[str], human_texts: list[str],
@@ -402,8 +493,8 @@ def _generate_mixed_text(ai_texts: list[str], human_texts: list[str],
         label = rng.uniform(0.0, 0.3)
     elif ratio < 0.7:
         # Mixed
-        ai_sents = re.split(r'(?<=[.!?])\s+', rng.choice(ai_texts))
-        human_sents = re.split(r'(?<=[.!?])\s+', rng.choice(human_texts))
+        ai_sents = split_sentences(rng.choice(ai_texts))
+        human_sents = split_sentences(rng.choice(human_texts))
         n_ai = rng.randint(1, max(1, len(ai_sents) // 2))
         n_human = rng.randint(1, max(1, len(human_sents) // 2))
         mixed = ai_sents[:n_ai] + human_sents[:n_human]
@@ -423,13 +514,56 @@ class TrainingDataGenerator:
     """Generate labeled training data for AI detection.
 
     Uses representative AI and human text templates with augmentation
-    to create diverse training samples. Supports all 10 library languages.
+    to create diverse training samples. Also generates synthetic feature
+    vectors from known AI/human feature distributions for broader coverage.
     """
+
+    # Known feature distribution offsets for AI vs human text:
+    # AI text tends to have: lower TTR, lower hapax, higher avg_word_length,
+    # lower word_length_var, higher mean_sent_len, lower sent_len_var,
+    # lower burstiness, higher vocab_burstiness, higher ai_pattern_rate, etc.
+    _AI_FEATURE_BIAS: list[float] = [
+        -1.2, -0.8, 0.6, -0.5, 0.8, -0.7, -0.3,  # TTR, hapax, AWL, WLV, MSL, SLV, SLS
+        -0.4, -0.3, -0.5,  # yules, simpsons, vocab_rich
+        0.5, 0.3, -0.6,    # bi_rep, tri_rep, uniq_bi
+        -0.3, -0.3, -0.4,  # char_ent, word_ent, bi_ent
+        -1.5, 0.5,         # burstiness, vocab_burst
+        0.0, 0.2, -0.2,    # para_norm, avg_para_len, list_bullet
+        0.3, 0.2, -0.3, -0.5, -0.6,  # comma, semi, dash, question, excl
+        1.5, -0.5, 0.3,    # ai_pattern, wfr_var, zipf
+        0.4, -0.3,         # avg_syl, flesch
+        -0.8, 0.2, 0.6,    # starter_div, conj_rate, trans_rate
+        -0.9,              # consec_len_diff_var
+    ]
+
+    _HUMAN_FEATURE_BIAS: list[float] = [
+        0.5, 0.4, -0.3, 0.5, -0.3, 0.5, 0.4,
+        0.3, 0.2, 0.4,
+        -0.3, -0.2, 0.3,
+        0.2, 0.3, 0.3,
+        0.8, -0.3,
+        0.0, -0.1, 0.1,
+        -0.2, -0.1, 0.2, 0.3, 0.4,
+        -0.8, 0.3, -0.2,
+        -0.2, 0.2,
+        0.5, -0.1, -0.3,
+        0.5,
+    ]
 
     def __init__(self, seed: int = 42) -> None:
         self.rng = random.Random(seed)
         self._ai_texts = list(_AI_TEXT_TEMPLATES)
         self._human_texts = list(_HUMAN_TEXT_TEMPLATES)
+
+    def _generate_synthetic_features(
+        self, bias: list[float], label: float, noise: float = 0.8
+    ) -> tuple[list[float], float]:
+        """Generate a synthetic normalized feature vector from distribution."""
+        features = []
+        for b in bias:
+            v = b + self.rng.gauss(0, noise)
+            features.append(max(-3.0, min(3.0, v)))
+        return features, label
 
     def generate(
         self, n_samples: int = 5000
@@ -437,38 +571,47 @@ class TrainingDataGenerator:
         """Generate training data as (feature_vector, label) pairs.
 
         Labels: 0.0 = human, 1.0 = AI.
+
+        Data sources:
+        1. Features extracted from AI text templates (30%)
+        2. Features extracted from human text templates (30%)
+        3. Mixed AI/human texts (20%)
+        4. Feature-augmented versions of template extractions (20%)
         """
         from texthumanize.neural_detector import extract_features, normalize_features
 
         data: list[tuple[Vec, float]] = []
-        n_pure_ai = n_samples // 4
-        n_pure_human = n_samples // 4
-        n_mixed = n_samples - n_pure_ai - n_pure_human
+        n_pure_ai = int(n_samples * 0.30)
+        n_pure_human = int(n_samples * 0.30)
+        n_mixed = int(n_samples * 0.20)
+        n_augmented = n_samples - n_pure_ai - n_pure_human - n_mixed
 
-        logger.info("Generating %d training samples (%d AI, %d human, %d mixed)...",
-                    n_samples, n_pure_ai, n_pure_human, n_mixed)
+        logger.info(
+            "Generating %d training samples (%d AI, %d human, %d mixed, %d augmented)...",
+            n_samples, n_pure_ai, n_pure_human, n_mixed, n_augmented,
+        )
 
-        # Pure AI texts
+        # 1. Pure AI texts — extract features
         for _i in range(n_pure_ai):
             text = _augment_text(self.rng.choice(self._ai_texts), self.rng)
             try:
                 features = extract_features(text, "auto")
                 norm = normalize_features(features)
-                data.append((norm, self.rng.uniform(0.75, 1.0)))
+                data.append((norm, self.rng.uniform(0.80, 1.0)))
             except Exception:
                 continue
 
-        # Pure human texts
+        # 2. Pure human texts — extract features
         for _i in range(n_pure_human):
             text = _augment_text(self.rng.choice(self._human_texts), self.rng)
             try:
                 features = extract_features(text, "auto")
                 norm = normalize_features(features)
-                data.append((norm, self.rng.uniform(0.0, 0.25)))
+                data.append((norm, self.rng.uniform(0.0, 0.20)))
             except Exception:
                 continue
 
-        # Mixed texts
+        # 3. Mixed texts
         for _i in range(n_mixed):
             text, label = _generate_mixed_text(
                 self._ai_texts, self._human_texts, self.rng
@@ -477,6 +620,24 @@ class TrainingDataGenerator:
                 features = extract_features(text, "auto")
                 norm = normalize_features(features)
                 data.append((norm, label))
+            except Exception:
+                continue
+
+        # 4. Feature-augmented: take text features + add moderate noise
+        for _i in range(n_augmented):
+            is_ai = self.rng.random() > 0.5
+            texts = self._ai_texts if is_ai else self._human_texts
+            text = _augment_text(self.rng.choice(texts), self.rng)
+            try:
+                features = extract_features(text, "auto")
+                norm = normalize_features(features)
+                noise_scale = self.rng.uniform(0.10, 0.30)
+                noisy = _augment_features(norm, self.rng, noise_scale)
+                if is_ai:
+                    label = self.rng.uniform(0.70, 0.95)
+                else:
+                    label = self.rng.uniform(0.05, 0.30)
+                data.append((noisy, label))
             except Exception:
                 continue
 

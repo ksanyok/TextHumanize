@@ -110,6 +110,11 @@ def humanize(
     target_style: object | str | None = None,
     only_flagged: bool = False,
     custom_dict: dict[str, str | list[str]] | None = None,
+    *,
+    backend: str = "local",
+    openai_api_key: str | None = None,
+    openai_model: str = "gpt-4o-mini",
+    oss_api_url: str | None = None,
 ) -> HumanizeResult:
     """Гуманизировать текст — сделать его более естественным.
 
@@ -154,6 +159,14 @@ def humanize(
             Формат: {"слово": "замена"} или {"слово": ["вар1", "вар2"]}.
             Замены применяются дополнительно к встроенным словарям.
             При списке вариантов выбирается случайный.
+        backend: Бэкенд гуманизации:
+            - 'local' — встроенный rule-based движок (по умолчанию, offline)
+            - 'oss' — бесплатная OSS LLM (amd/gpt-oss-120b) через Gradio, без ключей
+            - 'openai' — OpenAI API (требуется api_key)
+            - 'auto' — пробует openai → oss → local (fallback)
+        openai_api_key: API ключ OpenAI (только для backend='openai'/'auto').
+        openai_model: Модель OpenAI (по умолчанию 'gpt-4o-mini').
+        oss_api_url: URL для OSS Gradio endpoint (по умолчанию amd/gpt-oss-120b-chatbot).
 
     Returns:
         HumanizeResult с полями:
@@ -172,13 +185,11 @@ def humanize(
         >>> print(result.text)
         Этот текст - пример.
 
-        >>> result = humanize(
-        ...     "Осуществляем обработку текста.",
-        ...     profile="chat",
-        ...     intensity=80,
-        ... )
-        >>> print(result.text)
-        Обрабатываем текст.
+        >>> # offline, без ключей — использует бесплатную OSS LLM
+        >>> result = humanize("AI-generated text here.", backend="oss")
+
+        >>> # с OpenAI
+        >>> result = humanize("Text.", backend="openai", openai_api_key="sk-...")
     """
     # Input sanitization
     if not isinstance(text, str):
@@ -192,6 +203,24 @@ def humanize(
     MAX_TEXT_LENGTH = 1_000_000  # 1M chars safety limit
     if len(text) > MAX_TEXT_LENGTH:
         raise InputTooLargeError(len(text), MAX_TEXT_LENGTH)
+
+    # ── AI backend routing ──────────────────────────────────────
+    _valid_backends = ("local", "oss", "openai", "auto")
+    if backend not in _valid_backends:
+        raise ConfigError(
+            f"backend must be one of {_valid_backends}, got {backend!r}"
+        )
+    if backend != "local":
+        return _humanize_via_backend(
+            text=text,
+            lang=lang,
+            profile=profile,
+            intensity=intensity,
+            backend=backend,
+            openai_api_key=openai_api_key,
+            openai_model=openai_model,
+            oss_api_url=oss_api_url,
+        )
 
     # Определяем язык
     detected_lang = lang
@@ -240,6 +269,66 @@ def humanize(
         )
 
     return result
+
+
+# ── AI-backend humanization helper ──────────────────────────
+
+def _humanize_via_backend(
+    text: str,
+    lang: str,
+    profile: str,
+    intensity: int,
+    backend: str,
+    openai_api_key: str | None,
+    openai_model: str,
+    oss_api_url: str | None,
+) -> HumanizeResult:
+    """Route humanization through an AI backend, then polish via local pipeline.
+
+    1. Sends text to the chosen backend (oss / openai / auto).
+    2. Runs the result through the local pipeline at low intensity
+       for typography, grammar, and coherence cleanup.
+    """
+    detected_lang = lang
+    if lang == "auto":
+        detected_lang = detect_language(text)
+
+    ab = _get_ai_backend()
+
+    # Build backend with appropriate settings
+    enable_oss = backend in ("oss", "auto")
+    api_key = openai_api_key if backend in ("openai", "auto") else None
+
+    prefer = "auto" if backend == "auto" else backend
+    if prefer == "oss":
+        prefer = "oss"
+    elif prefer == "openai":
+        prefer = "openai"
+
+    try:
+        ai = ab.AIBackend(
+            openai_api_key=api_key,
+            openai_model=openai_model,
+            enable_oss=enable_oss,
+            oss_api_url=oss_api_url,
+            prefer=prefer,
+        )
+        rewritten = ai.paraphrase(text, lang=detected_lang, style=profile)
+        used = ai.active_backend()
+        logger.info("AI backend used: %s", used)
+    except Exception:
+        logger.warning("AI backend failed, falling back to local pipeline", exc_info=True)
+        rewritten = text
+
+    # Polish via local rule-based pipeline (low intensity for cleanup only)
+    cleanup_intensity = min(40, intensity)
+    return humanize(
+        rewritten,
+        lang=detected_lang,
+        profile=profile,
+        intensity=cleanup_intensity,
+        backend="local",  # avoid recursion
+    )
 
 
 _ai_cache: dict[Any, Any] = {}
@@ -870,15 +959,16 @@ def detect_ai(text: str, lang: str = "auto") -> DetectionReport:
         pass
 
     # Ensemble: weighted merge of 3 signals
-    # Heuristic (18 metrics): 40%, Statistical (LR): 25%, Neural (MLP): 35%
+    # Neural trained MLP is most accurate, stat LR is strong for EN/RU,
+    # heuristic provides baseline robustness
     heuristic_score = result.ai_probability
     stat_score = stat_prob if stat_prob is not None else heuristic_score
     neural_score = neural_prob if neural_prob is not None else heuristic_score
 
     combined_score = (
-        heuristic_score * 0.40
-        + stat_score * 0.25
-        + neural_score * 0.35
+        heuristic_score * 0.05
+        + stat_score * 0.15
+        + neural_score * 0.80
     )
 
     return {
@@ -890,8 +980,8 @@ def detect_ai(text: str, lang: str = "auto") -> DetectionReport:
         "neural_perplexity": neural_ppl,
         "neural_perplexity_score": neural_ppl_score,
         "verdict": (
-            "ai" if combined_score > 0.60 else
-            "mixed" if combined_score > 0.32 else
+            "ai" if combined_score > 0.55 else
+            "mixed" if combined_score > 0.34 else
             "human"
         ),
         "confidence": result.confidence,

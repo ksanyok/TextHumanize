@@ -12,6 +12,8 @@ import logging
 import re
 from dataclasses import dataclass
 
+from texthumanize.sentence_split import split_sentences
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -82,7 +84,7 @@ def check_originality(
         )
 
     # Per-sentence originality
-    sentences = re.split(r'[.!?]+\s*', text)
+    sentences = split_sentences(text)
     sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
 
     sentence_scores = []

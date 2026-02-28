@@ -18,6 +18,8 @@ from __future__ import annotations
 import logging
 import math
 import re
+
+from texthumanize.sentence_split import split_sentences
 from collections import Counter
 from dataclasses import dataclass, field
 
@@ -256,8 +258,8 @@ class StylisticAnalyzer:
         return fp
 
     def _split_sentences(self, text: str) -> list[str]:
-        """Простая разбивка на предложения (без тяжёлого сплиттера)."""
-        sentences = re.split(r'(?<=[.!?…])\s+', text)
+        """Разбивка на предложения (email/URL safe)."""
+        sentences = split_sentences(text, self.lang)
         return [s.strip() for s in sentences if s.strip() and len(s.split()) > 1]
 
 # ═══════════════════════════════════════════════════════════════

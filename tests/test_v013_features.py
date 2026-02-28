@@ -16,13 +16,14 @@ class TestPipeline16Stages(unittest.TestCase):
     """Проверка 16-этапного пайплайна."""
 
     def test_stage_count(self):
-        self.assertEqual(len(Pipeline.STAGE_NAMES), 18)
+        self.assertEqual(len(Pipeline.STAGE_NAMES), 20)
 
     def test_stage_names(self):
         expected = (
             "watermark", "segmentation", "typography", "debureaucratization",
             "structure", "repetitions", "liveliness",
             "paraphrasing", "syntax_rewriting", "tone", "universal", "naturalization",
+            "paraphrase_engine", "sentence_restructuring",
             "entropy_injection",
             "readability", "grammar", "coherence",
             "validation", "restore",

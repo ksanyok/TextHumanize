@@ -26,6 +26,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Optional
 
+from texthumanize.sentence_split import split_sentences
+
 logger = logging.getLogger(__name__)
 
 
@@ -439,7 +441,7 @@ class Seq2SeqParaphraser:
 #  Hybrid paraphraser (neural + rule-based refinement)
 # ═══════════════════════════════════════════════════════════════
 
-# Sentence boundary patterns for chunking
+# Sentence boundary patterns for chunking (kept for compat; prefer split_sentences())
 _SENT_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
 
 # Word-level synonym maps for post-processing refinement
@@ -559,7 +561,7 @@ class NeuralParaphraser:
                 confidence=1.0, method="noop",
             )
 
-        sentences = _SENT_SPLIT_RE.split(text.strip())
+        sentences = split_sentences(text.strip(), self.lang)
         if not sentences:
             return NeuralParaphraseResult(
                 original=text, paraphrased=text,

@@ -15,6 +15,8 @@ import math
 import re
 from collections import Counter
 
+from texthumanize.sentence_split import split_sentences
+
 logger = logging.getLogger(__name__)
 
 # Pre-built character trigram frequency tables for common languages
@@ -130,7 +132,7 @@ def perplexity_score(text: str, lang: str = "en") -> dict:
     ppl = 2.0 ** ce if ce > 0 else 1.0
 
     # Per-sentence cross-entropy for variance analysis
-    sentences = re.split(r'[.!?]+\s+', text)
+    sentences = split_sentences(text, lang)
     sentences = [s for s in sentences if len(s) > 10]
 
     if len(sentences) >= 3:

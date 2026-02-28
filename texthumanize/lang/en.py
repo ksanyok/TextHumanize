@@ -682,7 +682,7 @@ LANG_EN = {
 
     # Phrase-level bureaucratic expressions
     "bureaucratic_phrases": {
-        "it is important to note that": ["note that", "importantly"],
+        "it is important to note that": ["note that", "importantly,"],
         "it should be noted that": ["note that", "notably"],
         "it is worth mentioning that": ["worth noting", "notably"],
         "it goes without saying that": ["clearly", "obviously"],

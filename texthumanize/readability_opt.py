@@ -16,6 +16,7 @@ import re
 
 from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
 from texthumanize.sentence_readability import sentence_readability
+from texthumanize.sentence_split import split_sentences
 
 logger = logging.getLogger(__name__)
 
@@ -228,7 +229,7 @@ class ReadabilityOptimizer:
             _JOIN_WORDS.get("en", [" and "]),
         )
 
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = split_sentences(text, self.lang)
         if len(sentences) < 2:
             return text, 0
 

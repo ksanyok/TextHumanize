@@ -47,6 +47,11 @@ async def async_humanize(
     target_style: object | str | None = None,
     only_flagged: bool = False,
     custom_dict: dict[str, str | list[str]] | None = None,
+    *,
+    backend: str = "local",
+    openai_api_key: str | None = None,
+    openai_model: str = "gpt-4o-mini",
+    oss_api_url: str | None = None,
 ) -> HumanizeResult:
     """Async version of humanize().
 
@@ -54,7 +59,7 @@ async def async_humanize(
     making it safe to use in async frameworks like FastAPI.
 
     Args:
-        Same as humanize().
+        Same as humanize(). Supports backend='local'/'oss'/'openai'/'auto'.
 
     Returns:
         HumanizeResult — same as humanize().
@@ -73,6 +78,10 @@ async def async_humanize(
         target_style=target_style,
         only_flagged=only_flagged,
         custom_dict=custom_dict,
+        backend=backend,
+        openai_api_key=openai_api_key,
+        openai_model=openai_model,
+        oss_api_url=oss_api_url,
     ))
 
 

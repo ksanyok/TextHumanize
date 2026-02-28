@@ -132,6 +132,114 @@ _AI_WORD_REPLACEMENTS = {
         "paramount": ["very important", "top", "main"],
         "multifaceted": ["complex", "varied", "many-sided"],
         "holistic": ["overall", "full-picture", "broad"],
+        # ── Inflected forms of already-covered base words ──
+        "utilization": ["use", "usage", "application"],
+        "leveraging": ["using", "building on", "drawing on"],
+        "facilitates": ["helps", "supports", "enables"],
+        "facilitation": ["help", "support", "assistance"],
+        "optimization": ["improvement", "tuning", "fine-tuning"],
+        "implementation": ["setup", "rollout", "execution"],
+        "demonstrates": ["shows", "proves", "reveals"],
+        "encompasses": ["covers", "includes", "spans"],
+        "encompass": ["cover", "include", "span"],
+        "constitutes": ["makes up", "is", "forms"],
+        "necessitate": ["require", "call for", "need"],
+        "necessitates": ["requires", "calls for", "needs"],
+        "delving": ["digging into", "exploring", "looking into"],
+        "fostering": ["encouraging", "building", "supporting"],
+        "harnessing": ["using", "tapping into", "channeling"],
+        "streamlined": ["simplified", "cleaned up", "lean"],
+        "endeavors": ["tries", "attempts", "efforts"],
+        "underscores": ["highlights", "shows", "points out"],
+        "navigating": ["working through", "dealing with", "handling"],
+        "unraveling": ["untangling", "figuring out", "breaking down"],
+        # ── Formal connectors and adverbs ──
+        "thereby": ["this way", "so", "in doing so"],
+        "notwithstanding": ["despite", "even so", "regardless"],
+        "whilst": ["while", "as"],
+        "aforementioned": ["earlier", "above", "previous"],
+        # ── Fancy adjectives/descriptors ──
+        "nuanced": ["subtle", "layered", "detailed"],
+        "intricate": ["complex", "detailed", "involved"],
+        "pertinent": ["relevant", "related", "important"],
+        "substantive": ["real", "meaningful", "solid"],
+        "overarching": ["main", "broad", "overall"],
+        "noteworthy": ["notable", "worth noting", "interesting"],
+        "commendable": ["impressive", "praiseworthy", "admirable"],
+        "meticulous": ["careful", "thorough", "precise"],
+        "meticulously": ["carefully", "thoroughly", "with care"],
+        "transformative": ["game-changing", "major", "powerful"],
+        "cutting-edge": ["latest", "modern", "advanced"],
+        "indispensable": ["essential", "vital", "necessary"],
+        "invaluable": ["priceless", "extremely useful", "key"],
+        "groundbreaking": ["pioneering", "novel", "breakthrough"],
+        # ── AI-metaphor vocabulary ──
+        "landscape": ["scene", "space", "field", "world"],
+        "paradigm": ["model", "approach", "framework"],
+        "synergy": ["teamwork", "combined effect", "collaboration"],
+        "cornerstone": ["foundation", "basis", "core"],
+        "tapestry": ["mix", "blend", "web"],
+        "beacon": ["guide", "signal", "example"],
+        "linchpin": ["key part", "backbone", "anchor"],
+        "testament": ["proof", "sign", "evidence"],
+        "realm": ["area", "field", "world", "domain"],
+        "culmination": ["peak", "result", "climax"],
+        "juxtaposition": ["contrast", "comparison", "side-by-side look"],
+        "underpinning": ["basis", "foundation", "backbone"],
+        # ── Formal verbs ──
+        "adhere": ["stick to", "follow", "keep to"],
+        "adherence": ["sticking to", "following", "commitment"],
+        "delineate": ["outline", "describe", "lay out"],
+        "delineates": ["outlines", "describes", "lays out"],
+        "elucidate": ["explain", "clarify", "spell out"],
+        "embark": ["start", "begin", "set out"],
+        "spearhead": ["lead", "drive", "champion"],
+        "unravel": ["untangle", "figure out", "break down"],
+        # ── Academic vocabulary simplification ──
+        # (reduces avg_word_length, avg_syllables, improves flesch_score)
+        "sophisticated": ["complex", "advanced", "clever"],
+        "methodology": ["method", "approach", "process"],
+        "methodological": ["research", "study", "scientific"],
+        "methodologies": ["methods", "approaches", "ways"],
+        "interconnected": ["linked", "tied", "related"],
+        "computational": ["computer", "digital", "data"],
+        "operational": ["working", "daily", "practical"],
+        "contemporary": ["modern", "current", "present"],
+        "unprecedented": ["rare", "extreme", "record"],
+        "approximately": ["about", "roughly", "around"],
+        "predominantly": ["mostly", "mainly", "largely"],
+        "fundamentally": ["basically", "at its core", "deeply"],
+        "systematically": ["step by step", "in order", "carefully"],
+        "characteristics": ["traits", "features", "qualities"],
+        "infrastructure": ["setup", "system", "base"],
+        "circumstances": ["conditions", "cases", "situations"],
+        "communication": ["contact", "talk", "exchange"],
+        "collaboration": ["teamwork", "joint work", "effort"],
+        "establishment": ["setup", "creation", "founding"],
+        "determination": ["resolve", "grit", "drive"],
+        "consideration": ["thought", "care", "attention"],
+        "investigation": ["study", "look", "research"],
+        "implications": ["effects", "results", "impact"],
+        "perspectives": ["views", "angles", "takes"],
+        "frameworks": ["models", "systems", "setups"],
+        "parameters": ["settings", "factors", "variables"],
+        "mechanisms": ["ways", "processes", "methods"],
+        "disciplines": ["fields", "areas", "subjects"],
+        "empirical": ["observed", "tested", "real"],
+        "analytical": ["logical", "detailed", "careful"],
+        "imperative": ["vital", "key", "pressing"],
+        "significant": ["big", "major", "important"],
+        "particularly": ["especially", "mainly", "notably"],
+        "demonstrates": ["shows", "proves", "reveals"],
+        "technological": ["tech", "digital", "modern"],
+        "advancements": ["advances", "progress", "gains"],
+        "convergence": ["meeting", "merging", "joining"],
+        "interdisciplinary": ["cross-field", "mixed", "joint"],
+        "algorithms": ["methods", "formulas", "programs"],
+        "efficiency": ["speed", "output", "results"],
+        "phenomena": ["events", "patterns", "things"],
+        "rigorous": ["strict", "tough", "thorough"],
+        "protocols": ["rules", "steps", "procedures"],
     },
     "ru": {
         "значительно": ["заметно", "ощутимо", "сильно", "намного"],
@@ -777,14 +885,14 @@ class TextNaturalizer:
             return text
 
         replaced = 0
-        max_replacements = max(5, len(text.split()) // 20)
+        max_replacements = max(10, len(text.split()) // 8)
         colloc = CollocEngine(lang=self.lang)
 
         for word, replacements in self._replacements.items():
             if replaced >= max_replacements:
                 break
 
-            if self.rng.random() > prob * 0.8:
+            if self.rng.random() > min(0.95, prob * 1.1):
                 continue
 
             pattern = re.compile(r'\b' + re.escape(word) + r'\b', re.IGNORECASE)

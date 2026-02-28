@@ -29,6 +29,8 @@ import math
 import re
 from typing import Any
 
+from texthumanize.sentence_split import split_sentences
+
 logger = logging.getLogger(__name__)
 
 _WORD_RE = re.compile(r'[a-zA-Zа-яА-ЯёЁіїєґІЇЄҐ]+')
@@ -311,9 +313,8 @@ class WordVec:
         overall_sim = self.sentence_similarity(original, modified)
 
         # Per-sentence analysis
-        sent_re = re.compile(r'(?<=[.!?])\s+(?=[A-ZА-ЯЁ])')
-        orig_sents = sent_re.split(original.strip())
-        mod_sents = sent_re.split(modified.strip())
+        orig_sents = split_sentences(original.strip())
+        mod_sents = split_sentences(modified.strip())
 
         sent_sims: list[float] = []
         for os in orig_sents:

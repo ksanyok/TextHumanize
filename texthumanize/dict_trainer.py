@@ -14,6 +14,8 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 
+from texthumanize.sentence_split import split_sentences
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -67,7 +69,7 @@ def train_from_corpus(
     for text in texts:
         words = re.findall(r'\b\w+\b', text.lower())
         all_words.extend(words)
-        sents = re.split(r'[.!?]+\s*', text)
+        sents = split_sentences(text)
         all_sentences.extend(s.strip() for s in sents if s.strip())
 
     corpus_size = len(all_words)

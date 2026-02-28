@@ -273,7 +273,7 @@ class TestEnglishMorphology:
     def test_match_form_es(self):
         """Подбор формы -es."""
         result = self.m.find_synonym_form("goes", "work")
-        assert result == "workes"
+        assert result == "works"
 
     def test_match_form_ies(self):
         """Подбор формы -ies."""

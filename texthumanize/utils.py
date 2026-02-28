@@ -120,9 +120,11 @@ class HumanizeResult:
             return 0.3  # AI-текст без изменений — плохо
         if sim < 0.3:
             return 0.2  # Слишком сильно изменён — потеря смысла
-        # Оптимальный диапазон change: 3%-35%
-        # Центр оптимума: 15%
-        change_score = 1.0 - abs(change - 0.15) / 0.35
+        # Оптимальный диапазон change масштабируется от intensity:
+        # intensity=20 → center=0.08, intensity=60 → center=0.18,
+        # intensity=100 → center=0.30
+        target_change = max(0.05, self.intensity / 100.0 * 0.30)
+        change_score = 1.0 - abs(change - target_change) / 0.35
         change_score = max(0.0, min(1.0, change_score))
         return sim * 0.6 + change_score * 0.4
 

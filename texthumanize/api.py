@@ -110,13 +110,23 @@ def _require_text(data: dict) -> str:
 
 def _handle_humanize(data: dict) -> dict:
     text = _require_text(data)
-    result = humanize(
-        text,
-        lang=data.get("lang", "auto"),
-        profile=data.get("profile", "web"),
-        intensity=data.get("intensity", 60),
-        seed=data.get("seed"),
-    )
+    kwargs: dict[str, Any] = {
+        "lang": data.get("lang", "auto"),
+        "profile": data.get("profile", "web"),
+        "intensity": data.get("intensity", 60),
+        "seed": data.get("seed"),
+    }
+    # AI backend support
+    backend = data.get("backend", "local")
+    if backend != "local":
+        kwargs["backend"] = backend
+    if data.get("openai_api_key"):
+        kwargs["openai_api_key"] = data["openai_api_key"]
+    if data.get("openai_model"):
+        kwargs["openai_model"] = data["openai_model"]
+    if data.get("oss_api_url"):
+        kwargs["oss_api_url"] = data["oss_api_url"]
+    result = humanize(text, **kwargs)
     return {
         "text": result.text,
         "lang": result.lang,

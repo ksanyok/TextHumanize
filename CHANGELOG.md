@@ -3,6 +3,50 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.23.0] - 2026-02-28
+
+### Added
+- **`backend` parameter in `humanize()`** — unified AI backend selection:
+  - `backend="local"` — default, fully offline rule-based pipeline (no API keys, no internet)
+  - `backend="oss"` — free OSS LLM via HuggingFace Spaces (amd/gpt-oss-120b-chatbot), no API key needed
+  - `backend="openai"` — OpenAI API (requires `openai_api_key`)
+  - `backend="auto"` — tries openai → oss → local (graceful fallback)
+- **Improved OSS Gradio provider** — supports both `/api/chat` (newer) and `/api/predict` (legacy) Gradio endpoints with automatic format detection, robust response parsing for multiple Gradio response formats.
+- **Async backend support** — `async_humanize()` now accepts `backend`, `openai_api_key`, `openai_model`, `oss_api_url` parameters.
+- **Published on PyPI** — `pip install texthumanize` now works.
+
+### Changed
+- OSS provider timeout increased to 90s (was 60s) to handle LLM inference latency.
+- OSS provider base URL handling improved — accepts both full endpoint URLs and base Space URLs.
+- `humanize_ai()` remains available for backward compatibility but `humanize(backend=...)` is now the recommended API.
+
+## [0.22.0] - 2025-07-02
+
+### Added
+- **FR/ES/DE paraphrase patterns** — native multi-word expression simplification, connector stripping, and hedging modulation for French (37 MWE, 12 hedge), Spanish (38 MWE, 12 hedge), and German (35 MWE, 12 hedge). These languages no longer fall back to English patterns.
+- **Per-run detection cache** — `_cached_detect()` wrapper in pipeline avoids redundant `detect_ai()` calls within a single `run()`. The regression guard now reuses cached results from the detector-in-the-loop, saving at least 1 full detection cycle (4 detector invocations) per humanization.
+- **Expanded EN AI word replacements** — added 54 inflected forms, formal connectors, AI-metaphor vocabulary, and formal verbs to the naturalizer (total ~100 EN replacement entries). Covers 100% of the neural detector's `_AI_PATTERNS_EN` list (was ~37%).
+- **Academic vocabulary simplification** — 48 additional EN word simplifications targeting readability metrics: "sophisticated"→"complex", "methodology"→"method", "computational"→"computer", "unprecedented"→"rare", etc. Reduces `avg_word_length`, `avg_syllables_per_word`, and improves `flesch_score`.
+- **Dash injection transforms** — `inject_dashes()` converts comma-conjunction patterns to em-dash variants; `inject_parenthetical_dashes()` adds parenthetical asides marked by em-dashes. Targets the `dash_rate` neural feature.
+
+### Changed
+- **Regression guard comparison** — now compares full ensemble `combined_score` before vs. after (was incorrectly comparing heuristic score before vs. ensemble after, causing the guard to always fire for EN and revert all humanization).
+- **Naturalizer replacement limits** — increased `max_replacements` from `max(5, words//20)` to `max(10, words//8)` and raised per-word probability from `prob * 0.8` to `min(0.95, prob * 1.1)`, enabling significantly more word replacements per pass.
+- **Sentence length reshaping** — reduced `target_cv` from 0.50 to 0.35 to prevent overshooting `sentence_length_variance` (was producing 57 vs human baseline of 19).
+
+### Fixed
+- **Critical: EN regression guard false trigger** — the guard compared heuristic `artificiality_score` (0-100 scale ÷ 100) with full ensemble `combined_score` (0-1 scale). For typical AI text: heuristic=58.6/100=0.586, ensemble=0.94 → guard always saw "regression" and reverted to minimal processing (0.05 intensity) regardless of actual improvement. Fix: compare ensemble score before and after using the same `_cached_detect()` function.
+- **Morphology: `-es` suffix handling** — `_match_form_en()` fallthrough returned `syn + "es"` for all `-es` originals, producing "showes" (from "demonstrates"→"shows"), "helpes" (from "facilitates"→"helps"). Now correctly returns `syn + "s"` for non-sibilant stems.
+- **Morphology: `-er`/`-est` lemmatization** — comparative/superlative forms of `-y` adjectives ("earlier", "earliest") were lemmatized as "earli"/"earli" instead of "early". Now detects the `-i` stem and restores `-y`.
+- **Morphology: `-ed` adjective guard** — added explicit guard for compound adjectives ("aforementioned", "streamlined", "sophisticated") and mangled-stem detection (stems ending in 'i') to prevent incorrect verb-style `-ed` re-inflection.
+- **Morphology: lemmatizer `-es` stripping** — fallthrough in `_lemmatize_en()` stripped `-es` from words like "requires"→"requir" and "rules"→"rul" (should be "require"/"rule"). Now defaults to stripping just `-s`, preserving the stem-final `-e`.
+
+### Performance
+- EN bypass: combined_score 0.962 → 0.851 at intensity=70 (was 0.950 → 0.937 before these changes)
+- EN `ai_pattern_rate`: 0.092 → 0.000 (all 85 AI marker words now replaced)
+- FR/ES/DE paraphrase: 2-3 transform hits per typical text (was 0 — fell back to EN)
+- Detection cache: eliminates 4-8 redundant detector invocations per `humanize()` call
+
 ## [0.21.0] - 2025-07-01
 
 ### Added

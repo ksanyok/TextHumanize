@@ -18,6 +18,8 @@ import logging
 import re
 from dataclasses import dataclass, field
 
+from texthumanize.sentence_split import split_sentences
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -144,8 +146,8 @@ def _check_double_words(text: str) -> list[GrammarIssue]:
 def _check_capitalization(text: str) -> list[GrammarIssue]:
     """Проверить капитализацию в начале предложений."""
     issues = []
-    # Split into sentences by '.', '!', '?'
-    sentences = re.split(r"(?<=[.!?…])\s+", text)
+    # Split into sentences (email/URL safe)
+    sentences = split_sentences(text)
     offset = 0
     for sent in sentences:
         sent_stripped = sent.lstrip()

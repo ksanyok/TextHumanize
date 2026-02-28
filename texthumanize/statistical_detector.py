@@ -12,6 +12,7 @@ import re
 from collections import Counter
 
 from texthumanize.ai_markers import load_ai_markers
+from texthumanize.sentence_split import split_sentences as _safe_split_sentences
 
 logger = logging.getLogger(__name__)
 
@@ -312,28 +313,28 @@ _CONJUNCTIONS_UK: set[str] = {
 # ----------------------------------------------------------
 _LR_WEIGHTS: dict[str, float] = {
     # Lexical features
-    "type_token_ratio": -0.85,
+    "type_token_ratio": -0.50,
     "hapax_ratio": 0.62,
-    "avg_word_length": -0.48,
+    "avg_word_length": -0.30,
     "word_length_variance": 0.37,
     # Sentence-level features
     "mean_sentence_length": -0.32,
-    "sentence_length_variance": 0.91,
+    "sentence_length_variance": 0.50,
     "sentence_length_skewness": 0.44,
     # Vocabulary measures
     "yules_k": 0.28,
-    "simpsons_diversity": -0.55,
-    "vocabulary_richness": -0.39,
+    "simpsons_diversity": -0.30,
+    "vocabulary_richness": -0.20,
     # N-gram features
-    "bigram_repetition_rate": 0.53,
+    "bigram_repetition_rate": 0.28,
     "trigram_repetition_rate": 0.41,
-    "unique_bigram_ratio": -0.67,
+    "unique_bigram_ratio": -0.35,
     # Entropy features
     "char_entropy": 0.22,
     "word_entropy": 0.58,
     "bigram_entropy": 0.19,
     # Burstiness features
-    "burstiness_score": 1.15,
+    "burstiness_score": 0.55,
     "vocab_burstiness": 0.73,
     # Structural features
     "paragraph_count_norm": 0.05,
@@ -341,27 +342,27 @@ _LR_WEIGHTS: dict[str, float] = {
     "list_bullet_ratio": -0.34,
     # Punctuation features
     "comma_rate": -0.26,
-    "semicolon_rate": -0.72,
+    "semicolon_rate": -0.40,
     "dash_rate": 0.45,
     "question_rate": 0.38,
     "exclamation_rate": 0.29,
     # AI pattern features
     "ai_pattern_rate": -2.10,
     # Perplexity-proxy features
-    "word_freq_rank_variance": 0.64,
+    "word_freq_rank_variance": 0.35,
     "zipf_fit_residual": 0.31,
     # Readability features
-    "avg_syllables_per_word": -0.42,
+    "avg_syllables_per_word": -0.25,
     "flesch_score_norm": 0.36,
     # Discourse features
     "starter_diversity": 0.52,
     "conjunction_rate": 0.18,
-    "transition_word_rate": -0.88,
+    "transition_word_rate": -0.45,
     # Rhythm features
-    "consec_len_diff_var": 0.76,
+    "consec_len_diff_var": 0.40,
 }
 
-_LR_BIAS: float = 0.15
+_LR_BIAS: float = 0.75
 
 # ----------------------------------------------------------
 # Feature normalization (mean, std) from corpus stats
@@ -426,6 +427,11 @@ _FEAT_NORM_RU: dict[str, tuple[float, float]] = {
     "mean_sentence_length": (12.0, 5.0),     # RU sentences tend shorter
     "yules_k": (55.0, 35.0),                 # Inflected languages → lower K
     "vocabulary_richness": (7.0, 2.0),
+    "burstiness_score": (-0.35, 0.35),       # RU informal has extreme burstiness
+    "sentence_length_variance": (20.0, 20.0), # RU shorter texts → lower variance
+    "bigram_repetition_rate": (0.03, 0.04),  # RU inflections → less repetition
+    "word_freq_rank_variance": (0.8, 0.7),   # RU informal word-freq differs
+    "consec_len_diff_var": (1.5, 1.0),       # RU rhythm differs
 }
 
 # Language-specific normalization overrides (UK)
@@ -621,9 +627,8 @@ _BULLET_RE = re.compile(
 
 
 def _split_sentences(text: str) -> list[str]:
-    """Split text into sentences (heuristic)."""
-    raw = _SENT_RE.split(text.strip())
-    return [s.strip() for s in raw if s.strip()]
+    """Split text into sentences (email/URL safe)."""
+    return _safe_split_sentences(text)
 
 
 def _tokenize(text: str) -> list[str]:

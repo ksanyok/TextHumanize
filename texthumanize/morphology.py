@@ -466,15 +466,24 @@ class MorphologyEngine:
             if word.endswith("ses") or word.endswith("ces") \
                     or word.endswith("ges") or word.endswith("zes"):
                 return word[:-1]
-            return word[:-2]
+            # Default: stem likely ends in -e (requires → require, rules → rule)
+            return word[:-1]
         if word.endswith("s") and not word.endswith("ss") and len(word) > 3:
             return word[:-1]
 
         # -er/-est → base
         if word.endswith("est") and len(word) > 5:
-            return word[:-3]
+            stem = word[:-3]
+            # earliest → early (comparative/superlative of -y adjectives)
+            if stem.endswith("i"):
+                return stem[:-1] + "y"
+            return stem
         if word.endswith("er") and len(word) > 4:
-            return word[:-2]
+            stem = word[:-2]
+            # earlier → early (comparative of -y adjectives)
+            if stem.endswith("i"):
+                return stem[:-1] + "y"
+            return stem
 
         # -ly → base adj
         if word.endswith("ly") and len(word) > 4:
@@ -543,31 +552,89 @@ class MorphologyEngine:
                     if f.lower() == orig_lower and i < len(syn_forms):
                         return syn_forms[i]
 
+        # First, strip any existing inflection from synonym_lemma so we
+        # never double-append suffixes like -ing+ing or -es+s.
+        syn = self._lemmatize_en(synonym_lemma)
+
+        # Guard: multi-word replacements (e.g., "lots of") — don't inflect
+        if " " in synonym_lemma:
+            return synonym_lemma
+
+        # Guard: adjective suffixes ending in -s that are NOT plural/verb
+        # (e.g., "numerous", "previous", "various", "serious", "conscious")
+        _adj_s_endings = (
+            "ous", "ious", "eous", "uous",  # -ous family
+            "us",   # bonus, campus (often nouns, but not plural)
+            "less",  # useless, harmless
+            "ness",  # goodness, fairness
+        )
+        if orig_lower.endswith(_adj_s_endings):
+            return synonym_lemma
+
         # -s, -es, -ed, -ing, -er, -est, -ly
         if orig_lower.endswith("ing"):
-            if synonym_lemma.endswith("e"):
-                return synonym_lemma[:-1] + "ing"
-            return synonym_lemma + "ing"
+            if syn.endswith("e") and not syn.endswith("ee"):
+                return syn[:-1] + "ing"
+            return syn + "ing"
         if orig_lower.endswith("ed"):
-            if synonym_lemma.endswith("e"):
-                return synonym_lemma + "d"
-            return synonym_lemma + "ed"
+            # Guard: adjectives with -ed that aren't past tense verbs
+            # e.g., "unprecedented", "unexpected", "unmatched", "advanced"
+            # Also: short adjectives like "new", "big" shouldn't get -ed.
+            _adj_ed_prefixes = ("un", "over", "under", "multi", "self")
+            if any(orig_lower.startswith(p) for p in _adj_ed_prefixes):
+                return synonym_lemma
+            # Guard: compound adjectives ending in -ed that are adjectival
+            _adj_ed_words = (
+                "aforementioned", "streamlined", "predetermined",
+                "widespread", "specialized", "interconnected",
+                "sophisticated", "unprecedented", "advanced",
+            )
+            if orig_lower in _adj_ed_words:
+                return synonym_lemma
+            # Guard: if lemmatized synonym looks mangled (ends in 'i'),
+            # the replacement is likely already in correct form
+            if syn.endswith("i"):
+                return synonym_lemma
+            # Don't add -ed to short common adjectives
+            if len(syn) <= 4 and syn in (
+                "new", "old", "big", "bad", "good", "real",
+                "fair", "full", "key", "wide", "rare", "rich",
+                "safe", "wild", "bold", "calm", "cold", "cool",
+                "dark", "deep", "fast", "few", "fine", "firm",
+                "flat", "free", "hard", "high", "hot", "keen",
+                "kind", "late", "long", "loud", "low", "main",
+                "mild", "near", "neat", "nice", "odd", "open",
+                "pale", "past", "peak", "poor", "pure", "raw",
+                "slim", "slow", "soft", "sole", "sore", "sure",
+                "tall", "thin", "tiny", "true", "vast", "warm",
+                "weak", "wet", "wise",
+            ):
+                return synonym_lemma
+            if syn.endswith("e"):
+                return syn + "d"
+            return syn + "ed"
         if orig_lower.endswith("ies") and not orig_lower.endswith("dies"):
-            if synonym_lemma.endswith("y"):
-                return synonym_lemma[:-1] + "ies"
-            return synonym_lemma + "s"
+            if syn.endswith("y") and len(syn) > 2 and syn[-2] not in "aeiou":
+                return syn[:-1] + "ies"
+            return syn + "s"
         if orig_lower.endswith("es"):
-            return synonym_lemma + "es"
+            if syn.endswith(("sh", "ch", "x", "ss", "o", "z")):
+                return syn + "es"
+            if syn.endswith("e"):
+                return syn + "s"
+            return syn + "s"
         if orig_lower.endswith("s") and not orig_lower.endswith("ss"):
-            return synonym_lemma + "s"
+            if syn.endswith(("s", "sh", "ch", "x", "z")):
+                return syn + "es"
+            return syn + "s"
         if orig_lower.endswith("er"):
-            return synonym_lemma + "er"
+            return syn + "er"
         if orig_lower.endswith("est"):
-            return synonym_lemma + "est"
+            return syn + "est"
         if orig_lower.endswith("ly"):
-            if synonym_lemma.endswith("y"):
-                return synonym_lemma[:-1] + "ily"
-            return synonym_lemma + "ly"
+            if syn.endswith("y"):
+                return syn[:-1] + "ily"
+            return syn + "ly"
 
         return synonym_lemma
 

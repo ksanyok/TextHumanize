@@ -9,6 +9,17 @@ from texthumanize.utils import get_profile
 
 logger = logging.getLogger(__name__)
 
+# Patterns for email/URL protection during typography normalization
+_EMAIL_RE = re.compile(
+    r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}'
+)
+_URL_RE = re.compile(
+    r'https?://[^\s<>\"\']+|www\.[^\s<>\"\']+',
+)
+_DOMAIN_RE = re.compile(
+    r'\b[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+\b',
+)
+
 class TypographyNormalizer:
     """Нормализует типографику текста под выбранный профиль.
 
@@ -149,6 +160,16 @@ class TypographyNormalizer:
 
     def _fix_punctuation_spaces(self, text: str) -> str:
         """Исправить пробелы вокруг знаков препинания."""
+        # Protect emails, URLs and domain-like strings
+        protected: list[tuple[str, str]] = []
+        counter = 0
+        for pat in (_EMAIL_RE, _URL_RE, _DOMAIN_RE):
+            for m in pat.finditer(text):
+                placeholder = f"\x00TYPO{counter}\x00"
+                protected.append((placeholder, m.group()))
+                text = text.replace(m.group(), placeholder, 1)
+                counter += 1
+
         # Убрать пробел перед , . : ; ! ?  (но НЕ перед leader dots: 4+ точек подряд)
         text = re.sub(r'\s+([,:;!?])', r'\1', text)
         # Пробел перед одиночной точкой (но не перед .... leader dots)
@@ -156,6 +177,10 @@ class TypographyNormalizer:
 
         # Добавить пробел после , . : ; ! ? если его нет (кроме конца строки)
         text = re.sub(r'([,.:;!?])(?=[A-Za-zА-Яа-яёЁіІїЇєЄґҐ])', r'\1 ', text)
+
+        # Restore protected tokens
+        for placeholder, original in reversed(protected):
+            text = text.replace(placeholder, original)
 
         return text
 

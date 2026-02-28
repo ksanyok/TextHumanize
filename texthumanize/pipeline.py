@@ -80,6 +80,7 @@ class Pipeline:
         "watermark", "segmentation", "typography", "debureaucratization",
         "structure", "repetitions", "liveliness",
         "paraphrasing", "syntax_rewriting", "tone", "universal", "naturalization",
+        "paraphrase_engine", "sentence_restructuring",
         "entropy_injection",
         "readability", "grammar", "coherence",
         "validation", "restore",
@@ -229,13 +230,13 @@ class Pipeline:
         """
 
         # Adaptive max_change_ratio: higher intensity allows more changes
-        # intensity 30 → 0.37, intensity 50 → 0.45, intensity 80 → 0.57
+        # intensity 30 → 0.34, intensity 50 → 0.40, intensity 80 → 0.49
         _user_max = self.options.constraints.get("max_change_ratio", None)
         if _user_max is not None:
             max_change = _user_max
         else:
             _i = self.options.intensity / 100.0
-            max_change = min(0.65, 0.25 + _i * 0.40)
+            max_change = min(0.55, 0.25 + _i * 0.30)
         deadline = time.monotonic() + self.PIPELINE_TIMEOUT
 
         def _check_deadline() -> None:
@@ -261,6 +262,23 @@ class Pipeline:
                 if retry.quality_score > result.quality_score:
                     result = retry
 
+        # ── Per-run detection cache ────────────────────────────
+        # Avoids recomputing detect_ai() for the same text within a single
+        # run() invocation. The regression guard often re-detects text that
+        # was already scored in the detector-in-the-loop.
+        _detect_cache: dict[int, dict] = {}
+
+        def _cached_detect(txt: str, *, lang: str) -> dict:
+            """Detect AI with per-run memoization."""
+            key = hash(txt)
+            cached = _detect_cache.get(key)
+            if cached is not None:
+                return cached
+            from texthumanize.core import detect_ai as _full_detect
+            result_d = _full_detect(txt, lang=lang)
+            _detect_cache[key] = result_d
+            return result_d
+
         # ── Detector-in-the-loop ──────────────────────────────
         # After humanization, check if the AI detector still flags
         # the result. If so, run another pass with escalated intensity
@@ -271,29 +289,34 @@ class Pipeline:
 
         # Only loop if original text was actually AI-like (>40%)
         if max_loops > 0 and ai_before > 40:
+            best_result = result
+            best_score = _cached_detect(result.text, lang=lang).get(
+                "combined_score", 1.0,
+            )
+
             for loop_i in range(max_loops):
                 _check_deadline()
 
-                # Quick heuristic-only detection on result text
-                from texthumanize.detectors import AIDetector
-                det = AIDetector(lang=lang)
-                det_result = det.detect(result.text, lang=lang)
-                current_ai = det_result.ai_probability
-
-                if current_ai <= target_ai:
+                if best_score <= target_ai:
                     break  # Successfully humanized below threshold
 
-                # Calculate change from original — allow up to 60%
-                loop_change = self._calc_change_ratio(text, result.text)
-                if loop_change > 0.60:
+                # Calculate change from original — scale headroom with intensity
+                # to prevent inverse monotonicity (low intensity getting more
+                # total change than high intensity via the loop)
+                loop_change = self._calc_change_ratio(text, best_result.text)
+                _headroom = max(0.02, (self.options.intensity / 100) * 0.08)
+                _max_total = max_change + _headroom
+                if loop_change > _max_total:
                     break  # Already changed enough, don't risk quality
 
                 # Re-process the RESULT with escalated intensity
-                escalation = 1.3 + 0.4 * loop_i  # 1.3×, 1.7×
+                # Cap escalated intensity to avoid over-processing
+                escalation = 1.2 + 0.3 * loop_i  # 1.2×, 1.5×
+                esc_intensity = min(75, int(self.options.intensity * escalation))
                 loop_opts = HumanizeOptions(
                     lang=self.options.lang,
                     profile=self.options.profile,
-                    intensity=min(100, int(self.options.intensity * escalation)),
+                    intensity=esc_intensity,
                     preserve=dict(self.options.preserve),
                     constraints={
                         **self.options.constraints,
@@ -306,33 +329,63 @@ class Pipeline:
 
                 try:
                     loop_result = loop_pipeline._run_pipeline(
-                        result.text, lang, intensity_factor=1.0,
+                        best_result.text, lang, intensity_factor=1.0,
                     )
                 except (TimeoutError, Exception):
                     break
 
-                # Accept loop result if it improves detection
-                loop_det = det.detect(loop_result.text, lang=lang)
-                if loop_det.ai_probability < current_ai:
-                    # Merge: keep original text reference but update result
+                # Accept loop result ONLY if it improves full detection score
+                loop_score = _cached_detect(loop_result.text, lang=lang).get(
+                    "combined_score", 1.0,
+                )
+                if loop_score < best_score:
                     total_change = self._calc_change_ratio(text, loop_result.text)
-                    if total_change <= 0.65:
-                        result = HumanizeResult(
+                    if total_change <= _max_total:
+                        best_result = HumanizeResult(
                             original=text,
                             text=loop_result.text,
                             lang=lang,
                             profile=self.options.profile,
                             intensity=self.options.intensity,
-                            changes=result.changes + [
+                            changes=best_result.changes + [
                                 {"type": "detection_loop",
                                  "description": (
-                                     f"Loop {loop_i + 1}: AI {current_ai:.0%}→"
-                                     f"{loop_det.ai_probability:.0%}"
+                                     f"Loop {loop_i + 1}: AI "
+                                     f"{best_score:.0%}→{loop_score:.0%}"
                                  )},
                             ] + loop_result.changes,
-                            metrics_before=result.metrics_before,
+                            metrics_before=best_result.metrics_before,
                             metrics_after=loop_result.metrics_after,
                         )
+                        best_score = loop_score
+
+            result = best_result
+
+        # ── Regression guard ─────────────────────────────────
+        # If humanization made the AI score WORSE (increased), fall back
+        # to minimal processing. This protects languages (e.g., DE)
+        # where rule-based transforms can make text more AI-like.
+        try:
+            score_after = _cached_detect(result.text, lang=lang).get(
+                "combined_score", 0.0,
+            )
+            # Compare like-for-like: full ensemble before vs. after
+            score_before_full = _cached_detect(text, lang=lang).get(
+                "combined_score", 0.0,
+            )
+            if score_after > score_before_full + 0.01:  # Worsened by >1%
+                # Fall back to typography-only pass
+                fallback = self._run_pipeline(text, lang, intensity_factor=0.05)
+                result = fallback
+                result.changes.append({
+                    "type": "regression_guard",
+                    "description": (
+                        f"Откат: AI {score_before_full:.0%}→{score_after:.0%} "
+                        f"(ухудшение — минимальная обработка)"
+                    ),
+                })
+        except Exception:
+            pass  # Guard is advisory, never blocks return
 
         return result
 
@@ -485,7 +538,8 @@ class Pipeline:
         # ── Адаптивная интенсивность ──────────────────────────
         # Автоматически корректируем intensity на основе artificiality_score:
         # - Высокий AI-скор (>60) → усиливаем обработку
-        # - Низкий AI-скор (<25) → ослабляем, чтобы не портить живой текст
+        # - Низкий AI-скор (<25) → мягко ослабляем, но гарантируем не менее
+        #   50% от запрошенной intensity (монотонность)
         effective_options = self.options
         ai_score = metrics_before.artificiality_score
         base_intensity = self.options.intensity
@@ -493,12 +547,18 @@ class Pipeline:
         # Применяем graduated retry factor
         base_intensity = max(5, int(base_intensity * intensity_factor))
 
+        # Cap base intensity at 70 to prevent over-processing at high
+        # user intensities. The higher user values (80-100) manifest
+        # through the detector-in-the-loop running extra passes, not
+        # through more aggressive single-pass processing.
+        base_intensity = min(base_intensity, 70)
+
         if ai_score >= 70:
-            # Сильно «искусственный» текст — усиливаем
-            adjusted = min(100, int(base_intensity * 1.3))
+            # Сильно «искусственный» текст — slightly boost
+            adjusted = min(75, int(base_intensity * 1.15))
         elif ai_score >= 50:
             # Средне «искусственный» — немного усиливаем
-            adjusted = min(100, int(base_intensity * 1.1))
+            adjusted = min(75, int(base_intensity * 1.1))
         elif ai_score <= 5:
             # Полностью «живой» текст — применяем только типографику
             return self._typography_only(
@@ -820,6 +880,47 @@ class Pipeline:
         checkpoints.append(("naturalization", text))
         text = self._run_plugins("naturalization", text, lang, is_before=False)
 
+        # 10a. Paraphrase engine — structural rewrites (MWE simplification,
+        # connector deletion, hedging, perspective rotation, clause embedding).
+        text = self._run_plugins("paraphrase_engine", text, lang, is_before=True)
+        def _run_paraphrase_engine() -> tuple[str, list]:
+            from texthumanize.paraphrase_engine import ParaphraseEngine
+            pe = ParaphraseEngine(
+                lang=lang,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
+            )
+            t = pe.transform(text)
+            return t, [{"type": "paraphrase_engine", "description": c} for c in pe.changes]
+        text, _ch = self._safe_stage(
+            "paraphrase_engine", text, lang,
+            _run_paraphrase_engine, stage_timings,
+        )
+        all_changes.extend(_ch)
+        checkpoints.append(("paraphrase_engine", text))
+        text = self._run_plugins("paraphrase_engine", text, lang, is_before=False)
+
+        # 10a½. Sentence restructuring — deep structural transforms
+        # (contractions, register mixing, length reshaping, discourse markers,
+        #  rhetorical questions, cleft/existential transforms).
+        text = self._run_plugins("sentence_restructuring", text, lang, is_before=True)
+        def _run_restructuring() -> tuple[str, list]:
+            from texthumanize.sentence_restructurer import SentenceRestructurer
+            sr = SentenceRestructurer(
+                lang=lang,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
+            )
+            t = sr.process(text)
+            return t, sr.changes
+        text, _ch = self._safe_stage(
+            "sentence_restructuring", text, lang,
+            _run_restructuring, stage_timings,
+        )
+        all_changes.extend(_ch)
+        checkpoints.append(("sentence_restructuring", text))
+        text = self._run_plugins("sentence_restructuring", text, lang, is_before=False)
+
         # 10b. Word LM quality gate — advisory perplexity monitoring.
         # Reports perplexity change but does NOT roll back — perplexity
         # values are advisory until language model data is expanded.
@@ -927,7 +1028,7 @@ class Pipeline:
             max_change_v = _user_max_v
         else:
             _iv = effective_options.intensity / 100.0
-            max_change_v = min(0.65, 0.25 + _iv * 0.40)
+            max_change_v = min(0.55, 0.25 + _iv * 0.30)
         validator = QualityValidator(
             lang=lang,
             max_change_ratio=max_change_v,

@@ -707,17 +707,14 @@ class AIDetector:
         long_cnt = sum(1 for sl in lengths if sl >= 30)
         extremes = (short + long_cnt) / len(lengths)
 
-        # Если нет экстремальных длин — признак AI
+        # Если нет экстремальных длин — слабый признак AI
         if extremes < 0.05:
-            score = min(score + 0.15, 1.0)
+            score = min(score + 0.07, 1.0)
         elif extremes > 0.2:
             score = max(score - 0.1, 0.0)
 
-        # Проверяем: есть ли «однословные» предложения (фрагменты)
-        # Люди иногда пишут "Точно." или "Нет." — AI почти никогда
-        fragments = sum(1 for sl in lengths if sl <= 2)
-        if fragments == 0 and len(sentences) > 8:
-            score = min(score + 0.05, 1.0)
+        # Нет фрагментов — очень слабый сигнал, не добавляем бонус
+        # (раньше +0.05 наказывало грамотный человеческий текст)
 
         return max(0.0, min(1.0, score))
 
@@ -1453,9 +1450,10 @@ class AIDetector:
             indicators.append(0.8)
 
         score = statistics.mean(indicators) if indicators else 0.5
+        # Grammar "perfection" is a weak signal — many humans write well.
+        # Dampen toward 0.5 to avoid penalizing literate human text.
+        score = 0.5 + (score - 0.5) * 0.5
         return max(0.0, min(1.0, score))
-
-    # ─── 10. РАЗНООБРАЗИЕ НАЧАЛ ПРЕДЛОЖЕНИЙ ────────────────────
 
     def _calc_openings(self, sentences: list[str]) -> float:
         """AI часто начинает предложения одинаково.
@@ -2007,7 +2005,8 @@ class AIDetector:
         passive_patterns_ru = [
             r'\b\w+(?:ован|ирован|ен|ан|ят|ит)(?:а|о|ы|и)?\s+(?:был|была|было|были)\b',
             r'\b(?:был|была|было|были)\s+\w+(?:ован|ирован|ен|ан)\w*\b',
-            r'\b\w+(?:ся|сь)\b',  # Reflexive verbs (often passive in RU)
+            # Reflexive passive (only with passive-specific prefixes/patterns)
+            r'\b(?:из|пере|раз|при|за|от|вы)\w{3,}(?:ся|сь)\b',
         ]
 
         # Passive patterns (DE) — "wurde ... gemacht", "ist ... worden"
@@ -2155,7 +2154,7 @@ class AIDetector:
         indicators: list[float] = []
 
         for para in paragraphs:
-            para_sentences = [s.strip() for s in re.split(r'[.!?]+', para) if len(s.strip()) > 10]
+            para_sentences = [s.strip() for s in split_sentences(para) if len(s.strip()) > 10]
             if len(para_sentences) < 2:
                 continue
 
@@ -2267,11 +2266,11 @@ class AIDetector:
 
         Усиливает разницу в средней зоне (0.25–0.70).
         """
-        # Logistic function — смягчённая (center=0.35, k=8)
-        # Не давит средние raw so агрессивно, позволяя
-        # текстам с raw=0.30-0.40 получить заметный score.
-        k = 8.0  # steepness (was 10)
-        center = 0.35  # center (was 0.40)
+        # Logistic function — мягкая калибровка
+        # center=0.45 — raw < 0.40 даёт score < 0.35 (human)
+        # k=5 — меньше агрессивности в переходной зоне
+        k = 5.0
+        center = 0.45
         return 1.0 / (1.0 + math.exp(-k * (raw - center)))
 
     def _generate_explanations(
