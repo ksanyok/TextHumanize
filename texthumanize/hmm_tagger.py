@@ -233,6 +233,80 @@ _RU_LEXICON: dict[str, str] = {
     "их": "DET", "каждый": "DET", "весь": "DET", "вся": "DET",
 }
 
+# Ukrainian common words
+_UK_LEXICON: dict[str, str] = {
+    # Pronouns
+    "я": "PRON", "ти": "PRON", "він": "PRON", "вона": "PRON", "воно": "PRON",
+    "ми": "PRON", "ви": "PRON", "вони": "PRON", "мені": "PRON", "мене": "PRON",
+    "тобі": "PRON", "тебе": "PRON", "його": "PRON", "її": "PRON", "нас": "PRON",
+    "вас": "PRON", "них": "PRON", "їм": "PRON", "йому": "PRON", "їй": "PRON",
+    "себе": "PRON", "хто": "PRON",
+    "це": "PRON", "все": "PRON", "всі": "PRON",
+
+    # Prepositions
+    "в": "PREP", "у": "PREP", "на": "PREP", "з": "PREP", "к": "PREP", "по": "PREP",
+    "за": "PREP", "із": "PREP", "о": "PREP", "від": "PREP", "до": "PREP",
+    "для": "PREP", "при": "PREP", "через": "PREP", "між": "PREP",
+    "без": "PREP", "після": "PREP", "перед": "PREP", "під": "PREP",
+    "над": "PREP", "про": "PREP", "біля": "PREP", "серед": "PREP",
+
+    # Conjunctions
+    "і": "CONJ", "але": "CONJ", "або": "CONJ", "а": "CONJ", "та": "CONJ",
+    "що": "CONJ", "щоб": "CONJ", "коли": "CONJ", "якщо": "CONJ",
+    "тому": "CONJ", "хоча": "CONJ", "поки": "CONJ", "бо": "CONJ",
+
+    # Common verbs
+    "бути": "VERB", "був": "VERB", "була": "VERB", "було": "VERB",
+    "були": "VERB", "є": "VERB", "буде": "VERB", "будуть": "VERB",
+    "може": "VERB", "можуть": "VERB", "могти": "VERB", "мати": "VERB",
+    "має": "VERB", "стати": "VERB", "став": "VERB", "стала": "VERB",
+    "знати": "VERB", "знає": "VERB", "думати": "VERB", "думає": "VERB",
+    "говорити": "VERB", "говорить": "VERB", "сказати": "VERB", "сказав": "VERB",
+    "бачити": "VERB", "робити": "VERB", "робить": "VERB",
+
+    # Common adverbs
+    "не": "ADV", "вже": "ADV", "ще": "ADV", "дуже": "ADV", "теж": "ADV",
+    "також": "ADV", "тільки": "ADV", "навіть": "ADV",
+    "потім": "ADV", "зараз": "ADV", "завжди": "ADV", "ніколи": "ADV",
+    "тут": "ADV", "там": "ADV", "де": "ADV",
+    "як": "ADV", "так": "ADV", "досить": "ADV",
+
+    # Determiners
+    "цей": "DET", "ця": "DET", "ці": "DET", "той": "DET",
+    "та": "DET", "ті": "DET", "мій": "DET", "моя": "DET", "мої": "DET",
+    "твій": "DET", "свій": "DET", "наш": "DET", "ваш": "DET",
+    "їх": "DET", "кожний": "DET", "весь": "DET", "вся": "DET",
+}
+
+# Ukrainian suffix rules
+_UK_SUFFIX_RULES: list[tuple[str, str, float]] = [
+    ("ність", "NOUN", 0.92),
+    ("ство", "NOUN", 0.90),
+    ("ція", "NOUN", 0.90),
+    ("ння", "NOUN", 0.90),
+    ("ття", "NOUN", 0.88),
+    ("іка", "NOUN", 0.80),
+    ("ості", "NOUN", 0.88),
+    ("ати", "VERB", 0.85),
+    ("яти", "VERB", 0.85),
+    ("ити", "VERB", 0.85),
+    ("іти", "VERB", 0.85),
+    ("увати", "VERB", 0.90),
+    ("ує", "VERB", 0.88),
+    ("ає", "VERB", 0.88),
+    ("ить", "VERB", 0.85),
+    ("ний", "ADJ", 0.85),
+    ("ська", "ADJ", 0.88),
+    ("ський", "ADJ", 0.88),
+    ("ній", "ADJ", 0.82),
+    ("вий", "ADJ", 0.80),
+    ("чий", "ADJ", 0.78),
+    ("ший", "ADJ", 0.78),
+    ("тий", "ADJ", 0.78),
+    ("но", "ADV", 0.55),
+    ("ло", "ADV", 0.40),
+]
+
 # Suffix → tag rules for English (ordered by specificity)
 _EN_SUFFIX_RULES: list[tuple[str, str, float]] = [
     # (suffix, tag, confidence)
@@ -320,7 +394,9 @@ def _emission_prob(word: str, tag: str, lang: str = "en") -> float:
         return 0.95 if tag == "NUM" else 0.005
 
     # Lexicon lookup
-    lexicon = _EN_LEXICON if lang not in ("ru", "uk") else _RU_LEXICON
+    lexicon = _EN_LEXICON if lang not in ("ru", "uk") else (
+        _UK_LEXICON if lang == "uk" else _RU_LEXICON
+    )
     if w in lexicon:
         expected = lexicon[w]
         if tag == expected:
@@ -331,7 +407,9 @@ def _emission_prob(word: str, tag: str, lang: str = "en") -> float:
         return 0.02
 
     # Suffix rules
-    suffix_rules = _EN_SUFFIX_RULES if lang not in ("ru", "uk") else _RU_SUFFIX_RULES
+    suffix_rules = _EN_SUFFIX_RULES if lang not in ("ru", "uk") else (
+        _UK_SUFFIX_RULES if lang == "uk" else _RU_SUFFIX_RULES
+    )
     best_match_tag = None
     best_confidence = 0.0
     for suffix, stag, conf in suffix_rules:

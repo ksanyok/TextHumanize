@@ -196,9 +196,16 @@ class EntropyInjector:
             "sin", "embargo", "donde",
         }
 
+        split_words_uk = {
+            "і", "але", "а", "однак", "хоча", "тому",
+            "оскільки", "причому", "який", "яка", "яке",
+        }
+
         split_candidates = split_words_en
-        if self._lang in ("ru", "uk"):
+        if self._lang == "ru":
             split_candidates = split_words_ru
+        elif self._lang == "uk":
+            split_candidates = split_words_uk
         elif self._lang == "de":
             split_candidates = split_words_de
         elif self._lang == "fr":
@@ -266,8 +273,10 @@ class EntropyInjector:
 
     def _get_merge_connectors(self) -> list[str]:
         """Get natural sentence connectors for merging."""
-        if self._lang in ("ru", "uk"):
+        if self._lang == "ru":
             return [", и ", ", а ", " — ", ", причём "]
+        if self._lang == "uk":
+            return [", і ", ", а ", " — ", ", причому "]
         if self._lang == "de":
             return [", und ", ", aber ", " — ", ", wobei "]
         if self._lang == "fr":
@@ -333,12 +342,19 @@ class EntropyInjector:
 
     def _get_fragments(self) -> list[str]:
         """Get language-specific short discourse fragments."""
-        if self._lang in ("ru", "uk"):
+        if self._lang == "ru":
             return [
                 "И это важно.", "Это факт.", "Вот в чём суть.",
                 "Звучит логично.", "Стоит задуматься.",
                 "Не всё так просто.", "Это ещё не всё.",
                 "И вот почему.", "Вопрос непростой.",
+            ]
+        if self._lang == "uk":
+            return [
+                "І це важливо.", "Це факт.", "Ось у чому суть.",
+                "Звучить логічно.", "Варто замислитися.",
+                "Не все так просто.", "Це ще не все.",
+                "І ось чому.", "Питання непросте.",
             ]
         if self._lang == "de":
             return [
@@ -450,11 +466,17 @@ class EntropyInjector:
 
     def _get_parenthetical_asides(self) -> list[str]:
         """Get language-specific parenthetical asides."""
-        if self._lang in ("ru", "uk"):
+        if self._lang == "ru":
             return [
                 "— что важно —", "— и это ключевой момент —",
                 "— что интересно —", "— по сути —",
                 "— стоит отметить —", "— как ни странно —",
+            ]
+        if self._lang == "uk":
+            return [
+                "— що важливо —", "— і це ключовий момент —",
+                "— що цікаво —", "— по суті —",
+                "— варто зазначити —", "— як не дивно —",
             ]
         if self._lang == "de":
             return [
@@ -502,11 +524,17 @@ class EntropyInjector:
 
     def _get_hedging_words(self) -> list[str]:
         """Get language-specific hedging words/phrases."""
-        if self._lang in ("ru", "uk"):
+        if self._lang == "ru":
             return [
                 "Пожалуй,", "Скорее всего,", "Вероятно,",
                 "По всей видимости,", "Надо сказать,",
                 "Как мне кажется,",
+            ]
+        if self._lang == "uk":
+            return [
+                "Мабуть,", "Найімовірніше,", "Ймовірно,",
+                "Вочевидь,", "Треба сказати,",
+                "Як на мене,",
             ]
         if self._lang == "de":
             return [
@@ -560,11 +588,17 @@ class EntropyInjector:
 
     def _get_intro_variations(self) -> list[str]:
         """Get language-specific introductory phrase variations."""
-        if self._lang in ("ru", "uk"):
+        if self._lang == "ru":
             return [
                 "При этом", "К слову,", "Между тем,",
                 "Что касается этого,", "В целом,",
                 "С другой стороны,",
+            ]
+        if self._lang == "uk":
+            return [
+                "При цьому", "До речі,", "Тим часом,",
+                "Що стосується цього,", "Загалом,",
+                "З іншого боку,",
             ]
         if self._lang == "de":
             return [

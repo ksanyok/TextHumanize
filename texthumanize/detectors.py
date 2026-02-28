@@ -654,10 +654,19 @@ class AIDetector:
         # Текст человека: char entropy ~4.0-4.5, word entropy ~8-10
         # AI текст: char entropy ~3.5-4.0, word entropy ~6-8
 
-        # Нормализуем в 0–1 шкалу (1 = AI-like low entropy)
-        char_score = max(0, 1.0 - (char_entropy - 3.0) / 2.0)
-        word_score = max(0, 1.0 - (word_entropy - 5.0) / 5.0)
-        cond_score = max(0, 1.0 - conditional_entropy / 3.0)
+        # Language-specific entropy baselines
+        # Cyrillic scripts have higher baseline char entropy (~4.5-4.9)
+        lang = getattr(self, "_current_lang", "en")
+        if lang in ("ru", "uk"):
+            # RU/UK: char_entropy ~4.5-4.9, word ~5.5-6.0
+            char_score = max(0, 1.0 - (char_entropy - 4.0) / 1.5)
+            word_score = max(0, 1.0 - (word_entropy - 5.0) / 3.0)
+            cond_score = max(0, 1.0 - conditional_entropy / 4.0)
+        else:
+            # EN: char_entropy ~3.5-4.5, word ~5.0-8.0
+            char_score = max(0, 1.0 - (char_entropy - 3.0) / 2.0)
+            word_score = max(0, 1.0 - (word_entropy - 5.0) / 5.0)
+            cond_score = max(0, 1.0 - conditional_entropy / 3.0)
 
         score = (char_score * 0.2 + word_score * 0.5 + cond_score * 0.3)
         return max(0.0, min(1.0, score))
@@ -686,6 +695,11 @@ class AIDetector:
         # AI: CV ≈ 0.15–0.35, Human: CV ≈ 0.5–0.9+
         # Маппим в 0–1
         score = max(0, 1.0 - (cv - 0.1) / 0.7)
+
+        # Short sentences naturally have lower CV (less room
+        # for variation), so dampen the AI signal
+        if avg < 10:
+            score *= 0.7
 
         # Дополнительно: проверяем наличие очень коротких (< 5 слов)
         # и очень длинных (> 30 слов) предложений — у AI их мало
@@ -2156,6 +2170,8 @@ class AIDetector:
                 "role", "impact", "influence", "factor", "aspect",
                 "важно", "значимо", "ключевой", "существенно",
                 "роль", "влияние", "фактор", "аспект",
+                "ключовий", "суттєво", "важливо", "значний",
+                "вплив", "чинник", "аспект",
             }
             has_general = sum(1 for w in first_sent.split() if w.strip('.,;:') in general_words)
 
@@ -2165,8 +2181,8 @@ class AIDetector:
             avg_rest_len = statistics.mean(rest_lens) if rest_lens else first_len
 
             is_topic_sent = (
-                has_general >= 1
-                or first_len >= avg_rest_len * 0.8
+                has_general >= 2
+                or (has_general >= 1 and first_len >= avg_rest_len * 1.2)
             )
             indicators.append(0.8 if is_topic_sent else 0.2)
 
@@ -2310,7 +2326,30 @@ class AIDetector:
             "topic_sentence": "Каждый абзац начинается с обобщающего утверждения",
         }
 
-        names = feature_names_ru if lang in ("ru", "uk") else feature_names
+        feature_names_uk = {
+            "entropy": "Надто рівномірний розподіл ентропії тексту",
+            "burstiness": "Одноманітна довжина речень (низька варіативність)",
+            "vocabulary": "Обмежене лексичне розмаїття",
+            "zipf": "Відхилення частот слів від природного розподілу",
+            "stylometry": "Формальний академічний стиль, характерний для AI",
+            "pattern": "Виявлено AI-характерні слова та фрази",
+            "punctuation": "Пунктуаційний профіль характерний для AI",
+            "coherence": "Надмірно послідовні переходи між абзацами",
+            "grammar": "Неприродно ідеальна граматика та форматування",
+            "opening": "Повторювані початки речень",
+            "readability": "Однакова читабельність по всьому тексту",
+            "rhythm": "Монотонний ритм довжини речень",
+            "perplexity": "Низька перплексія символьних n-грам (передбачувані патерни)",
+            "discourse": "Ригідна структура вступ-основа-висновок",
+            "semantic_rep": "Семантичне перефразування одних ідей у різних абзацах",
+            "entity": "Абстрактні згадки замість конкретних імен/дат",
+            "voice": "Надмірний пасивний стан та номіналізації",
+            "topic_sentence": "Кожен абзац починається з узагальнюючого твердження",
+        }
+
+        names = feature_names_uk if lang == "uk" else (
+            feature_names_ru if lang == "ru" else feature_names
+        )
 
         # Sort by score (most AI-like first)
         sorted_features = sorted(scores.items(), key=lambda x: x[1], reverse=True)
@@ -2345,7 +2384,17 @@ class AIDetector:
                     "opening": "Разнообразные начала предложений",
                     "rhythm": "Естественный ритм письма",
                 }
-                hn = names_human_ru if lang in ("ru", "uk") else names_human_en
+                names_human_uk = {
+                    "entropy": "Природна ентропія тексту",
+                    "burstiness": "Гарна варіативність довжини речень",
+                    "vocabulary": "Багатий словниковий запас",
+                    "pattern": "Мало AI-характерних патернів",
+                    "opening": "Різноманітні початки речень",
+                    "rhythm": "Природний ритм письма",
+                }
+                hn = names_human_uk if lang == "uk" else (
+                    names_human_ru if lang == "ru" else names_human_en
+                )
                 explanation = hn.get(feature)
                 if explanation:
                     explanations.append(f"✓ {explanation}")

@@ -523,6 +523,9 @@ def _get_past_participle_en(verb: str) -> str:
     if low in _EN_IRREGULAR:
         return _EN_IRREGULAR[low]
     # Regular verbs
+    # Guard: if already ends with -ed, return as-is (avoid double inflection)
+    if low.endswith("ed") and len(low) > 3:
+        return low
     if low.endswith("e"):
         return low + "d"
     if low.endswith("y") and len(low) > 2 and low[-2:] not in (

@@ -641,6 +641,12 @@ class MorphologyEngine:
         """Подобрать форму синонима под оригинал (RU/UK)."""
         orig_lower = original.lower()
 
+        # Skip adverbs — invariable words ending in -о/-е/-ше/-ьш
+        # These should not be matched against adjective endings
+        _adverb_suffixes = ("но", "лее", "ьше", "нно", "ово")
+        if orig_lower.endswith(_adverb_suffixes) and not synonym_lemma.endswith(("ый", "ий", "ій")):
+            return synonym_lemma
+
         endings_map = _RU_ADJ_ENDINGS if self.lang == "ru" else _UK_ADJ_ENDINGS
 
         # Прилагательные: определяем окончание оригинала

@@ -123,6 +123,22 @@ _TRANSITIONS_EN: set[str] = {
 
 _VOWELS_EN = set("aeiouyAEIOUY")
 _VOWELS_RU = set("аеёиоуыэюяАЕЁИОУЫЭЮЯ")
+_VOWELS_UK = set("аеіїоуєюяАЕІЇОУЄЮЯ")
+
+_AI_PATTERNS_UK: list[str] = [
+    "крім того", "більше того", "необхідно зазначити", "слід підкреслити",
+    "важливо розуміти", "на завершення", "таким чином", "у зв'язку з цим",
+    "разом з тим", "загалом", "зокрема", "насамперед",
+    "у першу чергу", "з іншого боку", "на сьогоднішній день",
+    "у межах даного", "згідно з даними",
+    "на думку експертів", "являє собою", "є ключовим",
+    "зумовлено тим", "сприяє розвитку", "здійснює вплив",
+    "має важливе значення", "у контексті даного", "на підставі",
+    "беручи до уваги", "з урахуванням вищевикладеного", "даний підхід",
+    "є невід'ємною", "відіграє важливу роль", "слід враховувати",
+    "не менш важливим", "ключовим аспектом", "істотним чином",
+    "має місце", "що стосується",
+]
 
 # Sentence boundary regex
 _SENT_RE = re.compile(r'(?<=[.!?])\s+(?=[A-ZА-ЯЁ"\'"(])')
@@ -293,8 +309,11 @@ def extract_features(text: str, lang: str = "en") -> Vec:
     # 27. AI pattern rate (multilingual)
     lower_text = text.lower()
     ai_count = sum(1 for t in tokens if t in _AI_PATTERNS_EN)
-    if lang in ("ru", "uk"):
+    if lang == "ru":
         for phrase in _AI_PATTERNS_RU:
+            ai_count += lower_text.count(phrase)
+    elif lang == "uk":
+        for phrase in _AI_PATTERNS_UK:
             ai_count += lower_text.count(phrase)
 
     # Also load language-specific markers from ai_markers module
@@ -335,7 +354,11 @@ def extract_features(text: str, lang: str = "en") -> Vec:
         zipf_res = 0.0
 
     # 30, 31. Readability
-    vowels = _VOWELS_EN if lang == "en" else (_VOWELS_RU if lang in ("ru", "uk") else _VOWELS_EN)
+    vowels = _VOWELS_EN if lang == "en" else (
+        _VOWELS_UK if lang == "uk" else (
+            _VOWELS_RU if lang == "ru" else _VOWELS_EN
+        )
+    )
     syllables = [_count_syllables(t, vowels) for t in tokens]
     avg_syl = _safe_mean([float(s) for s in syllables])
     asl = n_tokens / max(n_sentences, 1)

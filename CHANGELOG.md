@@ -3,6 +3,53 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.21.0] - 2025-07-01
+
+### Added
+- **Detector-in-the-loop humanization** — after the first pipeline pass, the heuristic detector checks the result. If AI probability remains above threshold (default 0.40), the pipeline re-runs on the output with escalated intensity (up to 2 loops). This creates a feedback cycle that significantly reduces AI detection scores. Configurable via `constraints={"target_ai_score": 0.35, "max_detection_loops": 2}`.
+- **Language-specific statistical detector normalization** — `_FEAT_NORM_RU` and `_FEAT_NORM_UK` with calibrated baselines for: avg_word_length, syllable count, char/word entropy, TTR, hapax ratio, Flesch score, conjunction/transition rates, Yule's K. Russian/Ukrainian text is no longer compared against English-only statistical norms.
+- **RU/UK conjunction and transition word sets** — `_CONJUNCTIONS_RU` (22 words: "и", "но", "а", "или", etc.), `_TRANSITIONS_RU` (22 words: "однако", "поэтому", "итак", etc.), `_CONJUNCTIONS_UK` (21 words: "і", "але", "або", "бо", etc.), `_TRANSITIONS_UK` (21 words: "однак", "отже", "втім", etc.). Feature extraction now uses language-appropriate word lists.
+- **Adaptive max_change_ratio** — default ceiling now scales with intensity: intensity 30 → 0.37, intensity 50 → 0.45, intensity 80 → 0.57, intensity 100 → 0.65. User-specified `max_change_ratio` in constraints overrides this.
+- **Ukrainian AI detection patterns** (`_AI_PATTERNS_UK`) — 30+ Ukrainian-specific AI marker phrases for neural detector: "крім того", "необхідно зазначити", "таким чином", "відіграє важливу роль", etc.
+- **Ukrainian function words** (`_UK_FUNCTION_WORDS`) — 35 Ukrainian function words for fingerprint analysis, replacing Russian words previously used for UK text.
+- **Ukrainian vowel set** (`_VOWELS_UK`) — proper Ukrainian vowels (includes і/ї/є, excludes Russian ё/ы/э) for neural detector phonetic features.
+- **Ukrainian HMM lexicon** (`_UK_LEXICON`) — ~80 Ukrainian words → POS tags (pronouns, prepositions, conjunctions, verbs, adverbs, determiners). Separate from Russian lexicon.
+- **Ukrainian HMM suffix rules** (`_UK_SUFFIX_RULES`) — 24 Ukrainian-specific suffix→POS rules (-ність→NOUN, -ння→NOUN, -ати→VERB, -ський→ADJ, etc.).
+- **Ukrainian feature name translations** — `feature_names_uk` (18 detection metric names) and `names_human_uk` (6 human-like feature descriptions) for Ukrainian detection explanations.
+
+### Changed
+- **Entropy_score normalization** — language-specific thresholds. Cyrillic text (RU/UK) uses baseline char_entropy 4.0 (was 3.0) and tighter word_entropy range. This reduces entropy_score from ~0.78 to ~0.40 for human RU/UK text while maintaining discrimination for AI text.
+- **Topic_sent_score calibration** — tightened topic sentence detection: now requires 2+ general/abstract words, or 1 general word + first sentence length ≥ 1.2× average rest. Was overly sensitive (firing on 80% of human paragraphs with `first_len >= avg_rest_len * 0.8`).
+- **Burstiness damping for short sentences** — when average sentence length < 10 words, burstiness score is scaled by 0.7×. Short informal sentences naturally have lower CV, which was falsely triggering AI signal.
+- **Statistical detector `_predict_proba`** — now accepts `lang` parameter to select language-specific normalization. All callers updated.
+- **Short-text damping threshold** — statistical detector uses 50-token threshold for confidence damping, preventing overconfident predictions on short texts.
+
+### Fixed
+- **Critical: Ukrainian language contamination** — 23 contamination points across 6 files where Russian text was used for Ukrainian:
+  - `entropy_injector.py`: 6 locations — split `lang in ("ru", "uk")` into separate branches with proper Ukrainian fragments, asides, hedging, intros, split words, and merge connectors.
+  - `fingerprint.py`: Added `_UK_FUNCTION_WORDS` frozenset, replaced Russian function words for Ukrainian fingerprint analysis.
+  - `neural_detector.py`: Added `_AI_PATTERNS_UK` (30+ patterns), `_VOWELS_UK`, split detection branches.
+  - `detectors.py`: Added Ukrainian feature names and human-like feature descriptions.
+  - `hmm_tagger.py`: Added `_UK_LEXICON` (~80 words), `_UK_SUFFIX_RULES` (24 rules), split lexicon/suffix selection.
+- **Critical: Statistical detector RU false positives** — human Russian text was scored 0.766 (AI verdict) due to English-only normalization. Now scores 0.31 (mixed/human). Root causes: avg_syllables_per_word norm 1.5 (EN-appropriate) vs actual RU mean 2.1; type_token_ratio norm 0.65 vs RU mean 0.82; conjunction_rate 0 (only EN conjunctions detected).
+- **Grammar: English double past-tense inflection** — `_get_past_participle_en()` now guards against words already ending in `-ed`, preventing "representedded" from passive voice conversion.
+- **Grammar: Russian "самее" comparative** — replaced "наиболее" → "самый" synonym (causes case agreement errors) with invariable adverb synonyms "особенно" / "крайне".
+- **Grammar: Ukrainian "найсильніше" superlative** — replaced "найбільш" → "найсильніше" synonym (wrong word class) with proper adverb synonyms "особливо" / "надзвичайно".
+- **Grammar: Slavic adverb morphology** — `_match_form_slavic()` now detects adverbs (ending in -но/-лее/-ьше/-нно/-ово) and skips adjective ending matching, preventing incorrect inflection of invariable words.
+
+### Detection Quality (before → after, on test corpus)
+| Metric | Before (v0.20.0) | After (v0.21.0) |
+|---|---|---|
+| RU human false positive | 0.311 | **0.190** |
+| UK human false positive | 0.180 | **0.140** |
+| EN human false positive | 0.090 | **0.087** |
+| Statistical RU human | 0.766 | **0.312** |
+| Statistical UK human | 0.041 | **0.008** |
+| RU AI detection | 0.845 | 0.846 |
+| UK AI detection | 0.758 | 0.758 |
+| EN AI detection | 0.909 | 0.909 |
+| UK humanization (after) | 0.50–0.69 | **0.388** |
+
 ## [0.20.0] - 2025-07-01
 
 ### Added

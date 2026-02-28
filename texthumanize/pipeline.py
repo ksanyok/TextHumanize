@@ -228,7 +228,14 @@ class Pipeline:
             TimeoutError: If processing exceeds PIPELINE_TIMEOUT seconds.
         """
 
-        max_change = self.options.constraints.get("max_change_ratio", 0.4)
+        # Adaptive max_change_ratio: higher intensity allows more changes
+        # intensity 30 → 0.37, intensity 50 → 0.45, intensity 80 → 0.57
+        _user_max = self.options.constraints.get("max_change_ratio", None)
+        if _user_max is not None:
+            max_change = _user_max
+        else:
+            _i = self.options.intensity / 100.0
+            max_change = min(0.65, 0.25 + _i * 0.40)
         deadline = time.monotonic() + self.PIPELINE_TIMEOUT
 
         def _check_deadline() -> None:
@@ -249,9 +256,83 @@ class Pipeline:
                 _check_deadline()
                 retry = self._run_pipeline(text, lang, intensity_factor=factor)
                 if retry.change_ratio <= max_change:
-                    return retry
+                    result = retry
+                    break
                 if retry.quality_score > result.quality_score:
                     result = retry
+
+        # ── Detector-in-the-loop ──────────────────────────────
+        # After humanization, check if the AI detector still flags
+        # the result. If so, run another pass with escalated intensity
+        # on the already-processed text to push it further from AI.
+        target_ai = self.options.constraints.get("target_ai_score", 0.40)
+        max_loops = self.options.constraints.get("max_detection_loops", 2)
+        ai_before = result.metrics_before.get("artificiality_score", 0)
+
+        # Only loop if original text was actually AI-like (>40%)
+        if max_loops > 0 and ai_before > 40:
+            for loop_i in range(max_loops):
+                _check_deadline()
+
+                # Quick heuristic-only detection on result text
+                from texthumanize.detectors import AIDetector
+                det = AIDetector(lang=lang)
+                det_result = det.detect(result.text, lang=lang)
+                current_ai = det_result.ai_probability
+
+                if current_ai <= target_ai:
+                    break  # Successfully humanized below threshold
+
+                # Calculate change from original — allow up to 60%
+                loop_change = self._calc_change_ratio(text, result.text)
+                if loop_change > 0.60:
+                    break  # Already changed enough, don't risk quality
+
+                # Re-process the RESULT with escalated intensity
+                escalation = 1.3 + 0.4 * loop_i  # 1.3×, 1.7×
+                loop_opts = HumanizeOptions(
+                    lang=self.options.lang,
+                    profile=self.options.profile,
+                    intensity=min(100, int(self.options.intensity * escalation)),
+                    preserve=dict(self.options.preserve),
+                    constraints={
+                        **self.options.constraints,
+                        "max_change_ratio": 0.35,  # Limit per-loop change
+                    },
+                    seed=(self.options.seed or 42) + loop_i + 1,
+                )
+                loop_pipeline = Pipeline(loop_opts)
+                loop_pipeline._check_deadline = _check_deadline
+
+                try:
+                    loop_result = loop_pipeline._run_pipeline(
+                        result.text, lang, intensity_factor=1.0,
+                    )
+                except (TimeoutError, Exception):
+                    break
+
+                # Accept loop result if it improves detection
+                loop_det = det.detect(loop_result.text, lang=lang)
+                if loop_det.ai_probability < current_ai:
+                    # Merge: keep original text reference but update result
+                    total_change = self._calc_change_ratio(text, loop_result.text)
+                    if total_change <= 0.65:
+                        result = HumanizeResult(
+                            original=text,
+                            text=loop_result.text,
+                            lang=lang,
+                            profile=self.options.profile,
+                            intensity=self.options.intensity,
+                            changes=result.changes + [
+                                {"type": "detection_loop",
+                                 "description": (
+                                     f"Loop {loop_i + 1}: AI {current_ai:.0%}→"
+                                     f"{loop_det.ai_probability:.0%}"
+                                 )},
+                            ] + loop_result.changes,
+                            metrics_before=result.metrics_before,
+                            metrics_after=loop_result.metrics_after,
+                        )
 
         return result
 
@@ -841,10 +922,15 @@ class Pipeline:
 
         # 15. Валидация
         _t0 = time.perf_counter()
-        max_change = self.options.constraints.get("max_change_ratio", 0.4)
+        _user_max_v = self.options.constraints.get("max_change_ratio", None)
+        if _user_max_v is not None:
+            max_change_v = _user_max_v
+        else:
+            _iv = effective_options.intensity / 100.0
+            max_change_v = min(0.65, 0.25 + _iv * 0.40)
         validator = QualityValidator(
             lang=lang,
-            max_change_ratio=max_change,
+            max_change_ratio=max_change_v,
             keep_keywords=keep_kw,
         )
         validation = validator.validate(original, text, metrics_before)

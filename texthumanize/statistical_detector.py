@@ -204,6 +204,110 @@ _CONJUNCTIONS_EN: set[str] = {
 }
 
 # ----------------------------------------------------------
+# Transition / discourse words (RU)
+# ----------------------------------------------------------
+_TRANSITIONS_RU: set[str] = {
+    "однако",
+    "поэтому",
+    "следовательно",
+    "таким",          # "таким образом"
+    "итак",
+    "соответственно",
+    "тем",            # "тем не менее"
+    "кроме",          # "кроме того"
+    "более",          # "более того"
+    "кстати",
+    "впрочем",
+    "действительно",
+    "безусловно",
+    "несомненно",
+    "вообще",
+    "собственно",
+    "фактически",
+    "наконец",
+    "во-первых",
+    "во-вторых",
+    "в-третьих",
+    "прежде",
+}
+
+_CONJUNCTIONS_RU: set[str] = {
+    "и",
+    "но",
+    "а",
+    "или",
+    "ни",
+    "да",
+    "ведь",
+    "потому",
+    "хотя",
+    "хоть",
+    "пока",
+    "если",
+    "когда",
+    "после",
+    "пока",
+    "чтобы",
+    "что",
+    "как",
+    "где",
+    "раз",
+    "либо",
+    "зато",
+}
+
+# ----------------------------------------------------------
+# Transition / discourse words (UK)
+# ----------------------------------------------------------
+_TRANSITIONS_UK: set[str] = {
+    "однак",
+    "тому",
+    "отже",
+    "відповідно",
+    "між",            # "між тим"
+    "крім",           # "крім того"
+    "до",             # "до речі"
+    "речі",
+    "справді",
+    "безумовно",
+    "безперечно",
+    "взагалі",
+    "власне",
+    "фактично",
+    "нарешті",
+    "по-перше",
+    "по-друге",
+    "по-третє",
+    "насамперед",
+    "зрештою",
+    "втім",
+}
+
+_CONJUNCTIONS_UK: set[str] = {
+    "і",
+    "й",
+    "але",
+    "або",
+    "ні",
+    "та",
+    "бо",
+    "адже",
+    "хоча",
+    "хоч",
+    "поки",
+    "якщо",
+    "коли",
+    "після",
+    "щоб",
+    "що",
+    "як",
+    "де",
+    "проте",
+    "зате",
+    "чи",
+}
+
+# ----------------------------------------------------------
 # Pre-trained logistic regression weights (35 features)
 # ----------------------------------------------------------
 _LR_WEIGHTS: dict[str, float] = {
@@ -300,6 +404,58 @@ _FEAT_NORM: dict[str, tuple[float, float]] = {
     "transition_word_rate": (0.008, 0.01),
     "consec_len_diff_var": (2.0, 1.2),
 }
+
+# Language-specific normalization overrides (RU)
+# Russian text has longer words, higher syllable count,
+# different entropy baselines, and different discourse features.
+_FEAT_NORM_RU: dict[str, tuple[float, float]] = {
+    **_FEAT_NORM,
+    "avg_word_length": (5.5, 1.0),          # Russian words are longer
+    "word_length_variance": (5.0, 2.0),
+    "avg_syllables_per_word": (2.1, 0.35),   # Russian syllable count higher
+    "char_entropy": (4.7, 0.3),              # Cyrillic → higher char entropy
+    "word_entropy": (5.7, 1.0),
+    "bigram_entropy": (5.8, 1.5),
+    "flesch_score_norm": (0.3, 0.35),        # Flesch doesn't work well for RU
+    "type_token_ratio": (0.82, 0.12),        # RU inflections → higher TTR
+    "hapax_ratio": (0.68, 0.15),             # Higher hapax in inflected lang
+    "simpsons_diversity": (0.99, 0.015),
+    "unique_bigram_ratio": (0.97, 0.03),     # Short RU text → near-unique
+    "conjunction_rate": (0.05, 0.03),         # RU conjunctions "и","но","а"
+    "transition_word_rate": (0.01, 0.012),
+    "mean_sentence_length": (12.0, 5.0),     # RU sentences tend shorter
+    "yules_k": (55.0, 35.0),                 # Inflected languages → lower K
+    "vocabulary_richness": (7.0, 2.0),
+}
+
+# Language-specific normalization overrides (UK)
+_FEAT_NORM_UK: dict[str, tuple[float, float]] = {
+    **_FEAT_NORM,
+    "avg_word_length": (5.0, 1.0),
+    "word_length_variance": (4.5, 2.0),
+    "avg_syllables_per_word": (2.0, 0.35),
+    "char_entropy": (4.7, 0.3),
+    "word_entropy": (5.8, 1.0),
+    "bigram_entropy": (6.0, 1.5),
+    "flesch_score_norm": (0.35, 0.35),
+    "type_token_ratio": (0.78, 0.13),
+    "hapax_ratio": (0.65, 0.15),
+    "simpsons_diversity": (0.99, 0.015),
+    "unique_bigram_ratio": (0.97, 0.03),
+    "conjunction_rate": (0.05, 0.03),
+    "transition_word_rate": (0.01, 0.012),
+    "mean_sentence_length": (12.0, 5.0),
+    "yules_k": (55.0, 35.0),
+    "vocabulary_richness": (7.0, 2.0),
+}
+
+def _get_feat_norm(lang: str) -> dict[str, tuple[float, float]]:
+    """Return language-appropriate normalization constants."""
+    if lang == "ru":
+        return _FEAT_NORM_RU
+    if lang == "uk":
+        return _FEAT_NORM_UK
+    return _FEAT_NORM
 
 # ----------------------------------------------------------
 # Syllable counting helpers
@@ -747,12 +903,22 @@ def extract_features(
     starter_div = (
         len(set(starters)) / max(len(starters), 1)
     )
+    conj_set = (
+        _CONJUNCTIONS_RU if lang == "ru"
+        else _CONJUNCTIONS_UK if lang == "uk"
+        else _CONJUNCTIONS_EN
+    )
     conj_cnt = sum(
-        1 for t in tokens if t in _CONJUNCTIONS_EN
+        1 for t in tokens if t in conj_set
     )
     conj_rate = conj_cnt / n_tok if n_tok else 0.0
+    trans_set = (
+        _TRANSITIONS_RU if lang == "ru"
+        else _TRANSITIONS_UK if lang == "uk"
+        else _TRANSITIONS_EN
+    )
     trans_cnt = sum(
-        1 for t in tokens if t in _TRANSITIONS_EN
+        1 for t in tokens if t in trans_set
     )
     trans_rate = (
         trans_cnt / n_tok if n_tok else 0.0
@@ -822,6 +988,7 @@ def _sigmoid(x: float) -> float:
 def _predict_proba(
     features: dict[str, float],
     n_tokens: int = 0,
+    lang: str = "en",
 ) -> float:
     """Compute P(AI) from normalized features.
 
@@ -831,10 +998,11 @@ def _predict_proba(
     Features are clipped to [-3, 3] after normalisation
     to prevent outlier dominance.
     """
+    feat_norm = _get_feat_norm(lang)
     z = _LR_BIAS
     for name, w in _LR_WEIGHTS.items():
         raw = features.get(name, 0.0)
-        mu, std = _FEAT_NORM.get(
+        mu, std = feat_norm.get(
             name, (0.0, 1.0)
         )
         if std > 0:
@@ -891,7 +1059,7 @@ class StatisticalDetector:
         """Quick AI probability score [0, 1]."""
         feats = self.extract_features(text)
         ntok = len(_tokenize(text))
-        return _predict_proba(feats, ntok)
+        return _predict_proba(feats, ntok, self.lang)
 
     def detect(self, text: str) -> dict:
         """Full detection with features + prob.
@@ -904,7 +1072,7 @@ class StatisticalDetector:
         """
         feats = self.extract_features(text)
         ntok = len(_tokenize(text))
-        prob = _predict_proba(feats, ntok)
+        prob = _predict_proba(feats, ntok, self.lang)
         return {
             "probability": round(prob, 4),
             "verdict": _verdict(prob),
@@ -933,7 +1101,7 @@ class StatisticalDetector:
                 chunk, self.lang
             )
             ntok = len(_tokenize(chunk))
-            prob = _predict_proba(feats, ntok)
+            prob = _predict_proba(feats, ntok, self.lang)
             results.append(
                 {
                     "sentence_index": 0,
@@ -950,7 +1118,7 @@ class StatisticalDetector:
                 chunk, self.lang
             )
             ntok = len(_tokenize(chunk))
-            prob = _predict_proba(feats, ntok)
+            prob = _predict_proba(feats, ntok, self.lang)
             results.append(
                 {
                     "sentence_index": i,

@@ -113,6 +113,16 @@ _RU_FUNCTION_WORDS = frozenset({
     "будет", "есть", "нет", "да",
 })
 
+_UK_FUNCTION_WORDS = frozenset({
+    "і", "в", "на", "з", "він", "вона", "вони", "ми", "ви", "я",
+    "не", "але", "а", "що", "це", "як", "за", "к", "по", "із",
+    "від", "до", "у", "о", "об", "при", "для", "ж", "чи", "б",
+    "ще", "так", "вже", "всі", "його", "її", "їх",
+    "то", "тільки", "ну", "теж", "також", "де", "коли",
+    "якщо", "щоб", "тому", "хоча", "були", "був", "була",
+    "буде", "є", "ні", "так", "або", "та",
+})
+
 _PRONOUNS_EN = frozenset({
     "i", "we", "you", "he", "she", "it", "they", "who", "this", "that",
     "my", "our", "your", "his", "her", "its", "their",
@@ -333,7 +343,9 @@ class AuthorFingerprint:
         p.parenthesis_rate = (text.count("(") + text.count("[")) / n100
 
         # Function words
-        func_words = _RU_FUNCTION_WORDS if lang in ("ru", "uk") else _EN_FUNCTION_WORDS
+        func_words = _RU_FUNCTION_WORDS if lang == "ru" else (
+            _UK_FUNCTION_WORDS if lang == "uk" else _EN_FUNCTION_WORDS
+        )
         func_count = sum(1 for w in lower_words if w in func_words)
         p.function_word_ratio = func_count / len(lower_words) if lower_words else 0.0
 
