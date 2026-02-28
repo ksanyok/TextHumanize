@@ -37,8 +37,22 @@ LANGUAGES = {
     "tr": LANG_TR,
 }
 
-# Языки с полными словарями (глубокая обработка)
-DEEP_LANGUAGES = set(LANGUAGES.keys())
+# ── Language tiers ─────────────────────────────────────────
+
+# Tier 1: Full detection + full humanization (deep grammar, syntax rewriting)
+TIER1_LANGUAGES = {"en", "ru", "uk", "de"}
+
+# Tier 2: Good detection + basic humanization (markers, patterns, no syntax rewrite)
+TIER2_LANGUAGES = {"fr", "es", "it", "pl", "pt"}
+
+# Tier 3: Basic detection + minimal humanization (universal processor only)
+TIER3_LANGUAGES = {"ar", "zh", "ja", "ko", "tr"}
+
+# Backward compat: DEEP_LANGUAGES = tier 1 only (was incorrectly set(LANGUAGES.keys()))
+DEEP_LANGUAGES = TIER1_LANGUAGES
+
+# All languages with at least marker-based detection support
+DETECTION_LANGUAGES = TIER1_LANGUAGES | TIER2_LANGUAGES
 
 # Минимальный пустой языковой пакет для неизвестных языков
 _EMPTY_LANG_PACK = {
@@ -83,5 +97,21 @@ def get_lang_pack(lang: str) -> dict:
 
 
 def has_deep_support(lang: str) -> bool:
-    """Проверить, есть ли для языка полный словарь."""
+    """Проверить, есть ли для языка полный словарь (Tier 1)."""
     return lang in DEEP_LANGUAGES
+
+
+def get_language_tier(lang: str) -> int:
+    """Return language tier: 1 (full), 2 (good), 3 (basic), 0 (unknown)."""
+    if lang in TIER1_LANGUAGES:
+        return 1
+    if lang in TIER2_LANGUAGES:
+        return 2
+    if lang in TIER3_LANGUAGES:
+        return 3
+    return 0
+
+
+def has_detection_support(lang: str) -> bool:
+    """Check if language has marker-based detection (Tier 1 + 2)."""
+    return lang in DETECTION_LANGUAGES

@@ -882,13 +882,18 @@ def detect_ai(text: str, lang: str = "auto") -> DetectionReport:
     )
 
     return {
-        "score": result.ai_probability,
+        "score": combined_score,
+        "heuristic_score": result.ai_probability,
         "combined_score": combined_score,
         "stat_probability": stat_prob,
         "neural_probability": neural_prob,
         "neural_perplexity": neural_ppl,
         "neural_perplexity_score": neural_ppl_score,
-        "verdict": result.verdict,
+        "verdict": (
+            "ai" if combined_score > 0.60 else
+            "mixed" if combined_score > 0.32 else
+            "human"
+        ),
         "confidence": result.confidence,
         "metrics": {
             "entropy": result.entropy_score,

@@ -104,9 +104,17 @@ class TestLanguagePacks:
         assert len(pack["synonyms"]) >= 10
 
     def test_all_deep_languages(self):
-        """Все 9 языков имеют полную поддержку."""
-        for lang in ["ru", "uk", "en", "de", "fr", "es", "pl", "pt", "it"]:
-            assert has_deep_support(lang), f"{lang} должен иметь полную поддержку"
+        """Tier 1 languages have deep support (syntax rewriting, full grammar)."""
+        for lang in ["ru", "uk", "en", "de"]:
+            assert has_deep_support(lang), f"{lang} должен иметь полную поддержку (tier 1)"
+
+    def test_tier2_languages_not_deep(self):
+        """Tier 2 languages have detection support but not deep (syntax) support."""
+        from texthumanize.lang import get_language_tier, has_detection_support
+        for lang in ["fr", "es", "pl", "pt", "it"]:
+            assert not has_deep_support(lang), f"{lang} is tier 2, not deep"
+            assert has_detection_support(lang), f"{lang} should have detection support"
+            assert get_language_tier(lang) == 2
 
     def test_unknown_language_returns_empty(self):
         """Неизвестный язык возвращает пустой пакет (без ошибки)."""

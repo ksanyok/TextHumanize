@@ -713,10 +713,11 @@ class TestV015Integration(unittest.TestCase):
     """Integration tests for v0.15.0."""
 
     def test_humanize_uses_new_pipeline(self):
-        """Pipeline now has 17 stages."""
+        """Pipeline now has 18 stages (including entropy_injection)."""
         from texthumanize.pipeline import Pipeline
-        self.assertEqual(len(Pipeline.STAGE_NAMES), 17)
+        self.assertEqual(len(Pipeline.STAGE_NAMES), 18)
         self.assertIn("syntax_rewriting", Pipeline.STAGE_NAMES)
+        self.assertIn("entropy_injection", Pipeline.STAGE_NAMES)
 
     def test_detect_ai_has_stat_detector(self):
         """detect_ai now includes statistical detector results."""

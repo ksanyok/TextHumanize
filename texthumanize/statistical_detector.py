@@ -11,6 +11,8 @@ import math
 import re
 from collections import Counter
 
+from texthumanize.ai_markers import load_ai_markers
+
 logger = logging.getLogger(__name__)
 
 # ----------------------------------------------------------
@@ -527,6 +529,7 @@ def _count_ai_markers(
     """Count AI-characteristic markers in text.
 
     Returns rate (count / total_words).
+    Uses multilingual markers from ai_markers module.
     """
     lower = text.lower()
     tokens = _tokenize(text)
@@ -534,17 +537,56 @@ def _count_ai_markers(
     if n == 0:
         return 0.0
     count = 0
-    if lang == "ru":
-        for phrase in _AI_MARKERS_RU:
+
+    # Load language-specific markers from ai_markers module
+    lang_markers = load_ai_markers(lang)
+
+    if lang_markers:
+        # Count single-word markers from all categories
+        all_words: set[str] = set()
+        all_phrases: list[str] = []
+        for category, words in lang_markers.items():
+            for w in words:
+                if " " in w:
+                    all_phrases.append(w.lower())
+                else:
+                    all_words.add(w.lower())
+
+        # Count phrase matches
+        for phrase in all_phrases:
             count += lower.count(phrase)
-        # Also check single-word matches from EN
+
+        # Count word matches
         for t in tokens:
-            if t in _AI_MARKERS_EN:
+            if t in all_words:
                 count += 1
     else:
-        for t in tokens:
-            if t in _AI_MARKERS_EN:
-                count += 1
+        # Fallback: use hardcoded EN/RU markers
+        if lang == "ru":
+            for phrase in _AI_MARKERS_RU:
+                count += lower.count(phrase)
+            for t in tokens:
+                if t in _AI_MARKERS_EN:
+                    count += 1
+        else:
+            for t in tokens:
+                if t in _AI_MARKERS_EN:
+                    count += 1
+
+    # For non-EN languages, also check EN markers as AI often
+    # leaks English-style words even in other languages
+    if lang not in ("en",) and lang_markers:
+        en_markers = load_ai_markers("en")
+        if en_markers:
+            en_words: set[str] = set()
+            for words in en_markers.values():
+                for w in words:
+                    if " " not in w:
+                        en_words.add(w.lower())
+            for t in tokens:
+                if t in en_words:
+                    count += 1
+
     return count / n
 
 

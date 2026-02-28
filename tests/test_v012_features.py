@@ -248,10 +248,14 @@ class TestNewLanguages:
         assert set(LANGUAGES.keys()) == expected
 
     def test_all_14_have_deep_support(self):
-        """Все 14 языков имеют глубокую поддержку."""
-        for lang in ("en", "ru", "uk", "de", "fr", "es", "pl", "pt", "it",
-                      "ar", "zh", "ja", "ko", "tr"):
-            assert has_deep_support(lang), f"{lang} должен иметь глубокую поддержку"
+        """All 14 languages have at least lang pack support; tier 1 have deep."""
+        from texthumanize.lang import get_language_tier
+        for lang in ("en", "ru", "uk", "de"):
+            assert has_deep_support(lang), f"{lang} should be tier 1 (deep)"
+        for lang in ("fr", "es", "pl", "pt", "it"):
+            assert get_language_tier(lang) == 2, f"{lang} should be tier 2"
+        for lang in ("ar", "zh", "ja", "ko", "tr"):
+            assert get_language_tier(lang) == 3, f"{lang} should be tier 3"
 
     # ── Arabic ────────────────────────────────────────────────
 

@@ -14,7 +14,7 @@ from texthumanize.coherence_repair import CoherenceRepairer
 from texthumanize.decancel import Debureaucratizer
 from texthumanize.fingerprint_randomizer import FingerprintRandomizer
 from texthumanize.grammar_fix import GrammarCorrector
-from texthumanize.lang import has_deep_support
+from texthumanize.lang import has_deep_support, get_language_tier
 from texthumanize.liveliness import LivelinessInjector
 from texthumanize.naturalizer import TextNaturalizer
 from texthumanize.normalizer import TypographyNormalizer
@@ -80,6 +80,7 @@ class Pipeline:
         "watermark", "segmentation", "typography", "debureaucratization",
         "structure", "repetitions", "liveliness",
         "paraphrasing", "syntax_rewriting", "tone", "universal", "naturalization",
+        "entropy_injection",
         "readability", "grammar", "coherence",
         "validation", "restore",
     )
@@ -551,8 +552,8 @@ class Pipeline:
                 })
             stage_timings["cjk_segmentation"] = time.perf_counter() - _t0
 
-        # Этапы 3-6: словарная обработка (только для языков с полным словарём)
-        if has_deep_support(lang):
+        # Этапы 3-6: словарная обработка (Tier 1 + Tier 2 languages)
+        if get_language_tier(lang) <= 2 and get_language_tier(lang) > 0:
             # 3. Деканцеляризация
             text = self._run_plugins("debureaucratization", text, lang, is_before=True)
             def _run_debureau() -> tuple[str, list]:
@@ -620,8 +621,8 @@ class Pipeline:
             checkpoints.append(("liveliness", text))
             text = self._run_plugins("liveliness", text, lang, is_before=False)
 
-        # 7. Семантическое перефразирование (для языков с полным словарём)
-        if has_deep_support(lang):
+        # 7. Семантическое перефразирование (Tier 1 + Tier 2)
+        if get_language_tier(lang) <= 2 and get_language_tier(lang) > 0:
             text = self._run_plugins("paraphrasing", text, lang, is_before=True)
             def _run_paraphrasing() -> tuple[str, list]:
                 p = SemanticParaphraser(
@@ -645,7 +646,9 @@ class Pipeline:
             text = self._run_plugins("paraphrasing", text, lang, is_before=False)
 
         # 7b. Syntax rewriting (sentence-level structural transforms)
-        if has_deep_support(lang):
+        # Only for Tier 1 languages (en, ru, uk, de) — SyntaxRewriter
+        # has proper grammar rules only for these languages
+        if get_language_tier(lang) == 1:
             text = self._run_plugins("syntax_rewriting", text, lang, is_before=True)
             def _run_syntax_rewrite() -> tuple[str, list]:
                 import re as _re_sr
@@ -755,6 +758,26 @@ class Pipeline:
         except Exception:
             pass  # Word LM is advisory, never blocks pipeline
         stage_timings["word_lm_gate"] = time.perf_counter() - _t0
+
+        # 10c. Entropy & burstiness injection (Phase 1 — all languages)
+        text = self._run_plugins("entropy_injection", text, lang, is_before=True)
+        def _run_entropy() -> tuple[str, list]:
+            from texthumanize.entropy_injector import EntropyInjector
+            ei = EntropyInjector(
+                lang=lang,
+                intensity=effective_options.intensity,
+                seed=effective_options.seed,
+                profile=effective_options.profile,
+            )
+            t = ei.process(text)
+            return t, ei.changes
+        text, _ch = self._safe_stage(
+            "entropy_injection", text, lang,
+            _run_entropy, stage_timings,
+        )
+        all_changes.extend(_ch)
+        checkpoints.append(("entropy_injection", text))
+        text = self._run_plugins("entropy_injection", text, lang, is_before=False)
 
         # 11. Оптимизация читаемости (для ВСЕХ языков)
         text = self._run_plugins("readability", text, lang, is_before=True)

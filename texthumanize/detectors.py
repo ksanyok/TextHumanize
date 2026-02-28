@@ -992,12 +992,33 @@ class AIDetector:
         # 4. "Furthermore/Moreover/However" в начале предложений
         formal_starts = 0
         formal_starters = {
+            # English
             "however", "furthermore", "moreover", "additionally",
             "consequently", "nevertheless", "nonetheless",
+            # Russian
             "однако", "кроме того", "более того", "помимо этого",
             "таким образом", "следовательно", "тем не менее",
+            # Ukrainian
             "однак", "крім того", "більш того", "окрім цього",
             "таким чином", "отже",
+            # German
+            "jedoch", "darüber hinaus", "außerdem", "nichtsdestotrotz",
+            "folglich", "demzufolge", "zusammenfassend",
+            # French
+            "cependant", "de plus", "néanmoins", "par conséquent",
+            "en outre", "ainsi", "en conclusion",
+            # Spanish
+            "sin embargo", "además", "no obstante", "por lo tanto",
+            "en consecuencia", "asimismo", "en conclusión",
+            # Italian
+            "tuttavia", "inoltre", "ciononostante", "pertanto",
+            "di conseguenza", "in conclusione",
+            # Polish
+            "jednakże", "ponadto", "niemniej jednak", "w związku z tym",
+            "podsumowując",
+            # Portuguese
+            "no entanto", "além disso", "contudo", "portanto",
+            "consequentemente", "em conclusão",
         }
         for sent in sentences:
             first_words = ' '.join(sent.split()[:3]).lower().rstrip('.,;:')
@@ -1081,6 +1102,62 @@ class AIDetector:
             r"|укреплению|формированию|росту)\b",
             r"\bобеспечивает (?:повышение|улучшение|оптимизацию|эффективн"
             r"|надёжн|устойчив|комплексн)\b",
+            # ── German hedging patterns ──
+            r"\bes ist (?:wichtig|entscheidend|wesentlich|bemerkenswert"
+            r"|von (?:großer|entscheidender|besonderer) Bedeutung)",
+            r"\bspielt eine (?:entscheidende|wichtige|wesentliche|zentrale"
+            r"|bedeutende|fundamentale) Rolle",
+            r"\bin der heutigen (?:Welt|Gesellschaft|Zeit)\b",
+            r"\bdarüber hinaus\b",
+            r"\bnichtsdestotrotz\b",
+            r"\bzusammenfassend (?:lässt sich|kann man|ist)\b",
+            r"\bes (?:sollte|muss|kann) (?:betont|erwähnt|hervorgehoben|festgestellt) werden",
+            r"\bein(?:e|en|em|er)? (?:umfassend|gründlich|eingehend|tiefgreifend)"
+            r"(?:e|en|er|em|es)? (?:Analyse|Untersuchung|Überblick|Studie)\b",
+            # ── French hedging patterns ──
+            r"\bil (?:est|convient de|faut|importe de) (?:important|essentiel|crucial"
+            r"|nécessaire|noter|souligner|mentionner)\b",
+            r"\bjoue un rôle (?:crucial|important|essentiel|fondamental|clé)\b",
+            r"\bdans le (?:monde|contexte|cadre) (?:actuel|moderne|contemporain)\b",
+            r"\bpar conséquent\b",
+            r"\bnéanmoins\b",
+            r"\ben conclusion\b",
+            r"\bil convient de (?:noter|souligner|mentionner|rappeler)\b",
+            r"\bune (?:analyse|étude|approche) (?:approfondie|exhaustive|complète|globale)\b",
+            # ── Spanish hedging patterns ──
+            r"\bes (?:importante|esencial|crucial|fundamental|necesario"
+            r"|imprescindible) (?:señalar|destacar|mencionar|subrayar|tener en cuenta)\b",
+            r"\bjuega un papel (?:crucial|importante|fundamental|clave|esencial)\b",
+            r"\ben el (?:mundo|contexto|marco) actual\b",
+            r"\bsin embargo\b",
+            r"\bno obstante\b",
+            r"\ben conclusión\b",
+            r"\bcabe (?:destacar|mencionar|señalar|resaltar)\b",
+            r"\bun (?:análisis|estudio|enfoque) (?:exhaustivo|integral|profundo|detallado)\b",
+            # ── Italian hedging patterns ──
+            r"\bè (?:importante|essenziale|cruciale|fondamentale|necessario)"
+            r" (?:notare|sottolineare|menzionare|evidenziare)\b",
+            r"\bgioca un ruolo (?:cruciale|importante|fondamentale|chiave|essenziale)\b",
+            r"\bnel (?:mondo|contesto|quadro) (?:attuale|moderno|contemporaneo)\b",
+            r"\btuttavia\b",
+            r"\bciononostante\b",
+            r"\bin (?:conclusione|sintesi)\b",
+            r"\b(?:un'analisi|uno studio|un approccio) (?:approfondito|esaustivo|completo)\b",
+            # ── Polish hedging patterns ──
+            r"\bnależy (?:podkreślić|zauważyć|wspomnieć|zwrócić uwagę)\b",
+            r"\bodgrywa (?:kluczową|ważną|istotną|zasadniczą) rolę\b",
+            r"\bw (?:dzisiejszym|współczesnym|obecnym) (?:świecie|kontekście)\b",
+            r"\bjednakże\b",
+            r"\bniemniej jednak\b",
+            r"\bpodsumowując\b",
+            # ── Portuguese hedging patterns ──
+            r"\bé (?:importante|essencial|crucial|fundamental|necessário)"
+            r" (?:notar|destacar|mencionar|salientar)\b",
+            r"\bdesempenha um papel (?:crucial|importante|fundamental|essencial)\b",
+            r"\bno (?:mundo|contexto|cenário) (?:atual|moderno|contemporâneo)\b",
+            r"\bno entanto\b",
+            r"\bcontudo\b",
+            r"\bem conclusão\b",
         ]
         hedge_count = 0
         for pat in hedging_patterns:
@@ -1092,6 +1169,18 @@ class AIDetector:
             r"\b(?:first(?:ly)?|second(?:ly)?|third(?:ly)?|finally|lastly),?\s",
             r"\b(?:first and foremost|last but not least|in addition to)\b",
             r"\b(?:во-первых|во-вторых|в-третьих|наконец)\b",
+            # German enumeration
+            r"\b(?:erstens|zweitens|drittens|schließlich|abschließend)\b",
+            # French enumeration
+            r"\b(?:premièrement|deuxièmement|troisièmement|enfin|finalement)\b",
+            # Spanish enumeration
+            r"\b(?:primero|segundo|tercero|finalmente|por último)\b",
+            # Italian enumeration
+            r"\b(?:in primo luogo|in secondo luogo|in terzo luogo|infine)\b",
+            # Polish enumeration
+            r"\b(?:po pierwsze|po drugie|po trzecie|na koniec)\b",
+            # Portuguese enumeration
+            r"\b(?:primeiramente|em segundo lugar|em terceiro lugar|por fim)\b",
         ]
         enum_count = sum(len(re.findall(p, text_lower)) for p in enum_patterns)
         enum_score = min(enum_count / 3, 1.0)
@@ -1907,6 +1996,31 @@ class AIDetector:
             r'\b\w+(?:ся|сь)\b',  # Reflexive verbs (often passive in RU)
         ]
 
+        # Passive patterns (DE) — "wurde ... gemacht", "ist ... worden"
+        passive_patterns_de = [
+            r'\b(?:wird|wurde|werden|wurden)\s+\w+(?:t|en)\b',
+            r'\bist\s+\w+\s+worden\b',
+            r'\b(?:wird|wurde)\s+\w+\b',
+        ]
+
+        # Passive patterns (FR) — "est fait", "a été fait"
+        passive_patterns_fr = [
+            r'\b(?:est|sont|a été|ont été|sera|seront)\s+\w+(?:é|ée|és|ées)\b',
+            r'\b(?:est|sont)\s+\w+(?:é|ée|és|ées)\s+par\b',
+        ]
+
+        # Passive patterns (ES) — "fue hecho", "se hace"
+        passive_patterns_es = [
+            r'\b(?:fue|fueron|es|son|ha sido|han sido)\s+\w+(?:ado|ido|ada|ida)\b',
+            r'\bse\s+\w+(?:a|e|an|en)\b',
+        ]
+
+        # Passive patterns (IT) — "è stato fatto", "viene fatto"
+        passive_patterns_it = [
+            r'\b(?:è|sono|è stato|è stata|sono stati|sono state)\s+\w+(?:ato|ato|ita|iti|ite)\b',
+            r'\b(?:viene|vengono)\s+\w+(?:ato|ata|ati|ate)\b',
+        ]
+
         text_lower = text.lower()
 
         for pattern in passive_patterns:
@@ -1915,12 +2029,37 @@ class AIDetector:
         for pattern in passive_patterns_ru:
             passive_count += len(re.findall(pattern, text_lower))
 
+        for pattern in passive_patterns_de:
+            passive_count += len(re.findall(pattern, text_lower))
+
+        for pattern in passive_patterns_fr:
+            passive_count += len(re.findall(pattern, text_lower))
+
+        for pattern in passive_patterns_es:
+            passive_count += len(re.findall(pattern, text_lower))
+
+        for pattern in passive_patterns_it:
+            passive_count += len(re.findall(pattern, text_lower))
+
         # Nominalizations: -tion, -ment, -ness, -ity (overused by AI)
         nominalization_suffixes = [
             r'\b\w{4,}tion\b', r'\b\w{4,}ment\b', r'\b\w{4,}ness\b',
             r'\b\w{4,}ity\b', r'\b\w{4,}ence\b', r'\b\w{4,}ance\b',
             # RU: -ация, -ение, -ование
             r'\b\w{4,}ация\b', r'\b\w{4,}ение\b', r'\b\w{4,}ование\b',
+            # DE: -ung, -heit, -keit, -schaft
+            r'\b\w{4,}ung\b', r'\b\w{4,}heit\b', r'\b\w{4,}keit\b',
+            r'\b\w{4,}schaft\b',
+            # FR: -tion, -ment, -ité, -ence, -ance
+            r'\b\w{4,}ité\b', r'\b\w{4,}isation\b',
+            # ES: -ción, -miento, -dad, -encia
+            r'\b\w{4,}ción\b', r'\b\w{4,}miento\b', r'\b\w{4,}dad\b',
+            # IT: -zione, -mento, -ità
+            r'\b\w{4,}zione\b', r'\b\w{4,}mento\b', r'\b\w{4,}ità\b',
+            # PL: -ość, -anie, -enie, -acja
+            r'\b\w{4,}ość\b', r'\b\w{4,}acja\b',
+            # PT: -ção, -mento, -dade
+            r'\b\w{4,}ção\b', r'\b\w{4,}dade\b',
         ]
 
         for suffix_pat in nominalization_suffixes:
@@ -1940,6 +2079,26 @@ class AIDetector:
         # Active voice markers (human uses more)
         active_markers = len(re.findall(
             r'\b(?:I|we|you|he|she|they)\s+\w+(?:ed|s)\b',
+            text, re.IGNORECASE
+        ))
+        # Add RU/UK active markers
+        active_markers += len(re.findall(
+            r'\b(?:я|мы|ты|вы|он|она|они|він|вона|вони)\s+\w+',
+            text, re.IGNORECASE
+        ))
+        # Add DE active markers (ich, wir, du, er, sie)
+        active_markers += len(re.findall(
+            r'\b(?:ich|wir|du|er|sie)\s+\w+(?:e|st|t|en)\b',
+            text, re.IGNORECASE
+        ))
+        # Add FR active markers (je, nous, tu, il, elle, ils)
+        active_markers += len(re.findall(
+            r'\b(?:je|nous|tu|vous|il|elle|ils|elles)\s+\w+',
+            text, re.IGNORECASE
+        ))
+        # Add ES active markers (yo, nosotros, tú, él, ella, ellos)
+        active_markers += len(re.findall(
+            r'\b(?:yo|nosotros|tú|usted|él|ella|ellos)\s+\w+',
             text, re.IGNORECASE
         ))
         active_ratio = active_markers / total_clauses if total_clauses > 0 else 0

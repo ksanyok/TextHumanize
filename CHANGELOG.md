@@ -3,6 +3,27 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.20.0] - 2025-07-01
+
+### Added
+- **Language tier system** (`lang/__init__.py`) — `TIER1_LANGUAGES` (en/ru/uk/de), `TIER2_LANGUAGES` (fr/es/it/pl/pt), `TIER3_LANGUAGES` (ar/zh/ja/ko/tr) with `get_language_tier()` API. Replaces broken `DEEP_LANGUAGES = all 14` with honest capability tiers.
+- **Multilingual AI detection** — heuristic, statistical, and neural detectors now load language-specific AI markers for DE/FR/ES/IT/PL/PT via `ai_markers.load_ai_markers()`. Detection scores for non-EN languages jump from 0.0 to 0.80+.
+- **Multilingual heuristic patterns** — 30+ hedging regex patterns for DE/FR/ES/IT/PL/PT, passive voice detection for DE/FR/ES/IT, formal starters for 6 languages, enumeration patterns for 6 languages, nominalization suffixes for DE/FR/ES/IT/PL/PT, active voice markers for RU/UK/DE/FR/ES.
+- **Entropy injection module** (`texthumanize/entropy_injector.py`) — Phase 1 human-likeness engine. Injects sentence-length burstiness, cadence variation, and discourse surprise. Language-specific fragments for EN/RU/DE/FR/ES/IT/PL/PT. Profile-aware target CVs (chat=0.70, formal=0.42). 18th pipeline stage.
+- **Modular install extras** (`pyproject.toml`) — `pip install texthumanize[detect]`, `[humanize]`, `[api]`, `[full]`, `[docs]`. Core library remains zero-dependency.
+- **Strategic roadmap** (`ROADMAP.md`) — 5-phase improvement plan with success metrics.
+
+### Changed
+- **Detection score now uses 3-signal ensemble** — `detect_ai()["score"]` returns the combined heuristic+statistical+neural score (was returning heuristic-only). Added `heuristic_score` field for the raw heuristic value.
+- **Pipeline expanded to 18 stages** — new `entropy_injection` stage between `naturalization` and `readability`.
+- **Pipeline language gating** — syntax rewriting limited to Tier 1 languages (en/ru/uk/de). Stages 3–7 (debureaucratization through paraphrasing) gated to Tier 1+2. Tier 3 languages get universal processor + detection only.
+- **Verdict thresholds** recalibrated for combined score: AI >0.60, mixed 0.32–0.60, human <0.32.
+
+### Fixed
+- **Critical: Non-EN detection returning 0.0** — statistical detector used EN-only markers for all non-RU languages; neural detector used EN-only patterns for all non-RU/UK languages; heuristic detector had 95% EN-only hedging patterns. All three detectors now load language-specific markers.
+- **Critical: All 14 languages marked as "deep"** — `DEEP_LANGUAGES = set(LANGUAGES.keys())` falsely claimed full support for ar/zh/ja/ko/tr. Now only Tier 1 languages are "deep".
+- **FR/ES humanization skipping stages** — after tier refactor, stages 3–7 were gated on `has_deep_support()` (Tier 1 only). Fixed to gate on Tier 1+2.
+
 ## [0.19.0] - 2025-06-30
 
 ### Added

@@ -23,6 +23,7 @@ import re
 from collections import Counter
 from typing import Any
 
+from texthumanize.ai_markers import load_ai_markers
 from texthumanize.neural_engine import (
     DenseLayer,
     FeedForwardNet,
@@ -289,12 +290,31 @@ def extract_features(text: str, lang: str = "en") -> Vec:
     question_rate = text.count("?") / text_len
     excl_rate = text.count("!") / text_len
 
-    # 27. AI pattern rate
+    # 27. AI pattern rate (multilingual)
     lower_text = text.lower()
     ai_count = sum(1 for t in tokens if t in _AI_PATTERNS_EN)
     if lang in ("ru", "uk"):
         for phrase in _AI_PATTERNS_RU:
             ai_count += lower_text.count(phrase)
+
+    # Also load language-specific markers from ai_markers module
+    if lang not in ("en", "ru", "uk"):
+        lang_markers = load_ai_markers(lang)
+        if lang_markers:
+            lang_words: set[str] = set()
+            lang_phrases: list[str] = []
+            for words in lang_markers.values():
+                for w in words:
+                    if " " in w:
+                        lang_phrases.append(w.lower())
+                    else:
+                        lang_words.add(w.lower())
+            for phrase in lang_phrases:
+                ai_count += lower_text.count(phrase)
+            for t in tokens:
+                if t in lang_words:
+                    ai_count += 1
+
     ai_pattern_rate = ai_count / max(n_tokens, 1)
 
     # 28. Word frequency rank variance

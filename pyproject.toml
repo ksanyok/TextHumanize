@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texthumanize"
-version = "0.19.0"
+version = "0.20.0"
 description = "Algorithmic text humanization with AI detection, tone analysis, paraphrasing, and spinning — 17-stage pipeline, 14 languages, zero dependencies"
 readme = "README.md"
 license = {text = "Dual License — Free for personal use, commercial license required for business"}
@@ -55,6 +55,26 @@ dev = [
     "mypy>=1.0",
     "pre-commit>=3.0",
     "hypothesis>=6.0",
+]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.0",
+]
+
+# Modular install extras — users can install only the parts they need:
+#   pip install texthumanize[detect]      — detection only
+#   pip install texthumanize[humanize]    — humanization only
+#   pip install texthumanize[api]         — REST API server
+#   pip install texthumanize[full]        — everything
+# NOTE: The core library is zero-dependency. These extras pull in
+# optional dependencies for extended functionality.
+detect = []       # Detection — no extra deps (pure Python)
+humanize = []     # Humanization — no extra deps (pure Python)
+api = [
+    "flask>=2.0",
+]
+full = [
+    "flask>=2.0",
 ]
 
 [project.scripts]

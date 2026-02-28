@@ -44,7 +44,7 @@ try:
     from importlib.metadata import version as _meta_version
     __version__ = _meta_version("texthumanize")
 except Exception:
-    __version__ = "0.19.0"
+    __version__ = "0.20.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
@@ -220,6 +220,8 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "POSBenchmarkError": ("texthumanize.pos_benchmark", "POSBenchmarkError"),
     # cjk_segmenter.py (new additions)
     "run_cjk_benchmark": ("texthumanize.cjk_segmenter", "run_cjk_benchmark"),
+    # entropy_injector.py (Phase 1)
+    "EntropyInjector": ("texthumanize.entropy_injector", "EntropyInjector"),
 }
 
 
