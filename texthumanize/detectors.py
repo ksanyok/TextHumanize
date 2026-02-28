@@ -118,108 +118,28 @@ class DetectionResult:
         return "\n".join(lines)
 
 # ═══════════════════════════════════════════════════════════════
-#  AI-ХАРАКТЕРНЫЕ СЛОВА (языково-специфичные)
+#  AI-ХАРАКТЕРНЫЕ СЛОВА (загружаются из JSON через ai_markers)
 # ═══════════════════════════════════════════════════════════════
 
-_AI_WORDS = {
-    "en": {
-        "adverbs": {
-            "significantly", "substantially", "considerably", "remarkably",
-            "exceptionally", "tremendously", "profoundly", "fundamentally",
-            "essentially", "particularly", "specifically", "notably",
-            "increasingly", "effectively", "ultimately", "consequently",
-            "inherently", "intrinsically", "predominantly", "invariably",
-        },
-        "adjectives": {
-            "comprehensive", "crucial", "pivotal", "paramount",
-            "innovative", "robust", "seamless", "holistic",
-            "cutting-edge", "state-of-the-art", "groundbreaking",
-            "transformative", "synergistic", "multifaceted",
-            "nuanced", "intricate", "meticulous", "imperative",
-        },
-        "verbs": {
-            "utilize", "leverage", "facilitate", "implement",
-            "foster", "enhance", "streamline", "optimize",
-            "underscore", "delve", "navigate", "harness",
-            "exemplify", "spearhead", "revolutionize", "catalyze",
-            "necessitate", "elucidate", "delineate", "substantiate",
-        },
-        "connectors": {
-            "however", "furthermore", "moreover", "nevertheless",
-            "nonetheless", "additionally", "consequently", "therefore",
-            "thus", "hence", "accordingly", "subsequently",
-            "in conclusion", "to summarize", "in essence",
-            "it is important to note", "it is worth mentioning",
-        },
-        "phrases": {
-            "plays a crucial role", "is of paramount importance",
-            "in today's world", "in the modern era",
-            "a wide range of", "it goes without saying",
-            "in light of", "due to the fact that",
-            "at the end of the day", "it is important to note that",
-            "it should be noted that", "it is worth mentioning that",
-            "first and foremost", "last but not least",
-            "in order to", "with regard to", "as a matter of fact",
-        },
-    },
-    "ru": {
-        "adverbs": {
-            "значительно", "существенно", "чрезвычайно", "безусловно",
-            "несомненно", "неоспоримо", "принципиально", "непосредственно",
-            "кардинально", "всесторонне", "исключительно", "преимущественно",
-        },
-        "adjectives": {
-            "комплексный", "всеобъемлющий", "инновационный", "ключевой",
-            "основополагающий", "первостепенный", "фундаментальный",
-            "принципиальный", "многогранный", "всесторонний",
-        },
-        "verbs": {
-            "осуществлять", "реализовывать", "способствовать",
-            "обеспечивать", "характеризоваться", "представлять собой",
-            "являться", "функционировать", "оказывать влияние",
-        },
-        "connectors": {
-            "однако", "тем не менее", "вместе с тем", "кроме того",
-            "более того", "помимо этого", "таким образом",
-            "следовательно", "безусловно", "несомненно",
-            "в заключение", "подводя итог", "исходя из вышесказанного",
-            "необходимо отметить", "стоит подчеркнуть",
-        },
-        "phrases": {
-            "играет ключевую роль", "имеет первостепенное значение",
-            "в современном мире", "на сегодняшний день",
-            "широкий спектр", "не подлежит сомнению",
-            "является одним из", "представляет собой",
-            "в рамках данного", "с учётом того что",
-            "необходимо подчеркнуть", "следует отметить",
-        },
-    },
-    "uk": {
-        "adverbs": {
-            "значно", "суттєво", "надзвичайно", "безумовно",
-            "безсумнівно", "незаперечно", "принципово", "безпосередньо",
-            "кардинально", "всебічно", "виключно", "переважно",
-        },
-        "adjectives": {
-            "комплексний", "всеосяжний", "інноваційний", "ключовий",
-            "основоположний", "першочерговий", "фундаментальний",
-            "принциповий", "багатогранний", "всебічний",
-        },
-        "connectors": {
-            "однак", "тим не менш", "разом з тим", "крім того",
-            "більш того", "окрім цього", "таким чином",
-            "отже", "безумовно", "безсумнівно",
-            "на завершення", "підсумовуючи",
-            "необхідно зазначити", "варто підкреслити",
-        },
-        "phrases": {
-            "відіграє ключову роль", "має першочергове значення",
-            "у сучасному світі", "на сьогоднішній день",
-            "широкий спектр", "є одним з",
-            "являє собою", "у рамках даного",
-        },
-    },
-}
+def _load_ai_words() -> dict[str, dict[str, set[str]]]:
+    """Load AI marker words from external JSON (texthumanize.ai_markers).
+
+    Falls back to built-in markers in ai_markers module if JSON
+    files don't exist.  Returns dict[lang → dict[category → set]].
+    """
+    from texthumanize.ai_markers import load_all_markers
+    return load_all_markers()
+
+
+_AI_WORDS: dict[str, dict[str, set[str]]] = {}
+
+
+def _get_ai_words() -> dict[str, dict[str, set[str]]]:
+    """Lazy-load and cache AI words on first use."""
+    global _AI_WORDS
+    if not _AI_WORDS:
+        _AI_WORDS = _load_ai_words()
+    return _AI_WORDS
 
 # ═══════════════════════════════════════════════════════════════
 #  ОСНОВНОЙ ДЕТЕКТОР
@@ -1033,7 +953,8 @@ class AIDetector:
         text_lower = text.lower()
         total_words = len(words)
 
-        ai_dict = _AI_WORDS.get(lang, _AI_WORDS.get("en", {}))
+        all_ai = _get_ai_words()
+        ai_dict = all_ai.get(lang, all_ai.get("en", {}))
 
         total_hits = 0
         weighted_hits = 0.0
