@@ -10,6 +10,7 @@ jobs:
   python:
     name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -40,7 +41,7 @@ jobs:
         env:
           TEXTHUMANIZE_TIMEOUT: "120"
         run: |
-          pytest --cov=texthumanize --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -v --tb=short --timeout=300
+          pytest --cov=texthumanize --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -v --tb=short --timeout=120 -x
 
       - name: Type check with mypy (Python 3.12 only)
         if: matrix.python-version == '3.12'

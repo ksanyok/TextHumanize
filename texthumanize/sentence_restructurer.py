@@ -118,15 +118,15 @@ def inject_contractions(
         rng = random.Random()
 
     for pat, _full, short in _CONTRACTION_PATTERNS:
-        def _replacer(m: re.Match, _short: str = short) -> str:
+        def _replacer(m: re.Match, _short: str = short) -> str:  # type: ignore[no-any-return]
             if rng.random() > probability:
-                return m.group()
-            orig = m.group()
+                return str(m.group())
+            orig: str = str(m.group())
             # Preserve original capitalization
             if orig[0].isupper():
                 return _short[0].upper() + _short[1:]
             return _short
-        text = pat.sub(_replacer, text)
+        text = str(pat.sub(_replacer, text))
 
     return text
 
@@ -476,10 +476,65 @@ _FORMAL_TO_INFORMAL_UK: dict[str, list[str]] = {
     "відповідно": ["значить", "як наслідок"],
 }
 
+_FORMAL_TO_INFORMAL_DE: dict[str, list[str]] = {
+    "darüber hinaus": ["außerdem", "und"],
+    "nichtsdestotrotz": ["trotzdem", "aber"],
+    "infolgedessen": ["deshalb", "darum"],
+    "des Weiteren": ["außerdem", "auch"],
+    "im Hinblick auf": ["mit Blick auf", "was … angeht"],
+    "unter Berücksichtigung": ["mit Blick auf", "angesichts"],
+    "aufgrund der Tatsache": ["weil", "denn"],
+    "zum gegenwärtigen Zeitpunkt": ["jetzt", "gerade", "momentan"],
+    "in Bezug auf": ["zu", "bei", "was … betrifft"],
+    "letztendlich": ["am Ende", "schließlich"],
+    "nichtsdestoweniger": ["trotzdem", "aber"],
+    "hinsichtlich": ["was … angeht", "bei"],
+    "demzufolge": ["also", "deshalb", "darum"],
+    "dessen ungeachtet": ["trotzdem", "aber"],
+    "gleichwohl": ["trotzdem", "doch"],
+}
+
+_FORMAL_TO_INFORMAL_FR: dict[str, list[str]] = {
+    "néanmoins": ["quand même", "pourtant"],
+    "par conséquent": ["du coup", "donc"],
+    "en outre": ["en plus", "et"],
+    "c'est pourquoi": ["voilà pourquoi", "du coup"],
+    "toutefois": ["quand même", "pourtant"],
+    "il convient de": ["il faut", "on doit"],
+    "en ce qui concerne": ["pour ce qui est de", "côté"],
+    "au demeurant": ["d'ailleurs", "par ailleurs"],
+    "de surcroît": ["en plus", "et"],
+    "par ailleurs": ["d'un autre côté", "sinon"],
+    "en revanche": ["par contre", "mais"],
+    "à cet égard": ["à ce sujet", "là-dessus"],
+    "dans la mesure où": ["vu que", "puisque"],
+    "afin de": ["pour"],
+}
+
+_FORMAL_TO_INFORMAL_ES: dict[str, list[str]] = {
+    "sin embargo": ["pero", "aunque"],
+    "no obstante": ["pero", "aun así"],
+    "por consiguiente": ["por eso", "así que"],
+    "asimismo": ["también", "y"],
+    "por lo tanto": ["por eso", "así que"],
+    "en lo que respecta a": ["en cuanto a", "sobre"],
+    "con el objeto de": ["para"],
+    "a pesar de ello": ["aun así", "de todas formas"],
+    "cabe señalar": ["vale decir", "digamos"],
+    "es menester": ["hay que", "se necesita"],
+    "dicho lo cual": ["con todo", "así y todo"],
+    "así las cosas": ["entonces", "en ese caso"],
+    "de igual modo": ["igual", "también"],
+    "en virtud de": ["por", "gracias a"],
+}
+
 _FORMAL_TO_INFORMAL_ALL = {
     "en": _FORMAL_TO_INFORMAL_EN,
     "ru": _FORMAL_TO_INFORMAL_RU,
     "uk": _FORMAL_TO_INFORMAL_UK,
+    "de": _FORMAL_TO_INFORMAL_DE,
+    "fr": _FORMAL_TO_INFORMAL_FR,
+    "es": _FORMAL_TO_INFORMAL_ES,
 }
 
 _FORMAL_TO_INFORMAL_RE: dict[str, list[tuple[re.Pattern[str], list[str]]]] = {}
@@ -508,15 +563,15 @@ def mix_register(
         rng = random.Random()
 
     for pat, replacements in _FORMAL_TO_INFORMAL_RE[lang]:
-        def _replacer(m: re.Match, _repls: list[str] = replacements) -> str:
+        def _replacer(m: re.Match, _repls: list[str] = replacements) -> str:  # type: ignore[no-any-return]
             if rng.random() > probability:
-                return m.group()
+                return str(m.group())
             replacement = rng.choice(_repls)
-            orig = m.group()
+            orig: str = str(m.group())
             if orig[0].isupper():
                 replacement = replacement[0].upper() + replacement[1:]
             return replacement
-        text = pat.sub(_replacer, text)
+        text = str(pat.sub(_replacer, text))
 
     return text
 
@@ -833,16 +888,16 @@ def inject_dashes(
     if rng is None:
         rng = random.Random()
 
-    def _dash_replacer(m: re.Match) -> str:
+    def _dash_replacer(m: re.Match) -> str:  # type: ignore[no-any-return]
         conj = m.group(1)
         if rng.random() < intensity * 0.35:
             # 50% chance: em-dash only, 50%: em-dash + conjunction
             if rng.random() < 0.5:
                 return f" \u2014 {conj} "
             return " \u2014 "
-        return m.group(0)
+        return str(m.group(0))
 
-    return pattern.sub(_dash_replacer, text)
+    return str(pattern.sub(_dash_replacer, text))
 
 
 # Also inject parenthetical asides with dashes
@@ -908,11 +963,225 @@ def inject_parenthetical_dashes(
     max_inject = max(1, int(len(sentences) * 0.15))
 
     for sent in sentences:
-        if injected < max_inject and rng.random() < intensity * 0.12:
+        # Skip sentences that already contain em-dash asides
+        if injected < max_inject and "\u2014" not in sent and rng.random() < intensity * 0.12:
             aside = rng.choice(asides)
             if sent.endswith("."):
                 sent = sent[:-1] + aside + "."
                 injected += 1
+        result.append(sent)
+
+    return " ".join(result)
+
+
+# ═══════════════════════════════════════════════════════════════
+#  Deep sentence-level transforms (P0.2)
+# ═══════════════════════════════════════════════════════════════
+
+def _front_adverbial_clause(sent: str, lang: str, rng: random.Random) -> str | None:
+    """Move a trailing adverbial clause to the front of the sentence.
+
+    "The project succeeded because the team worked hard."
+    → "Because the team worked hard, the project succeeded."
+
+    This breaks the uniform SVO pattern that detectors key on.
+    """
+    if lang == "en":
+        patterns = [
+            (r'^(.{15,}?)\s+(because\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?)\s+(although\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?)\s+(while\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?)\s+(since\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?)\s+(when\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?)\s+(if\s+.{8,})\.$', r'\2, \1.'),
+        ]
+    elif lang == "ru":
+        patterns = [
+            (r'^(.{15,}?),?\s+(потому что\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?),?\s+(хотя\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?),?\s+(когда\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?),?\s+(если\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?),?\s+(поскольку\s+.{8,})\.$', r'\2, \1.'),
+        ]
+    elif lang == "uk":
+        patterns = [
+            (r'^(.{15,}?),?\s+(тому що\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?),?\s+(хоча\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?),?\s+(коли\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?),?\s+(якщо\s+.{8,})\.$', r'\2, \1.'),
+            (r'^(.{15,}?),?\s+(оскільки\s+.{8,})\.$', r'\2, \1.'),
+        ]
+    else:
+        return None
+
+    for pat_str, repl in patterns:
+        m = re.match(pat_str, sent, re.IGNORECASE)
+        if m:
+            result = re.sub(pat_str, repl, sent, flags=re.IGNORECASE)
+            # Capitalize first letter
+            if result and result[0].islower():
+                result = result[0].upper() + result[1:]
+            # Lowercase the moved main clause after comma
+            comma_pos = result.find(', ')
+            if comma_pos > 0 and comma_pos + 2 < len(result):
+                after = result[comma_pos + 2:]
+                if after and after[0].isupper() and after[:2] not in ('I ', "I'"):
+                    result = result[:comma_pos + 2] + after[0].lower() + after[1:]
+            return result
+    return None
+
+
+def _voice_alternation_en(sent: str, rng: random.Random) -> str | None:
+    """Convert simple passive voice to active voice (EN only).
+
+    "The report was written by the team."
+    → "The team wrote the report."
+
+    Only handles simple "X was VBN by Y" patterns to avoid errors.
+    """
+    m = re.match(
+        r'^(The |A |An |This |That |These |Those )?(.+?)\s+'
+        r'(?:was|were|is|are|has been|have been)\s+'
+        r'(\w+ed)\s+by\s+(.+?)(\.|!|\?)$',
+        sent, re.IGNORECASE,
+    )
+    if not m:
+        return None
+
+    _det, subject, verb_pp, agent, punct = m.groups()
+    # Simple past-participle → past tense (for regular verbs)
+    if verb_pp.endswith('ed'):
+        # Keep past tense
+        active_verb = verb_pp
+    else:
+        return None
+
+    agent = agent.strip()
+    subject = subject.strip()
+
+    # Capitalize agent, lowercase subject
+    if agent and agent[0].islower():
+        agent = agent[0].upper() + agent[1:]
+    result = f"{agent} {active_verb} the {subject.lower()}{punct}"
+    # Ensure reasonable length
+    if len(result.split()) < 3 or len(result.split()) > 25:
+        return None
+    return result
+
+
+def _insert_personal_opener(sent: str, lang: str, rng: random.Random) -> str | None:
+    """Insert a natural personal opening to a factual statement.
+
+    "The climate is changing rapidly."
+    → "From what I can tell, the climate is changing rapidly."
+
+    These personal openers are strong human signals as AI avoids them.
+    """
+    # Only apply to sentences starting with articles/determiners
+    if lang == "en":
+        if not re.match(r'^(The|A|An|This|That|It|There)\s', sent, re.IGNORECASE):
+            return None
+        openers = [
+            "From what I can tell, ",
+            "The way I see it, ",
+            "Honestly, ",
+            "If you ask me, ",
+            "As far as I know, ",
+            "In my experience, ",
+            "Truth be told, ",
+            "To be fair, ",
+        ]
+    elif lang == "ru":
+        if not re.match(r'^(Это|Тот|Та|То|Те|В|На|По)\s', sent, re.IGNORECASE):
+            return None
+        openers = [
+            "По моему опыту, ",
+            "Как мне кажется, ",
+            "Честно говоря, ",
+            "На мой взгляд, ",
+            "Если не ошибаюсь, ",
+            "Насколько я знаю, ",
+            "Скажу прямо — ",
+        ]
+    elif lang == "uk":
+        if not re.match(r'^(Це|Той|Та|Те|В|На|По)\s', sent, re.IGNORECASE):
+            return None
+        openers = [
+            "З мого досвіду, ",
+            "Як на мене, ",
+            "Чесно кажучи, ",
+            "На мій погляд, ",
+            "Якщо не помиляюсь, ",
+            "Наскільки я знаю, ",
+            "Скажу прямо — ",
+        ]
+    else:
+        return None
+
+    opener = rng.choice(openers)
+    # Lowercase the original sentence start after opener
+    if sent and sent[0].isupper():
+        sent = sent[0].lower() + sent[1:]
+    return opener + sent
+
+
+def apply_deep_sentence_transforms(
+    text: str,
+    lang: str,
+    rng: random.Random | None = None,
+    intensity: float = 0.5,
+) -> str:
+    """Apply deep sentence-level structural transforms.
+
+    These transforms change sentence structure, not just vocabulary:
+    - Adverbial clause fronting
+    - Voice alternation (passive → active)
+    - Personal opener injection
+
+    Applied at moderate probability to maintain natural distribution.
+    """
+    if not text or not text.strip():
+        return text
+    if rng is None:
+        rng = random.Random()
+
+    sentences = split_sentences(text, lang)
+    if len(sentences) < 3:
+        return text
+
+    result: list[str] = []
+    transforms = 0
+    max_transforms = max(1, int(len(sentences) * 0.25))
+
+    for sent in sentences:
+        if transforms >= max_transforms:
+            result.append(sent)
+            continue
+
+        # Try adverbial clause fronting (highest impact)
+        if rng.random() < intensity * 0.30:
+            fronted = _front_adverbial_clause(sent, lang, rng)
+            if fronted:
+                result.append(fronted)
+                transforms += 1
+                continue
+
+        # Try voice alternation (EN only)
+        if lang == "en" and rng.random() < intensity * 0.15:
+            active = _voice_alternation_en(sent, rng)
+            if active:
+                result.append(active)
+                transforms += 1
+                continue
+
+        # Try personal opener injection (strong human signal)
+        if rng.random() < intensity * 0.12:
+            opened = _insert_personal_opener(sent, lang, rng)
+            if opened:
+                result.append(opened)
+                transforms += 1
+                continue
+
         result.append(sent)
 
     return " ".join(result)
@@ -1054,6 +1323,16 @@ class SentenceRestructurer:
             text = inject_parenthetical_dashes(text, self.lang, rng=self._rng, intensity=prob)
             if text != before:
                 self._record_change("parenthetical_dashes", "Added parenthetical asides with em-dashes")
+
+        # 10. Deep sentence-level transforms (clause fronting, voice
+        #     alternation, personal openers) — all languages
+        if prob >= 0.30:
+            before = text
+            text = apply_deep_sentence_transforms(
+                text, self.lang, rng=self._rng, intensity=prob,
+            )
+            if text != before:
+                self._record_change("deep_sentence_transforms", "Applied deep structural sentence transforms")
 
         return text
 

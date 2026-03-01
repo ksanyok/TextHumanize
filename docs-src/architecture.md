@@ -3,7 +3,7 @@
 ## Module Structure
 
 ```
-texthumanize/                    # 75 Python modules, 42,500+ lines
+texthumanize/                    # 95 Python modules, 56,800+ lines
 ├── core.py                      # Facade: humanize(), analyze(), detect_ai()
 ├── async_api.py                 # Async wrappers: async_humanize(), async_detect_ai()
 ├── pipeline.py                  # 17-stage pipeline + adaptive intensity

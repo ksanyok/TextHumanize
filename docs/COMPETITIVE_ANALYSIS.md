@@ -123,7 +123,7 @@ TextHumanize occupies a unique position in the text humanization market: it is t
 | **Zero dependencies** | ✅ | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
 | **Deterministic output** | ✅ Seed-based | ❌ | ❌ | ❌ | ❌ | ❌ | N/A | N/A |
 | **Languages** | 14 + universal | 50+ | ~1 (English) | 50+ | Multi (varies) | ~3 | Multi | Multi |
-| **Processing speed** | 30K+ chars/sec | 2–10 sec/request | 2–10 sec/request | 2–10 sec/request | 2–5 sec/request | 2–10 sec/request | 1–5 sec/request | 1–5 sec/request |
+| **Processing speed** | ~3K chars/sec | 2–10 sec/request | 2–10 sec/request | 2–10 sec/request | 2–5 sec/request | 2–10 sec/request | 1–5 sec/request | 1–5 sec/request |
 | **AI detection built-in** | ✅ 13 metrics | ✅ Multi-detector | ✅ Built-in | ✅ Built-in | ✅ AI Detector | ✅ Strict mode | ✅ Core product | ✅ Core product |
 | **Humanization** | ✅ 17-stage pipeline | ✅ LLM-based | ✅ LLM-based | ✅ LLM-based | ✅ Paraphraser | ✅ Ghost Pro | ❌ | ❌ |
 | **Paraphrasing** | ✅ Syntactic | ✅ | ✅ | ✅ | ✅ (7 modes) | ✅ | ❌ | ❌ |
@@ -144,7 +144,7 @@ TextHumanize occupies a unique position in the text humanization market: it is t
 | **WordPress plugin** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **Docker support** | ✅ | N/A (SaaS) | N/A | N/A | N/A | N/A | N/A | N/A |
 | **LMS integration** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Canvas, Google Classroom | ❌ |
-| **Test coverage** | 1,802 tests | Unknown | Unknown | Unknown | Unknown | Unknown | Unknown | Unknown |
+| **Test coverage** | 1,995 tests | Unknown | Unknown | Unknown | Unknown | Unknown | Unknown | Unknown |
 | **Documentation** | ✅ MkDocs + cookbook | ✅ Blog/FAQ | ✅ FAQ | ✅ FAQ | ✅ Help center | ✅ Blog | ✅ Docs + API ref | ✅ Docs + API ref |
 | **Self-hostable** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
@@ -176,7 +176,7 @@ TextHumanize occupies a unique position in the text humanization market: it is t
 | **Cost at scale** | Flat $199–$1,499/year vs. per-word billing that scales linearly |
 | **17-stage pipeline transparency** | Full `explain()` audit trail. Undetectable.ai is a black box |
 | **SDK integration** | Embeddable Python/JS/PHP library. Undetectable.ai requires HTTP API calls |
-| **Speed** | 30K+ chars/sec locally vs. 2–10 seconds per API round-trip |
+| **Speed** | ~3K chars/sec locally vs. 2–10 seconds per API round-trip |
 | **Plugin system** | Extensible pipeline. Undetectable.ai offers no customization |
 
 ### vs. WriteHuman
@@ -391,7 +391,7 @@ TextHumanize is the **"developer's Swiss Army knife"** — the most feature-rich
 
 ### DO Compete On
 - **Privacy** (the GDPR/HIPAA angle is extremely powerful)
-- **Speed** (30K chars/sec vs. network latency is an order of magnitude difference)
+- **Speed** (~3K chars/sec vs. network latency is an order of magnitude difference)
 - **Cost at scale** ($199/year vs. $100+/month at high volume)
 - **Determinism** (reproducible processing is critical for testing, CI/CD, compliance)
 - **Transparency** (`explain()` audit trail — no other tool offers this)
@@ -403,7 +403,7 @@ TextHumanize is the **"developer's Swiss Army knife"** — the most feature-rich
 
 TextHumanize has **no direct competitor** in the open-source, offline, rule-based text humanization space. Its closest alternatives are either SaaS products (Undetectable.ai, WriteHuman, HIX Bypass) that trade privacy for output quality, or general-purpose writing tools (QuillBot) that aren't specialized for humanization.
 
-The library's technical foundation — 42K LOC, 17-stage pipeline, 14 languages, 1,802 tests, zero dependencies — is exceptional by any measure. The gap to "best in the world" is primarily in:
+The library's technical foundation — 56K+ LOC, 17-stage pipeline, 14 languages, 1,995 tests, zero dependencies — is exceptional by any measure. The gap to "best in the world" is primarily in:
 
 1. **Proving quality** against live detectors (benchmark publication)
 2. **Closing the fluency gap** with optional local LM support

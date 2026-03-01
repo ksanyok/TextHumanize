@@ -467,6 +467,30 @@ _AI_PHRASE_PATTERNS = {
         "in light of": ["given", "considering", "because of"],
         "on the other hand": ["then again", "but", "at the same time"],
         "as a matter of fact": ["actually", "in fact", "really"],
+        # --- New patterns (inspired by humano + GPTZero signals) ---
+        "it should be noted that": ["one thing:", "keep in mind —"],
+        "it is essential to": ["you need to", "the key is to"],
+        "it is crucial that": ["what matters is", "the priority is"],
+        "this serves as a testament to": ["this shows", "this proves"],
+        "this underscores the importance of": ["this highlights", "this shows why"],
+        "needless to say": ["obviously", "of course"],
+        "with that being said": ["all the same,", "still,"],
+        "it is evident that": ["clearly,", "you can see —"],
+        "for the purpose of": ["for", "to"],
+        "in the process of": ["while"],
+        "has the potential to": ["can", "might", "could"],
+        "is capable of": ["can"],
+        "take into consideration": ["consider", "keep in mind"],
+        "a significant number of": ["many", "plenty of", "quite a few"],
+        "the vast majority of": ["most", "nearly all"],
+        "despite the fact that": ["even though", "although"],
+        "in the event that": ["if"],
+        "at this point in time": ["now", "right now"],
+        "prior to": ["before"],
+        "subsequent to": ["after"],
+        "in close proximity to": ["near", "close to"],
+        "is indicative of": ["shows", "points to", "signals"],
+        "serves as an example of": ["is a good example of", "shows"],
     },
     "ru": {
         "необходимо подчеркнуть": ["стоит сказать", "отметим"],
@@ -480,6 +504,17 @@ _AI_PHRASE_PATTERNS = {
         "широкий спектр": ["много", "разные", "целый ряд"],
         "не подлежит сомнению": ["ясно", "очевидно", "понятно"],
         "с учётом того что": ["учитывая", "раз", "поскольку"],
+        # --- New patterns ---
+        "представляет собой": ["это", "является", "выступает"],
+        "в значительной степени": ["во многом", "сильно", "заметно"],
+        "в контексте данного": ["тут", "здесь", "в этом"],
+        "является неотъемлемой частью": ["входит в", "часть", "неразрывно связан с"],
+        "оказывает существенное влияние": ["сильно влияет", "влияет", "сказывается на"],
+        "в процессе реализации": ["при выполнении", "во время", "в ходе"],
+        "с точки зрения": ["если смотреть на", "по части"],
+        "целесообразно отметить": ["стоит сказать", "добавим"],
+        "тот факт, что": ["то, что"],
+        "исходя из вышеизложенного": ["итого", "резюмируя", "в итоге"],
     },
     "uk": {
         "необхідно підкреслити": ["варто сказати", "зазначимо"],
@@ -792,6 +827,80 @@ for _lang_data in _PERPLEXITY_BOOSTERS.values():
     for _cat in _lang_data:
         _lang_data[_cat] = list(dict.fromkeys(_lang_data[_cat]))
 
+# ─── Semantic Intensity Clusters ────────────────────────────────
+# Замена «very/really + adj» → одно ёмкое слово.
+# Это уменьшает word-count и повышает лексическую плотность — признак
+# человеческого текста.  Сортировано по частоте в AI-тексте.
+_INTENSITY_CLUSTERS: dict[str, list[tuple[str, list[str]]]] = {
+    "en": [
+        # (паттерн regex, варианты замены)
+        (r"\bvery good\b", ["excellent", "great", "superb"]),
+        (r"\bvery bad\b", ["terrible", "awful", "dreadful"]),
+        (r"\bvery big\b", ["huge", "massive", "enormous"]),
+        (r"\bvery small\b", ["tiny", "minuscule", "compact"]),
+        (r"\bvery important\b", ["crucial", "vital", "key"]),
+        (r"\bvery difficult\b", ["tough", "grueling", "daunting"]),
+        (r"\bvery easy\b", ["effortless", "simple", "a breeze"]),
+        (r"\bvery fast\b", ["rapid", "lightning-fast", "swift"]),
+        (r"\bvery slow\b", ["sluggish", "glacial", "plodding"]),
+        (r"\bvery old\b", ["ancient", "aged", "antique"]),
+        (r"\bvery new\b", ["brand-new", "fresh", "cutting-edge"]),
+        (r"\bvery hot\b", ["scorching", "blazing", "boiling"]),
+        (r"\bvery cold\b", ["freezing", "frigid", "icy"]),
+        (r"\bvery happy\b", ["thrilled", "ecstatic", "overjoyed"]),
+        (r"\bvery sad\b", ["heartbroken", "devastated", "miserable"]),
+        (r"\bvery tired\b", ["exhausted", "drained", "worn out"]),
+        (r"\bvery hungry\b", ["starving", "famished", "ravenous"]),
+        (r"\bvery beautiful\b", ["stunning", "gorgeous", "breathtaking"]),
+        (r"\bvery ugly\b", ["hideous", "ghastly", "unsightly"]),
+        (r"\bvery quiet\b", ["silent", "hushed", "muted"]),
+        (r"\bvery loud\b", ["deafening", "thunderous", "blaring"]),
+        (r"\bvery rich\b", ["wealthy", "affluent", "loaded"]),
+        (r"\bvery poor\b", ["destitute", "impoverished", "broke"]),
+        (r"\bvery strong\b", ["powerful", "mighty", "robust"]),
+        (r"\bvery weak\b", ["feeble", "frail", "fragile"]),
+        (r"\bvery bright\b", ["brilliant", "radiant", "dazzling"]),
+        (r"\bvery dark\b", ["pitch-black", "dim", "murky"]),
+        (r"\bvery scared\b", ["terrified", "petrified", "panic-stricken"]),
+        (r"\bvery angry\b", ["furious", "livid", "enraged"]),
+        (r"\bvery simple\b", ["straightforward", "basic", "elementary"]),
+        (r"\bvery complex\b", ["intricate", "elaborate", "convoluted"]),
+        (r"\breally good\b", ["excellent", "outstanding", "top-notch"]),
+        (r"\breally bad\b", ["terrible", "horrible", "atrocious"]),
+        (r"\breally big\b", ["massive", "gigantic", "colossal"]),
+        (r"\breally important\b", ["essential", "critical", "paramount"]),
+        (r"\breally difficult\b", ["extremely tough", "really hard", "a real challenge"]),
+        (r"\bextremely important\b", ["absolutely vital", "mission-critical", "essential"]),
+        (r"\bhighly significant\b", ["pivotal", "game-changing", "landmark"]),
+        (r"\bvery interesting\b", ["fascinating", "captivating", "gripping"]),
+        (r"\bvery effective\b", ["highly potent", "remarkably efficient", "spot-on"]),
+    ],
+    "ru": [
+        (r"\bочень хорош(?:ий|ая|ее|ие)\b", ["отличн\\1", "превосходн\\1", "великолепн\\1"]),
+        (r"\bочень плох(?:ой|ая|ое|ие)\b", ["ужасн\\1", "отвратительн\\1"]),
+        (r"\bочень больш(?:ой|ая|ое|ие)\b", ["огромн\\1", "колоссальн\\1", "гигантск\\1"]),
+        (r"\bочень маленьк(?:ий|ая|ое|ие)\b", ["крошечн\\1", "миниатюрн\\1"]),
+        (r"\bочень важн(?:ый|ая|ое|ые)\b", ["ключев\\1", "критическ\\1"]),
+        (r"\bочень сложн(?:ый|ая|ое|ые)\b", ["крайне непрост\\1", "головоломн\\1"]),
+        (r"\bочень быстр(?:ый|ая|ое|ые)\b", ["молниеносн\\1", "стремительн\\1"]),
+        (r"\bочень медленн(?:ый|ая|ое|ые)\b", ["черепаш\\1", "вял\\1"]),
+        (r"\bочень красив(?:ый|ая|ое|ые)\b", ["потрясающ\\1", "великолепн\\1"]),
+        (r"\bочень странн(?:ый|ая|ое|ые)\b", ["диковинн\\1", "причудлив\\1"]),
+        (r"\bочень интересн(?:ый|ая|ое|ые)\b", ["увлекательн\\1", "захватывающ\\1"]),
+    ],
+    "uk": [
+        (r"\bдуже гарн(?:ий|а|е|і)\b", ["чудов\\1", "прекрасн\\1", "розкішн\\1"]),
+        (r"\bдуже поган(?:ий|а|е|і)\b", ["жахлив\\1", "огидн\\1"]),
+        (r"\bдуже велик(?:ий|а|е|і)\b", ["величезн\\1", "колосальн\\1"]),
+        (r"\bдуже маленьк(?:ий|а|е|і)\b", ["крихітн\\1", "мініатюрн\\1"]),
+        (r"\bдуже важлив(?:ий|а|е|і)\b", ["ключов\\1", "критичн\\1"]),
+        (r"\bдуже складн(?:ий|а|е|і)\b", ["вкрай непрост\\1", "заплутан\\1"]),
+        (r"\bдуже швидк(?:ий|а|е|і)\b", ["блискавичн\\1", "стрімк\\1"]),
+        (r"\bдуже цікав(?:ий|а|е|і)\b", ["захопливо цікав\\1", "вражаюч\\1"]),
+    ],
+}
+
+
 class TextNaturalizer:
     """Модуль стилевой натурализации текста.
 
@@ -852,6 +961,11 @@ class TextNaturalizer:
         # feature 34 transition_word_rate)
         text = self._delete_transition_starters(text, prob)
 
+        # 2b. Semantic intensity clusters — замена «very + adj» одним
+        # более выразительным прилагательным (идея из humano).
+        # EN: "very good" → "excellent", RU: "очень хороший" → "отличный"
+        text = self._collapse_intensity_clusters(text, prob)
+
         # 3-5: Эти методы используют split_sentences + join → обрабатываем
         # каждый абзац/строку отдельно, чтобы не разрушать структуру
         text = self._per_paragraph(text, self._inject_burstiness, prob)
@@ -874,9 +988,8 @@ class TextNaturalizer:
         if self.intensity >= 30:
             text = self._split_long_paragraphs(text)
 
-        # 6. Контрактива (regex — безопасно)
-        if self.lang == "en" and self.profile in ("chat", "web"):
-            text = self._apply_contractions(text, prob)
+        # 6. Контрактива — перенесена в sentence_restructurer.inject_contractions()
+        # (75+ паттернов vs 15 здесь); не дублируем.
 
         return text
 
@@ -972,8 +1085,9 @@ class TextNaturalizer:
 
             # Collocation-aware synonym selection:
             # extract context words around the match for scoring
-            ctx_start = max(0, match.start() - 120)
-            ctx_end = min(len(text), match.end() + 120)
+            # Use wider context window (200 chars) for better collocation matching
+            ctx_start = max(0, match.start() - 200)
+            ctx_end = min(len(text), match.end() + 200)
             ctx_text = text[ctx_start:match.start()] + text[match.end():ctx_end]
             ctx_words = re.findall(r'[\w]+', ctx_text.lower())
 
@@ -1095,6 +1209,48 @@ class TextNaturalizer:
 
         return text
 
+    # ─── Semantic intensity clusters ──────────────────────────
+
+    def _collapse_intensity_clusters(self, text: str, prob: float) -> str:
+        """Collapse «very/really + adjective» into a single vivid word.
+
+        Reduces word-count and raises lexical density — both are
+        human-text markers.  E.g. "very good" → "excellent".
+        """
+        clusters = _INTENSITY_CLUSTERS.get(self.lang)
+        if not clusters:
+            return text
+
+        replacements = 0
+        max_replacements = max(2, int(len(text) / 400))
+
+        for pattern, alternatives in clusters:
+            if replacements >= max_replacements:
+                break
+            if self.rng.random() > prob * 0.6:
+                continue
+            m = re.search(pattern, text, flags=re.IGNORECASE)
+            if m:
+                original = m.group(0)
+                replacement = self.rng.choice(alternatives)
+                # For RU/UK patterns with backrefs, apply sub directly
+                if "\\" in replacement:
+                    text = re.sub(pattern, replacement, text,
+                                  count=1, flags=re.IGNORECASE)
+                else:
+                    # Preserve original capitalization
+                    if original[0].isupper():
+                        replacement = replacement[0].upper() + replacement[1:]
+                    text = text[:m.start()] + replacement + text[m.end():]
+                replacements += 1
+                self.changes.append({
+                    "type": "naturalize_intensity_cluster",
+                    "original": original,
+                    "replacement": replacement,
+                })
+
+        return text
+
     def _inject_burstiness(self, text: str, prob: float) -> str:
         """Внедрить вариативность длины предложений.
 
@@ -1143,6 +1299,10 @@ class TextNaturalizer:
             # Стратегия 2: Объединить два коротких (< 8 слов каждое)
             elif (wlen <= 6 and i + 1 < len(result)
                   and len(result[i + 1].split()) <= 8
+                  and not re.search(r'(?:^|\n)\d+[.)]\s?', sent)
+                  and not re.search(r'(?:^|\n)\d+[.)]\s?', result[i + 1])
+                  and not re.search(r'\d+[.)]$', sent.rstrip())
+                  and not re.search(r'\d+[.)]$', result[i + 1].rstrip())
                   and self.rng.random() < prob * 0.5):
                 # Объединяем через тире или запятую
                 first = sent.rstrip().rstrip('.!?')
@@ -1162,11 +1322,13 @@ class TextNaturalizer:
 
             # Стратегия 3: Вставить короткий фрагмент для разбивки
             # монотонности (3 подряд "средних" предложения)
+            # Cap probability at 0.20 to prevent over-insertion of
+            # discourse fragments which themselves become AI signals.
             elif (i >= 2 and wlen > 8
                   and abs(wlen - avg) < avg * 0.25
                   and abs(len(result[i-1].split()) - avg) < avg * 0.25
                   and abs(len(result[i-2].split()) - avg) < avg * 0.25
-                  and self.rng.random() < prob * 0.35):
+                  and self.rng.random() < min(prob * 0.35, 0.20)):
                 fragment = self._get_burstiness_fragment()
                 if fragment:
                     result[i] = fragment + " " + sent
@@ -1300,9 +1462,9 @@ class TextNaturalizer:
 
             # Стратегия 2 (30%): Вставить вводное тире (parenthetical)
             if self.rng.random() < prob * 0.3:
-                new_sent = self._insert_dash_aside(sent)
-                if new_sent and new_sent != sent:
-                    result[i] = new_sent
+                aside_sent = self._insert_dash_aside(sent)
+                if aside_sent and aside_sent != sent:
+                    result[i] = aside_sent
                     injected += 1
                     self.changes.append({
                         "type": "dash_injection",
@@ -1333,6 +1495,9 @@ class TextNaturalizer:
 
     def _insert_dash_aside(self, sent: str) -> str | None:
         """Вставить вводную фразу в тирах внутри предложения."""
+        # Guard: skip if sentence already contains an em-dash aside
+        if "\u2014" in sent:
+            return None
         words = sent.split()
         if len(words) < 10:
             return None

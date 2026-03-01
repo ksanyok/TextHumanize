@@ -44,7 +44,7 @@ try:
     from importlib.metadata import version as _meta_version
     __version__ = _meta_version("texthumanize")
 except Exception:
-    __version__ = "0.23.0"
+    __version__ = "0.25.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 

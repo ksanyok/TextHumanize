@@ -20,168 +20,173 @@ from texthumanize.sentence_split import split_sentences
 
 logger = logging.getLogger(__name__)
 
-# Переходные слова для вставки между абзацами (по языкам и категориям)
+# Переходные слова для вставки между абзацами (по языкам и категориям).
+# ВАЖНО: Используем ТОЛЬКО естественные, «человечные» переходы.
+# Формальные маркеры ("Moreover", "Furthermore", "Therefore", "Consequently"...)
+# являются AI-индикаторами и НЕ ДОЛЖНЫ вставляться, т.к. naturalizer их удаляет.
 _TRANSITION_INSERTIONS: dict[str, dict[str, list[str]]] = {
     "en": {
         "additive": [
-            "Moreover, ", "Furthermore, ", "Additionally, ",
-            "In addition, ", "What is more, ", "Besides, ",
+            "On top of that, ", "Plus, ", "And ",
+            "Also worth noting — ", "Along the same lines, ",
+            "Another thing: ",
         ],
         "adversative": [
-            "However, ", "Nevertheless, ", "On the other hand, ",
-            "In contrast, ", "Yet, ", "Still, ",
+            "That said, ", "But ", "Then again, ",
+            "At the same time, ", "Still, ",
+            "Oddly enough, ",
         ],
         "causal": [
-            "Therefore, ", "Consequently, ", "As a result, ",
-            "Thus, ", "Hence, ", "Accordingly, ",
+            "So ", "Because of this, ", "That's why ",
+            "This means ", "Naturally, ",
         ],
         "sequential": [
-            "Next, ", "Then, ", "Subsequently, ",
-            "Meanwhile, ", "Afterward, ",
+            "Next up, ", "From there, ", "After that, ",
+            "Moving on, ", "Then ",
         ],
     },
     "ru": {
         "additive": [
-            "Кроме того, ", "Помимо этого, ", "Также ",
-            "Более того, ", "Вдобавок, ", "К тому же, ",
+            "Ещё один момент: ", "Плюс к этому ", "А ещё ",
+            "И ", "Стоит добавить, что ", "К тому же ",
         ],
         "adversative": [
-            "Однако ", "Тем не менее, ", "С другой стороны, ",
-            "Впрочем, ", "Вместе с тем, ", "Всё же ",
+            "Правда, ", "Но ", "При этом ",
+            "Впрочем, ", "Хотя ", "С другой стороны, ",
         ],
         "causal": [
-            "Поэтому ", "Следовательно, ", "В результате ",
-            "Таким образом, ", "Благодаря этому, ",
+            "Поэтому ", "Отсюда и ", "Из-за этого ",
+            "А значит, ", "Вот почему ",
         ],
         "sequential": [
-            "Далее, ", "Затем ", "После этого ",
-            "Вслед за этим, ", "На следующем этапе ",
+            "Дальше — ", "Потом ", "После этого ",
+            "Следующий шаг: ", "Идём дальше. ",
         ],
     },
     "uk": {
         "additive": [
-            "Крім того, ", "Окрім цього, ", "Також ",
-            "Більше того, ", "До того ж, ", "На додаток, ",
+            "Ще один момент: ", "Плюс до цього ", "А ще ",
+            "І ", "Варто додати, що ", "До того ж ",
         ],
         "adversative": [
-            "Однак ", "Проте ", "З іншого боку, ",
-            "Водночас ", "Тим не менш, ", "Все ж ",
+            "Щоправда, ", "Але ", "При цьому ",
+            "Втім, ", "Хоча ", "З іншого боку, ",
         ],
         "causal": [
-            "Тому ", "Отже, ", "В результаті ",
-            "Таким чином, ", "Завдяки цьому, ",
+            "Тому ", "Звідси й ", "Через це ",
+            "А отже, ", "Ось чому ",
         ],
         "sequential": [
-            "Далі, ", "Потім ", "Після цього ",
-            "Слідом за цим, ", "На наступному етапі ",
+            "Далі — ", "Потім ", "Після цього ",
+            "Наступний крок: ", "Ідемо далі. ",
         ],
     },
     "de": {
         "additive": [
-            "Darüber hinaus ", "Außerdem ", "Zusätzlich ",
-            "Des Weiteren ", "Ferner ", "Zudem ",
+            "Dazu kommt: ", "Außerdem ", "Und ",
+            "Noch ein Punkt: ", "Nebenbei gesagt, ", "Zudem ",
         ],
         "adversative": [
-            "Jedoch ", "Allerdings ", "Andererseits ",
-            "Dennoch ", "Gleichwohl ", "Nichtsdestotrotz ",
+            "Aber ", "Allerdings ", "Dabei ",
+            "Gleichzeitig ", "Trotzdem ",
         ],
         "causal": [
-            "Daher ", "Folglich ", "Infolgedessen ",
-            "Somit ", "Dementsprechend ",
+            "Deshalb ", "Genau deshalb ", "Das heißt, ",
+            "Darum ", "Und so ",
         ],
         "sequential": [
-            "Anschließend ", "Danach ", "Im Folgenden ",
-            "Daraufhin ", "Im nächsten Schritt ",
+            "Dann ", "Danach ", "Als Nächstes ",
+            "Weiter geht's: ", "Im nächsten Schritt ",
         ],
     },
     "fr": {
         "additive": [
-            "De plus, ", "En outre, ", "Par ailleurs, ",
-            "Qui plus est, ", "D'autre part, ",
+            "Et ", "En plus, ", "D'ailleurs, ",
+            "Autre point : ", "À cela s'ajoute ",
         ],
         "adversative": [
-            "Cependant, ", "Néanmoins, ", "Toutefois, ",
-            "En revanche, ", "Pourtant, ",
+            "Mais ", "Pourtant, ", "Alors que ",
+            "En même temps, ", "Malgré tout, ",
         ],
         "causal": [
-            "Par conséquent, ", "De ce fait, ", "Ainsi, ",
-            "C'est pourquoi ", "En conséquence, ",
+            "Du coup, ", "Voilà pourquoi ", "C'est pour ça que ",
+            "Résultat : ", "Et donc, ",
         ],
         "sequential": [
-            "Ensuite, ", "Puis, ", "Par la suite, ",
-            "Après cela, ", "À la suite de cela, ",
+            "Après, ", "Puis ", "Ensuite, ",
+            "Étape suivante : ", "On passe à ",
         ],
     },
     "es": {
         "additive": [
-            "Además, ", "Asimismo, ", "Por otra parte, ",
-            "Igualmente, ", "De igual modo, ",
+            "Y ", "Aparte de eso, ", "Otro punto: ",
+            "También ", "Sumado a esto, ",
         ],
         "adversative": [
-            "Sin embargo, ", "No obstante, ", "Por el contrario, ",
-            "A pesar de ello, ", "En cambio, ",
+            "Pero ", "Eso sí, ", "Ahora bien, ",
+            "Aunque ", "Al mismo tiempo, ",
         ],
         "causal": [
-            "Por lo tanto, ", "En consecuencia, ", "Así pues, ",
-            "Por esta razón, ", "De ahí que ",
+            "Por eso ", "Así que ", "De ahí que ",
+            "Esto explica por qué ", "Y entonces, ",
         ],
         "sequential": [
-            "A continuación, ", "Luego, ", "Seguidamente, ",
-            "Posteriormente, ", "Acto seguido, ",
+            "Después, ", "Luego, ", "Lo siguiente: ",
+            "Y entonces ", "Pasamos a ",
         ],
     },
     "it": {
         "additive": [
-            "Inoltre, ", "Per di più, ", "In aggiunta, ",
-            "Altresì, ", "D'altra parte, ",
+            "E ", "In più, ", "C'è anche ",
+            "Altro punto: ", "A questo si aggiunge che ",
         ],
         "adversative": [
-            "Tuttavia, ", "Ciononostante, ", "Al contrario, ",
-            "Nonostante ciò, ", "Eppure, ",
+            "Ma ", "Però, ", "Eppure, ",
+            "Allo stesso tempo, ", "Detto questo, ",
         ],
         "causal": [
-            "Pertanto, ", "Di conseguenza, ", "Dunque, ",
-            "Per questo motivo, ", "Da ciò deriva che ",
+            "Per questo, ", "Ecco perché ", "E allora, ",
+            "Il risultato è che ", "Dunque, ",
         ],
         "sequential": [
-            "Successivamente, ", "In seguito, ", "Poi, ",
-            "Dopodiché, ", "Nel passaggio successivo, ",
+            "Poi, ", "Dopo, ", "A seguire, ",
+            "Il passo successivo: ", "Si passa a ",
         ],
     },
     "pl": {
         "additive": [
-            "Ponadto, ", "Co więcej, ", "Dodatkowo, ",
-            "Oprócz tego, ", "Również ",
+            "I ", "Poza tym, ", "Warto też dodać, że ",
+            "Kolejna rzecz: ", "Również ",
         ],
         "adversative": [
-            "Jednakże, ", "Niemniej jednak, ", "Z drugiej strony, ",
-            "Mimo to, ", "Natomiast ",
+            "Ale ", "Tyle że ", "Z drugiej strony, ",
+            "Mimo to, ", "Jednocześnie ",
         ],
         "causal": [
-            "Dlatego ", "W konsekwencji, ", "W rezultacie, ",
-            "Z tego powodu, ", "Tym samym ",
+            "Dlatego ", "Stąd ", "Z tego powodu, ",
+            "I w efekcie ", "Właśnie dlatego ",
         ],
         "sequential": [
-            "Następnie, ", "Potem, ", "W dalszej kolejności, ",
-            "Po tym, ", "W kolejnym kroku ",
+            "Potem, ", "Dalej — ", "Następnie, ",
+            "Kolejny krok: ", "Idąc dalej, ",
         ],
     },
     "pt": {
         "additive": [
-            "Além disso, ", "Ademais, ", "Por outro lado, ",
-            "Igualmente, ", "Do mesmo modo, ",
+            "E ", "Fora isso, ", "Outro ponto: ",
+            "Vale acrescentar que ", "Também ",
         ],
         "adversative": [
-            "No entanto, ", "Todavia, ", "Pelo contrário, ",
-            "Apesar disso, ", "Porém, ",
+            "Mas ", "Só que ", "Por outro lado, ",
+            "Apesar disso, ", "Ao mesmo tempo, ",
         ],
         "causal": [
-            "Portanto, ", "Em consequência, ", "Desse modo, ",
-            "Por essa razão, ", "Assim sendo, ",
+            "Por isso, ", "É por isso que ", "Daí que ",
+            "O resultado é ", "E então, ",
         ],
         "sequential": [
-            "Em seguida, ", "Depois, ", "Posteriormente, ",
-            "Após isso, ", "No passo seguinte, ",
+            "Depois, ", "Em seguida, ", "O próximo passo: ",
+            "A partir daí, ", "Seguindo em frente, ",
         ],
     },
     "ar": {
@@ -216,39 +221,41 @@ _TRANSITION_INSERTIONS: dict[str, dict[str, list[str]]] = {
     },
 }
 
-# Альтернативные начала предложений для разнообразия
+# Альтернативные начала предложений для разнообразия.
+# Используем только разговорные, «живые» стартеры — без AI-маркеров.
 _ALTERNATIVE_OPENINGS: dict[str, list[str]] = {
     "en": [
-        "Notably, ", "Interestingly, ", "In fact, ", "Indeed, ",
-        "Specifically, ", "In particular, ", "Essentially, ",
-        "Importantly, ", "Significantly, ", "Remarkably, ",
+        "The thing is, ", "Point being, ", "What stands out is ",
+        "One clear example: ", "Here, ", "In practice, ",
+        "As it turns out, ", "A closer look shows ",
+        "This is where ", "Worth noting: ",
     ],
     "ru": [
-        "Примечательно, что ", "Важно, что ", "По сути, ",
-        "В частности, ", "Стоит отметить, что ",
-        "Особенно важно, что ", "Существенно, что ",
-        "Характерно, что ", "Интересно, что ",
+        "Дело в том, что ", "Суть в том, что ", "Тут ",
+        "На практике ", "Если присмотреться, ",
+        "Вот что бросается в глаза: ", "Здесь ",
+        "Яркий пример — ", "Как показывает практика, ",
     ],
     "uk": [
-        "Примітно, що ", "Важливо, що ", "По суті, ",
-        "Зокрема, ", "Варто зазначити, що ",
-        "Особливо важливо, що ", "Суттєво, що ",
-        "Характерно, що ", "Цікаво, що ",
+        "Справа в тому, що ", "Суть у тому, що ", "Тут ",
+        "На практиці ", "Якщо придивитися, ",
+        "Ось що впадає в очі: ", "Тут ",
+        "Яскравий приклад — ", "Як показує практика, ",
     ],
     "de": [
-        "Bemerkenswert ist, dass ", "Tatsächlich ", "Insbesondere ",
-        "Im Wesentlichen ", "Wichtig ist, dass ",
-        "Hervorzuheben ist, dass ", "Bezeichnenderweise ",
+        "Fakt ist: ", "In der Praxis ", "Wichtig dabei: ",
+        "Ein gutes Beispiel: ", "Wenn man genauer hinschaut, ",
+        "Hier zeigt sich, dass ", "Es fällt auf, dass ",
     ],
     "fr": [
-        "Il est à noter que ", "En fait, ", "En particulier, ",
-        "Essentiellement, ", "Il convient de souligner que ",
-        "De manière significative, ", "Certes, ",
+        "Le fait est que ", "En pratique, ", "Ce qui frappe, c'est ",
+        "Un bon exemple : ", "Si on y regarde de plus près, ",
+        "Là où ça se voit, c'est ", "Ce qui ressort, c'est ",
     ],
     "es": [
-        "Cabe destacar que ", "De hecho, ", "En particular, ",
-        "Esencialmente, ", "Es importante señalar que ",
-        "Significativamente, ", "Ciertamente, ",
+        "El punto es que ", "En la práctica, ", "Lo que llama la atención es ",
+        "Un buen ejemplo: ", "Si miramos más de cerca, ",
+        "Aquí se nota que ", "Lo que resalta es ",
     ],
 }
 

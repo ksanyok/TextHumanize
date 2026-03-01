@@ -3,6 +3,27 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.25.0] - 2025-07-04
+
+### Fixed
+- **Coherence repair AI marker reinsertion** — `_TRANSITION_INSERTIONS` and `_ALTERNATIVE_OPENINGS` in `coherence_repair.py` were inserting the same formal AI markers ("Moreover,", "Furthermore,", "Therefore,") that `naturalizer.py` had removed. Replaced all transitions across 9 languages (EN, RU, UK, DE, FR, ES, IT, PL, PT) with natural human alternatives ("Plus,", "But,", "So,", "Ещё один момент:", etc.).
+- **Double contraction processing** — both `naturalizer.py` (15 patterns) and `sentence_restructurer.py` (75+ patterns) applied contractions. Removed duplicate processing from `naturalizer.py` since `sentence_restructurer` is the superset.
+
+### Added
+- **Semantic intensity clusters** — new `_collapse_intensity_clusters()` in `naturalizer.py` replaces "very/really + adjective" pairs with single vivid words. 39 EN patterns ("very good" → "excellent"), 11 RU ("очень хороший" → "отличный"), 8 UK ("дуже гарний" → "чудовий"). Reduces word count and raises lexical density.
+- **Perspective rotation for RU/UK** — `_rotate_perspective()` in `paraphrase_engine.py` now supports Russian (3 patterns) and Ukrainian (3 patterns), not just English. Patterns like "X демонстрирует, что Y" → "Согласно X, Y".
+- **+26 EN AI phrase patterns** — expanded `_AI_PHRASE_PATTERNS` with "it should be noted that", "has the potential to", "despite the fact that", "the vast majority of", "prior to", "subsequent to", "is indicative of", etc.
+- **+10 RU AI phrase patterns** — "представляет собой", "в значительной степени", "оказывает существенное влияние", "тот факт, что", "исходя из вышеизложенного", etc.
+- **Register mixing for DE/FR/ES** — added formal-to-informal dictionaries: DE (15 entries: "darüber hinaus"→"außerdem"), FR (14 entries: "néanmoins"→"quand même"), ES (14 entries: "sin embargo"→"pero").
+
+### Changed  
+- **PyPI publishing** — rewritten `publish.yml` to use `twine upload` with API token authentication instead of OIDC trusted publisher.
+
+### Performance
+- **EN AI-score improvement** (intensity=60, seed=42):
+  - en_formal: ai=0.262 (was ~0.5-0.6) — significant improvement
+  - en_casual: ai=0.126 (was ~0.5-0.6) — significant improvement
+
 ## [0.24.0] - 2025-07-03
 
 ### Added

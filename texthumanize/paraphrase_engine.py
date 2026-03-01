@@ -606,6 +606,67 @@ _PERSPECTIVE_EN: list[tuple[re.Pattern[str], list[str]]] = [
     ]),
 ]
 
+# RU perspective rotation: «Исследование показывает, что X» → «X — так следует из исследования»
+_PERSPECTIVE_RU: list[tuple[re.Pattern[str], list[str]]] = [
+    # "X показывает/демонстрирует/свидетельствует (о том,) что Y"
+    (re.compile(
+        r"^(.+?)\s+(?:показыва(?:ет|ют)|демонстрир(?:ует|уют)|свидетельству(?:ет|ют)|"
+        r"указыва(?:ет|ют)|подтвержда(?:ет|ют))"
+        r"(?:\s*,?\s*(?:о\s+том\s*,?\s*)?(?:что)\s+)(.+)$",
+        re.IGNORECASE,
+    ), [
+        r"\2 — так следует из того, что \1",
+        r"Согласно \1, \2",
+        r"Судя по \1, \2",
+    ]),
+    # "Важно отметить/учитывать, что Y" → "Y"
+    (re.compile(
+        r"^(?:Важно|Стоит|Необходимо|Нужно)\s+"
+        r"(?:отметить|учитывать|подчеркнуть|учесть)"
+        r"(?:\s*,?\s*что\s+)(.+)$",
+        re.IGNORECASE,
+    ), [
+        r"\1",
+    ]),
+    # "X обеспечивает (то,) что Y" → "Благодаря X, Y"
+    (re.compile(
+        r"^(.+?)\s+обеспечива(?:ет|ют)\s*(?:то\s*,?\s*)?(?:что\s+)?(.+)$",
+        re.IGNORECASE,
+    ), [
+        r"Благодаря тому, что \1, \2",
+        r"За счёт \1 \2",
+    ]),
+]
+
+# UK perspective rotation
+_PERSPECTIVE_UK: list[tuple[re.Pattern[str], list[str]]] = [
+    (re.compile(
+        r"^(.+?)\s+(?:показу(?:є|ють)|демонстру(?:є|ють)|свідч(?:ить|ать)|"
+        r"вказу(?:є|ють)|підтвердж(?:ує|ують))"
+        r"(?:\s*,?\s*(?:те\s*,?\s*)?(?:що)\s+)(.+)$",
+        re.IGNORECASE,
+    ), [
+        r"\2 — так випливає з \1",
+        r"Згідно з \1, \2",
+        r"Судячи з \1, \2",
+    ]),
+    (re.compile(
+        r"^(?:Важливо|Варто|Необхідно|Потрібно)\s+"
+        r"(?:зазначити|відзначити|підкреслити|врахувати)"
+        r"(?:\s*,?\s*що\s+)(.+)$",
+        re.IGNORECASE,
+    ), [
+        r"\1",
+    ]),
+    (re.compile(
+        r"^(.+?)\s+забезпеч(?:ує|ують)\s*(?:те\s*,?\s*)?(?:що\s+)?(.+)$",
+        re.IGNORECASE,
+    ), [
+        r"Завдяки тому, що \1, \2",
+        r"За рахунок \1 \2",
+    ]),
+]
+
 # ═══════════════════════════════════════════════════════════════
 #  Clause embedding patterns (merge 2 sentences into 1)
 # ═══════════════════════════════════════════════════════════════
@@ -869,10 +930,16 @@ class ParaphraseEngine:
 
     def _rotate_perspective(self, sent: str) -> str:
         """Rotate sentence perspective (e.g., topic-focus rewrite)."""
-        if self.lang != "en":
-            return sent  # EN only for now
+        if self.lang == "en":
+            patterns = _PERSPECTIVE_EN
+        elif self.lang == "ru":
+            patterns = _PERSPECTIVE_RU
+        elif self.lang == "uk":
+            patterns = _PERSPECTIVE_UK
+        else:
+            return sent
 
-        for pattern, replacements in _PERSPECTIVE_EN:
+        for pattern, replacements in patterns:
             m = pattern.match(sent.rstrip(".!?"))
             if m:
                 template = self._rng.choice(replacements)
@@ -894,37 +961,62 @@ class ParaphraseEngine:
     # ---------------------------------------------------------------
 
     def _embed_clause(self, sent1: str, sent2: str) -> Optional[str]:
-        """Try to merge two sentences into one by embedding."""
-        # Only for EN for now — RU/UK would need morphological agreement
-        if self.lang not in ("en",):
-            return None
+        """Try to merge two sentences into one by embedding.
 
+        Supports EN, RU, and UK with language-appropriate connectors.
+        """
         s1 = sent1.rstrip(".!?").strip()
         s2 = sent2.strip()
 
         if not s1 or not s2:
             return None
 
-        # Simple merge with connector
+        # Don't merge numbered list items (e.g., "1. First", "2. Second")
+        # The sentence splitter may produce "Первый\n2." where the number
+        # is at the end, or "2. Второй" where it's at the start.
+        if (re.search(r'(?:^|\n)\d+[.)]\s?', sent1)
+                or re.search(r'(?:^|\n)\d+[.)]\s?', sent2)
+                or re.search(r'\d+[.)]$', s1)
+                or re.search(r'\d+[.)]$', s2)):
+            return None
+
         s2_first_word = s2.split()[0].lower() if s2.split() else ""
 
-        # Don't merge if second sentence starts with a connector (already linked)
-        skip_starters = {"furthermore", "moreover", "additionally", "however",
-                         "consequently", "therefore", "nevertheless", "meanwhile"}
+        # Don't merge if second sentence starts with a connector
+        skip_starters = {
+            "furthermore", "moreover", "additionally", "however",
+            "consequently", "therefore", "nevertheless", "meanwhile",
+            "кроме", "более", "помимо", "следовательно", "тем",
+            "крім", "більше", "окрім", "відповідно", "тим",
+        }
         if s2_first_word in skip_starters:
             return None
 
         # Lowercase the second sentence's first letter
         s2_lower = s2[0].lower() + s2[1:] if s2 else s2
 
-        connectors = [
-            f"{s1}, and {s2_lower}",
-            f"{s1} — {s2_lower}",
-            f"{s1}; {s2_lower}",
-        ]
+        if self.lang == "ru":
+            connectors = [
+                f"{s1}, и {s2_lower}",
+                f"{s1} — {s2_lower}",
+                f"{s1}; {s2_lower}",
+                f"{s1}, причём {s2_lower}",
+            ]
+        elif self.lang == "uk":
+            connectors = [
+                f"{s1}, і {s2_lower}",
+                f"{s1} — {s2_lower}",
+                f"{s1}; {s2_lower}",
+                f"{s1}, причому {s2_lower}",
+            ]
+        else:
+            connectors = [
+                f"{s1}, and {s2_lower}",
+                f"{s1} — {s2_lower}",
+                f"{s1}; {s2_lower}",
+            ]
 
         result = self._rng.choice(connectors)
-        # Ensure proper ending
         if not result.endswith((".", "!", "?")):
             result += "."
 
@@ -935,18 +1027,43 @@ class ParaphraseEngine:
     #  Fragment creation
     # ---------------------------------------------------------------
 
+    # Fragment triggers for Russian
+    _FRAGMENT_TRIGGERS_RU: dict[str, list[str]] = {
+        "потому": ["И вот почему.", "Причина проста."],
+        "однако": ["Но есть нюанс.", "Впрочем."],
+        "важно": ["И вот что ещё.", "Ключевой момент."],
+        "результат": ["И что в итоге?", "Результат?"],
+    }
+
+    # Fragment triggers for Ukrainian
+    _FRAGMENT_TRIGGERS_UK: dict[str, list[str]] = {
+        "тому": ["І ось чому.", "Причина проста."],
+        "однак": ["Але є нюанс.", "Втім."],
+        "важливо": ["І ось що ще.", "Ключовий момент."],
+        "результат": ["І що в підсумку?", "Результат?"],
+    }
+
     def _create_fragment(self, sent: str) -> Optional[str]:
-        """Create a rhetorical fragment for naturalness."""
-        if self.lang != "en":
+        """Create a rhetorical fragment for naturalness.
+
+        Supports EN, RU, and UK.
+        """
+        words = sent.lower().split()
+
+        if self.lang == "ru":
+            triggers = self._FRAGMENT_TRIGGERS_RU
+        elif self.lang == "uk":
+            triggers = self._FRAGMENT_TRIGGERS_UK
+        elif self.lang == "en":
+            triggers = _FRAGMENT_TRIGGERS_EN
+        else:
             return None
 
-        words = sent.lower().split()
-        for trigger, fragments in _FRAGMENT_TRIGGERS_EN.items():
+        for trigger, fragments in triggers.items():
             if trigger in words:
-                # Split sentence at the trigger word
                 sent_clean = sent.rstrip(".!?")
                 idx = sent_clean.lower().find(trigger)
-                if idx > 10:  # enough text before the trigger
+                if idx > 10:
                     before = sent_clean[:idx].rstrip(" ,;:—-").strip()
                     after = sent_clean[idx:].strip()
                     fragment = self._rng.choice(fragments)

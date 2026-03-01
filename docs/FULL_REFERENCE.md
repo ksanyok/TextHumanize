@@ -114,7 +114,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 
 | Advantage | Details |
 |:----------|:--------|
-| 🚀 **Blazing fast** | 30,000+ chars/sec — process a full article in milliseconds, not seconds |
+| 🚀 **Blazing fast** | ~3,000 chars/sec — process a full article in milliseconds, not seconds |
 | 🔒 **100% private** | All processing is local. Your text never leaves your machine |
 | 🎯 **Precise control** | Intensity 0–100, 9 profiles, keyword preservation, max change ratio |
 | 🌍 **14 languages + universal** | Full dictionaries for 14 languages; statistical processor for any other |
@@ -220,7 +220,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 | Works offline | ✅ | ❌ |
 | Zero dependencies | ✅ | ❌ Requires API key + billing |
 | Deterministic | ✅ Same seed = same output | ❌ Non-deterministic |
-| Speed | **30K+ chars/sec** | ~500 chars/sec (API) |
+| Speed | **~3K chars/sec** | ~500 chars/sec (API) |
 | Cost per 1M chars | **$0** | ~$15–60 (GPT-4) |
 | Preserves meaning | ✅ Controlled change ratio | ⚠️ May hallucinate |
 | Max change control | ✅ `max_change_ratio` | ❌ Unpredictable |

@@ -21,13 +21,13 @@ All commercial licenses include:
 
 ## What's Included
 
-- Python SDK (42,500+ lines)
+- Python SDK (56,800+ lines)
 - PHP SDK (10,000+ lines)
 - TypeScript/JavaScript SDK
 - REST API server
 - CLI tool
 - Docker image
-- 1,802+ tests
+- 1,995+ tests
 - Full documentation
 
 ## Contact

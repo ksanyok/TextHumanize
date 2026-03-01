@@ -124,18 +124,24 @@ class TestTextNaturalizer:
         assert result != text or len(ad.changes) >= 0
 
     def test_contractions_english(self):
-        """Сокращения для английского (chat/web)."""
+        """Сокращения выполняются через sentence_restructurer, а не naturalizer.
+
+        В v0.25+ naturalizer больше не дублирует contractions —
+        ответственность полностью на SentenceRestructurer.inject_contractions().
+        """
         text = ("We do not need to worry about this. "
                 "It is not a problem. "
                 "They are working on it right now. "
                 "There is nothing to add here.")
         ad = TextNaturalizer(lang="en", profile="chat", intensity=100, seed=42)
-        ad.process(text)
-        # Должны появиться сокращения
+        result = ad.process(text)
+        # Naturalizer теперь НЕ делает contractions
         contraction_changes = [
             c for c in ad.changes if c["type"] == "naturalize_contraction"
         ]
-        assert len(contraction_changes) >= 1
+        assert len(contraction_changes) == 0
+        # Проверим что текст всё-таки обрабатывается (другие trfms)
+        assert result != text or len(ad.changes) >= 0
 
     def test_no_contractions_formal(self):
         """Сокращения НЕ применяются для formal профиля."""

@@ -13,14 +13,14 @@
 [![PHP 8.1+](https://img.shields.io/badge/php-8.1+-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
 &nbsp;&nbsp;
 [![CI](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-1802%20passed-2ea44f.svg?logo=pytest&logoColor=white)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-1995%20passed-2ea44f.svg?logo=pytest&logoColor=white)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
 &nbsp;&nbsp;
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/license-Dual%20(Free%20%2B%20Commercial)-blue.svg)](LICENSE)
 
 <br/>
 
-**42,375 lines of code** · **75 Python modules** · **17-stage pipeline** · **14 languages + universal** · **1,802 tests**
+**56,800+ lines of code** · **95 Python modules** · **17-stage pipeline** · **14 languages + universal** · **1,995 tests**
 
 [Quick Start](#quick-start) · [Features](#feature-matrix) · [Documentation](https://ksanyok.github.io/TextHumanize/) · [Live Demo](https://humanizekit.tester-buyreadysite.website/) · [License](#license--pricing)
 
@@ -28,7 +28,9 @@
 
 ---
 
-TextHumanize is a **pure-algorithmic text processing engine** that normalizes style, improves readability, and removes mechanical patterns from text. No neural networks, no API keys, no internet — just 42K+ lines of finely tuned rules, dictionaries, and statistical methods.
+TextHumanize is a **pure-algorithmic text processing engine** that normalizes style, improves readability, and reduces mechanical patterns in text. No neural networks, no API keys, no internet — just 56K+ lines of finely tuned rules, dictionaries, and statistical methods.
+
+> **Honest note:** TextHumanize is a style-normalization tool, not an AI-detection bypass tool. It reduces AI-like patterns (formulaic connectors, uniform sentence length, bureaucratic vocabulary) but does not guarantee that processed text will pass external AI detectors. Quality of humanization varies by language and text type. See [Limitations](#limitations) below.
 
 **Built-in toolkit:** AI Detection · Paraphrasing · Tone Analysis · Watermark Cleaning · Content Spinning · Coherence Analysis · Readability Scoring · Stylistic Fingerprinting · Auto-Tuner · Perplexity Analysis · Plagiarism Detection · **Async API** · **SSE Streaming**
 
@@ -46,14 +48,14 @@ TextHumanize is a **pure-algorithmic text processing engine** that normalizes st
 
 | Advantage | Details |
 |:----------|:--------|
-| **30,000+ chars/sec** | Process a full article in milliseconds, not seconds |
+| **~3,000 chars/sec** | Process a full article in under a second |
 | **100% private** | All processing is local — your text never leaves your machine |
 | **Precise control** | Intensity 0–100, 9 profiles, keyword preservation, max change ratio |
 | **14 languages** | Full dictionaries for 14 languages; statistical processor for any other |
 | **Zero dependencies** | Pure Python stdlib — no pip packages, no model downloads, starts in <100ms |
 | **Reproducible** | Seed-based PRNG — same input + same seed = identical output |
 | **AI detection** | 13-metric ensemble + 35-feature statistical detector — no ML required |
-| **Enterprise-ready** | Dual license, 1,802 tests, CI/CD, benchmarks, on-prem deployment |
+| **Enterprise-ready** | Dual license, 1,995 tests, CI/CD, benchmarks, on-prem deployment |
 
 ---
 
@@ -63,7 +65,7 @@ TextHumanize is a **pure-algorithmic text processing engine** that normalizes st
 |:----------|:------------:|:-----------------:|:------------------:|
 | Works offline | ✅ | ❌ | ❌ |
 | Privacy | ✅ Local only | ❌ Third-party servers | ❌ Cloud API |
-| Speed | **30K+ chars/sec** | 2–10 sec (network) | ~500 chars/sec |
+| Speed | **~3K chars/sec** | 2–10 sec (network) | ~500 chars/sec |
 | Cost per 1M chars | **$0** | $10–50/month | $15–60 (GPT-4) |
 | API key required | No | Yes | Yes |
 | Deterministic | ✅ Seed-based | ❌ | ❌ |
@@ -80,8 +82,8 @@ TextHumanize is a **pure-algorithmic text processing engine** that normalizes st
 | Pipeline stages | **17** | 2–4 |
 | Languages | **14 + universal** | 1–2 |
 | AI detection | ✅ 13 metrics + statistical ML | ❌ |
-| Python tests | **1,802** | 10–50 |
-| Codebase size | **42,375 lines** | 500–2K |
+| Python tests | **1,995** | 10–50 |
+| Codebase size | **56,800+ lines** | 500–2K |
 | Platforms | Python + JS + PHP | Single |
 | Plugin system | ✅ | ❌ |
 | Tone analysis | ✅ 7 levels | ❌ |
@@ -366,16 +368,16 @@ curl -X POST http://localhost:8080/humanize \
 
 All benchmarks on Apple Silicon (M-series), Python 3.12, single thread.
 
-| Function | Text Size | Avg Latency | Per 1K Words | Peak Memory |
-|----------|-----------|:-----------:|:------------:|:-----------:|
-| `humanize()` | 30 words | 0.1 ms | ~5 ms | 4 KB |
-| `humanize()` | 80 words | 1.5 ms | ~19 ms | 4 KB |
-| `humanize()` | 400 words | 0.1 ms | < 1 ms | 6 KB |
-| `detect_ai()` | 30 words | 4.3 ms | — | 22 KB |
-| `detect_ai()` | 80 words | 36.8 ms | — | 71 KB |
-| `detect_ai()` | 400 words | 162 ms | — | 196 KB |
-| `analyze()` | 80 words | 478 ms | — | 362 KB |
-| `paraphrase()` | 80 words | 0.2 ms | — | 8 KB |
+| Function | Text Size | Avg Latency | Peak Memory |
+|----------|-----------|:-----------:|:-----------:|
+| `humanize()` | 30 words | ~60 ms | 4 KB |
+| `humanize()` | 80 words | ~200 ms | 4 KB |
+| `humanize()` | 400 words | ~1.5 s | 6 KB |
+| `detect_ai()` | 30 words | ~50 ms | 22 KB |
+| `detect_ai()` | 80 words | ~150 ms | 71 KB |
+| `detect_ai()` | 400 words | ~500 ms | 196 KB |
+| `analyze()` | 80 words | ~500 ms | 362 KB |
+| `paraphrase()` | 80 words | ~5 ms | 8 KB |
 
 | Property | Value |
 |----------|:-----:|
@@ -409,7 +411,7 @@ Available stages: `watermark` → `segmentation` → `typography` → `debureauc
 ## Architecture
 
 ```
-texthumanize/                    # 75 Python modules, 42,375 lines
+texthumanize/                    # 95 Python modules, 56,800+ lines
 ├── core.py                      # Facade: humanize(), analyze(), detect_ai()
 ├── pipeline.py                  # 17-stage pipeline + adaptive intensity
 ├── api.py                       # REST API server (12 endpoints)
@@ -453,13 +455,13 @@ texthumanize/                    # 75 Python modules, 42,375 lines
 
 | Platform | Tests | Status |
 |:---------|------:|:------:|
-| **Python** | 1,802 | ✅ All passing |
+| **Python** | 1,995 | ✅ All passing |
 | **PHP** | 223 | ✅ All passing |
 | **TypeScript** | 28 | ✅ All passing |
-| **Total** | **2,053** | ✅ |
+| **Total** | **2,246** | ✅ |
 
 ```bash
-pytest -q                          # 1802 passed
+pytest -q                          # 1995 passed
 ruff check texthumanize/           # Lint
 mypy texthumanize/                 # Type check
 cd php && php vendor/bin/phpunit   # 223 tests
@@ -507,7 +509,7 @@ docker run -v $(pwd):/data texthumanize /data/input.txt -o /data/output.txt
 | **Privacy** | 100% local. Zero network calls. No data leaves your server |
 | **Auditability** | Every call returns change_ratio, quality_score, similarity, explain() report |
 | **Integration** | Python SDK · JS SDK · PHP SDK · CLI · REST API · Docker |
-| **Reliability** | 2,053 tests across 3 platforms, CI/CD with ruff + mypy |
+| **Reliability** | 2,246 tests across 3 platforms, CI/CD with ruff + mypy |
 | **No vendor lock-in** | Zero dependencies. No cloud APIs, no API keys, no rate limits |
 | **Language coverage** | 14 full language packs + universal processor for any language |
 
@@ -516,6 +518,35 @@ docker run -v $(pwd):/data texthumanize /data/input.txt -o /data/output.txt
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and PR guidelines.
+
+---
+
+## Limitations
+
+TextHumanize is a **style normalization** tool. Please be aware of realistic expectations:
+
+| Aspect | Current State | Notes |
+|:-------|:-------------|:------|
+| **EN humanization** | Reduces AI markers by 10–35% | Replaces bureaucratic phrases, varies sentence structure |
+| **RU humanization** | Reduces AI markers by 15–30% | Good at debureaucratization, some sentences may sound awkward |
+| **UK humanization** | Reduces AI markers by 20–50% | Best multilingual support after EN |
+| **External AI detectors** | Not reliable bypass | GPTZero, Originality.ai, etc. use different models |
+| **Short texts (< 50 words)** | Limited effect | Not enough context for meaningful transformation |
+| **Performance** | ~3K chars/sec | Fast for batch processing, but not sub-millisecond |
+| **Built-in AI detector** | Heuristic + statistical | Useful for internal scoring; not equivalent to GPTZero/Turnitin |
+| **Monotonicity** | Higher intensity ≠ always lower AI score | Some transforms at high intensity may create new AI-like patterns |
+
+**What TextHumanize does well:**
+- Removes formulaic connectors ("furthermore", "it is important to note")
+- Varies sentence length to add human-like burstiness
+- Replaces bureaucratic vocabulary with simpler alternatives
+- Deterministic, reproducible results with seed control
+- 100% offline, no data leaks, zero dependencies
+
+**What TextHumanize does NOT do:**
+- Guarantee passing external AI detectors (GPTZero, Originality.ai, Turnitin)
+- Rewrite text at the semantic level (it's rule-based, not LLM-based)
+- Handle domain-specific jargon (medical, legal, etc.)
 
 ---
 

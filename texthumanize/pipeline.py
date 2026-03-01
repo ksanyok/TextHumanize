@@ -266,17 +266,17 @@ class Pipeline:
         # Avoids recomputing detect_ai() for the same text within a single
         # run() invocation. The regression guard often re-detects text that
         # was already scored in the detector-in-the-loop.
-        _detect_cache: dict[int, dict] = {}
+        # Use text itself as key (not hash()) to avoid hash collisions.
+        _detect_cache: dict[str, dict] = {}
 
-        def _cached_detect(txt: str, *, lang: str) -> dict:
+        def _cached_detect(txt: str, *, lang: str) -> dict:  # type: ignore[type-arg]
             """Detect AI with per-run memoization."""
-            key = hash(txt)
-            cached = _detect_cache.get(key)
+            cached = _detect_cache.get(txt)
             if cached is not None:
                 return cached
             from texthumanize.core import detect_ai as _full_detect
-            result_d = _full_detect(txt, lang=lang)
-            _detect_cache[key] = result_d
+            result_d: dict = _full_detect(txt, lang=lang)  # type: ignore[assignment]
+            _detect_cache[txt] = result_d
             return result_d
 
         # ── Detector-in-the-loop ──────────────────────────────
@@ -284,15 +284,14 @@ class Pipeline:
         # the result. If so, run another pass with escalated intensity
         # on the already-processed text to push it further from AI.
         target_ai = self.options.constraints.get("target_ai_score", 0.40)
-        max_loops = self.options.constraints.get("max_detection_loops", 2)
+        max_loops = self.options.constraints.get("max_detection_loops", 3)
         ai_before = result.metrics_before.get("artificiality_score", 0)
 
         # Only loop if original text was actually AI-like (>40%)
         if max_loops > 0 and ai_before > 40:
             best_result = result
-            best_score = _cached_detect(result.text, lang=lang).get(
-                "combined_score", 1.0,
-            )
+            detect_result = _cached_detect(result.text, lang=lang)
+            best_score = detect_result.get("combined_score", 1.0)
 
             for loop_i in range(max_loops):
                 _check_deadline()
@@ -304,23 +303,35 @@ class Pipeline:
                 # to prevent inverse monotonicity (low intensity getting more
                 # total change than high intensity via the loop)
                 loop_change = self._calc_change_ratio(text, best_result.text)
-                _headroom = max(0.02, (self.options.intensity / 100) * 0.08)
+                _headroom = max(0.04, (self.options.intensity / 100) * 0.10)
                 _max_total = max_change + _headroom
                 if loop_change > _max_total:
                     break  # Already changed enough, don't risk quality
 
-                # Re-process the RESULT with escalated intensity
-                # Cap escalated intensity to avoid over-processing
-                escalation = 1.2 + 0.3 * loop_i  # 1.2×, 1.5×
-                esc_intensity = min(75, int(self.options.intensity * escalation))
+                # Targeted escalation: analyze which detector features
+                # are still flagging AI, and escalate accordingly.
+                # Gentler escalation to avoid over-processing cliff.
+                escalation = 1.10 + 0.15 * loop_i  # 1.10×, 1.25×, 1.40×
+                esc_intensity = min(70, int(self.options.intensity * escalation))
+
+                # Use detection details to target weak features
+                loop_profile = self.options.profile
+                detect_details = detect_result.get("details", {})
+                neural_score = detect_details.get("neural_score", best_score)
+
+                # If neural score is high, focus on structural transforms
+                # by using a higher-intensity profile
+                if neural_score > 0.6:
+                    esc_intensity = min(esc_intensity + 5, 75)
+
                 loop_opts = HumanizeOptions(
                     lang=self.options.lang,
-                    profile=self.options.profile,
+                    profile=loop_profile,
                     intensity=esc_intensity,
                     preserve=dict(self.options.preserve),
                     constraints={
                         **self.options.constraints,
-                        "max_change_ratio": 0.35,  # Limit per-loop change
+                        "max_change_ratio": 0.30,  # Tighter per-loop limit
                     },
                     seed=(self.options.seed or 42) + loop_i + 1,
                 )
@@ -335,9 +346,8 @@ class Pipeline:
                     break
 
                 # Accept loop result ONLY if it improves full detection score
-                loop_score = _cached_detect(loop_result.text, lang=lang).get(
-                    "combined_score", 1.0,
-                )
+                detect_result = _cached_detect(loop_result.text, lang=lang)
+                loop_score = detect_result.get("combined_score", 1.0)
                 if loop_score < best_score:
                     total_change = self._calc_change_ratio(text, loop_result.text)
                     if total_change <= _max_total:
@@ -356,9 +366,10 @@ class Pipeline:
             result = best_result
 
         # ── Regression guard ─────────────────────────────────
-        # If humanization made the AI score WORSE (increased), fall back
-        # to minimal processing. This protects languages (e.g., DE)
-        # where rule-based transforms can make text more AI-like.
+        # If humanization made the AI score WORSE (increased), try
+        # graduated fallback with decreasing intensity factors.
+        # This replaces the old binary 0.05× fallback which was too
+        # aggressive and returned near-original (high AI) text.
         try:
             score_after = _cached_detect(result.text, lang=lang).get(
                 "combined_score", 0.0,
@@ -368,14 +379,30 @@ class Pipeline:
                 "combined_score", 0.0,
             )
             if score_after > score_before_full + 0.01:  # Worsened by >1%
-                # Fall back to typography-only pass
-                fallback = self._run_pipeline(text, lang, intensity_factor=0.05)
-                result = fallback
+                # Graduated fallback: try decreasing intensity factors,
+                # keep the best result (lowest AI score)
+                best_fallback = result
+                best_fb_score = score_after
+                for fb_factor in (0.5, 0.3, 0.15, 0.08):
+                    _check_deadline()
+                    fb_result = self._run_pipeline(
+                        text, lang, intensity_factor=fb_factor,
+                    )
+                    fb_score = _cached_detect(fb_result.text, lang=lang).get(
+                        "combined_score", 0.0,
+                    )
+                    if fb_score < best_fb_score:
+                        best_fallback = fb_result
+                        best_fb_score = fb_score
+                    # If we found something better than original, stop
+                    if fb_score <= score_before_full:
+                        break
+                result = best_fallback
                 result.changes.append({
                     "type": "regression_guard",
                     "description": (
                         f"Откат: AI {score_before_full:.0%}→{score_after:.0%} "
-                        f"(ухудшение — минимальная обработка)"
+                        f"(graduated fallback → {best_fb_score:.0%})"
                     ),
                 })
         except Exception:
@@ -541,18 +568,20 @@ class Pipeline:
         # Применяем graduated retry factor
         base_intensity = max(5, int(base_intensity * intensity_factor))
 
-        # Cap base intensity at 85 to prevent over-processing at high
-        # user intensities. The higher user values (86-100) manifest
-        # through the detector-in-the-loop running extra passes, not
-        # through more aggressive single-pass processing.
-        base_intensity = min(base_intensity, 85)
+        # Cap base intensity at 80 to prevent over-processing.
+        # The old cap of 85 caused intensity cliff at 70-84 effective.
+        # The higher user values (81-100) manifest through the
+        # detector-in-the-loop running extra passes instead.
+        base_intensity = min(base_intensity, 80)
 
         if ai_score >= 70:
-            # Сильно «искусственный» текст — boost more aggressively
-            adjusted = min(90, int(base_intensity * 1.20))
+            # Сильно «искусственный» текст — aggressive boost, but capped
+            # Cap at 82 prevents the 84+ over-processing cliff while
+            # keeping the old ×1.20 multiplier that works well at int≤65
+            adjusted = min(82, int(base_intensity * 1.20))
         elif ai_score >= 50:
-            # Средне «искусственный» — усиливаем
-            adjusted = min(85, int(base_intensity * 1.15))
+            # Средне «искусственный» — moderate boost
+            adjusted = min(80, int(base_intensity * 1.15))
         elif ai_score <= 5:
             # Полностью «живой» текст — применяем только типографику
             return self._typography_only(
@@ -1035,6 +1064,10 @@ class Pipeline:
         _t0 = time.perf_counter()
         text = segmented.restore(text)
         stage_timings["restore"] = time.perf_counter() - _t0
+
+        # ── Safety: collapse overlapping em-dash asides ──
+        import re as _re_dash
+        text = _re_dash.sub(r'\u2014\s*\u2014', '\u2014', text)
 
         # 15. Валидация
         _t0 = time.perf_counter()

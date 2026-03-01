@@ -102,7 +102,7 @@ class CollocEngine:
         candidates: list[str],
         context: list[str] | None = None,
         *,
-        window: int = 3,
+        window: int = 5,
     ) -> str:
         """Pick the best-fitting synonym given context.
 
@@ -110,10 +110,10 @@ class CollocEngine:
             original:   The word being replaced.
             candidates: List of synonym options.
             context:    Surrounding words (before + after).
-            window:     Max context words to consider.
+            window:     Max context words to consider (expanded from 3→5).
 
         Returns:
-            Best candidate, or original if none scores above 0.
+            Best candidate, or a randomly-weighted one if no collocation data.
         """
         if not candidates:
             return original
@@ -127,12 +127,16 @@ class CollocEngine:
         ]
 
         if not ctx:
-            return candidates[0]
+            # No context — prefer shorter/simpler candidates (more natural)
+            sorted_by_len = sorted(candidates, key=len)
+            return sorted_by_len[0]
 
         scores: list[tuple[str, float]] = []
         for cand in candidates:
             s = self.context_score(cand, ctx)
-            scores.append((cand, s))
+            # Bonus for shorter candidates (simpler words sound more human)
+            len_bonus = max(0, (12 - len(cand)) * 0.02)
+            scores.append((cand, s + len_bonus))
 
         scores.sort(key=lambda x: -x[1])
 
@@ -141,8 +145,9 @@ class CollocEngine:
         if best_score > 0:
             return best_cand
 
-        # No collocation data → return first candidate
-        return candidates[0]
+        # No collocation data — prefer shorter/simpler candidates
+        sorted_by_len = sorted(candidates, key=len)
+        return sorted_by_len[0]
 
     def rank_synonyms(
         self,

@@ -310,6 +310,7 @@ class DetectionReport(TypedDict, total=False):
     """
 
     score: float
+    heuristic_score: float
     combined_score: float
     stat_probability: float | None
     verdict: str

@@ -688,7 +688,7 @@ def humanize_until_human(
 
         # ── Adaptive metric analysis ────────────────────────
         if strategy == "adaptive":
-            metrics = detection.get("metrics", {})
+            metrics: dict[str, float] = dict(detection.get("metrics", {}))  # type: ignore[arg-type]
             _adapt_overrides = _compute_adaptive_overrides(
                 metrics, current_intensity, verbose=verbose,
             )

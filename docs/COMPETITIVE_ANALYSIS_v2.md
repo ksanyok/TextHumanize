@@ -238,7 +238,7 @@ Stage 'syntax_rewriting' failed: Unsupported language: 'it'. Use 'en', 'ru', 'uk
 | **Open-source** | ✅ | ❌ | ❌ | ❌ |
 | **Privacy** | **100% local** | Cloud | Cloud | Cloud |
 | **Цена** | Free | $5-15/мес | $12-36/мес | Free/$6/мес |
-| **TPS** | 30K chars/s | Network dependent | Network dependent | Network dependent |
+| **TPS** | ~3K chars/s | Network dependent | Network dependent | Network dependent |
 | **Детерминизм** | ✅ (seed) | ❌ | ❌ | ❌ |
 | **CI/CD integration** | ✅ | ❌ | ❌ | ❌ |
 | **SDK** | Python+PHP+JS | Web | Web | Web |

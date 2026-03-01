@@ -10,17 +10,17 @@ Normalize style, improve readability, and ensure brand-safe content — offline,
 
 | Metric | Value |
 |--------|-------|
-| **Lines of Code** | 42,500+ Python |
+| **Lines of Code** | 56,800+ Python |
 | **Pipeline Stages** | 17 |
 | **Languages** | 14 + universal |
-| **Tests** | 1,802+ passing |
+| **Tests** | 1,995+ passing |
 | **Dependencies** | Zero |
 | **Platforms** | Python · JS/TS · PHP |
 
 ## Why TextHumanize?
 
 !!! success "Core Advantages"
-    - **30,000+ chars/sec** — process a full article in milliseconds
+    - **~3,000 chars/sec** — process a full article in milliseconds
     - **100% private** — all processing is local, your text never leaves your machine
     - **Precise control** — intensity 0–100, 9 profiles, keyword preservation
     - **14 languages** — full dictionaries + universal processor for any language

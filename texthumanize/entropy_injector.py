@@ -482,6 +482,9 @@ class EntropyInjector:
 
     def _insert_parenthetical(self, sent: str) -> str:
         """Insert a parenthetical aside into a sentence."""
+        # Guard: skip if sentence already contains an em-dash aside
+        if "\u2014" in sent:
+            return sent
         words = sent.split()
         if len(words) < 6:
             return sent
