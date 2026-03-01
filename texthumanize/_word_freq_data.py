@@ -3,6 +3,7 @@
 Auto-generated. Do not edit manually.
 EN: 10000 unigrams, 237 bigrams
 RU: 470 unigrams, 82 bigrams
+UK: 432 unigrams, 35 bigrams
 DE: 379 | FR: 226 | ES: 254
 """
 
@@ -1396,6 +1397,71 @@ _ES_UNI_DATA = (
     "dZGEj4rZzONo6HkKvc7Vhml1e4vM/duePPCtKPMbJm/8/H8cy5wt"
 )
 
+_UK_UNI_DATA = (
+    "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"
+    "hP8BX0q6fw=="
+)
+
+_UK_BI_DATA = (
+    "eNptklluwkAQRL/Hh0FjGxJyO4wJIRIif5zDYjPyxhW6b5SqMkEg5cfL66W6esbL4EsbrPMy5JNZ"
+    "Yofn/2liJ2v9Z2RHG8Dy5JHg3yJZYnWwzs4M+A4kTay3KtjJS/BGvWLCioWdrQZtfYvsype+D9nk"
+    "Q7r/x+bqTnUMwo5gb2ReoqLyT1QcrIJgj3iH6OyufvM98gv2soN6wU+tudDvRhOjK8yc0VcpF3Zh"
+    "V5CMU72QVDk36A6+ht9CXeNdb/ACH4O0UnqCROAf9MB9g06ccofoXI7XiLX3ZaaTd23olY1Oudcv"
+    "a+wK8udu7Nvh2StzqurCV5hroQlyaTyTTPMfsY8WW6vFUrl8ZTorytArt6ozjPQk7YuytyDzkeAm"
+    "VNw0rkqEDzin5CZo3ZEuHqTHxBew0QdtoGwboNLoPkWeUm9n1vJcufsd3F8RycedQqnU7Yh0xONt"
+    "wPDqVJ/+Ao2lk4k="
+)
+
 
 # ── Lazy-loaded cache ─────────────────────────────
 _cache: dict[str, dict] = {}
@@ -1448,5 +1514,19 @@ def get_es_uni() -> dict[str, float]:
     if "es_uni" not in _cache:
         _cache["es_uni"] = _decode_uni(_ES_UNI_DATA)
     return _cache["es_uni"]  # type: ignore[return-value]
+
+
+def get_uk_uni() -> dict[str, float]:
+    """Get UK unigram frequencies (lazy-loaded)."""
+    if "uk_uni" not in _cache:
+        _cache["uk_uni"] = _decode_uni(_UK_UNI_DATA)
+    return _cache["uk_uni"]  # type: ignore[return-value]
+
+
+def get_uk_bi() -> dict[tuple[str, str], float]:
+    """Get UK bigram frequencies (lazy-loaded)."""
+    if "uk_bi" not in _cache:
+        _cache["uk_bi"] = _decode_bi(_UK_BI_DATA)
+    return _cache["uk_bi"]  # type: ignore[return-value]
 
 

@@ -31,6 +31,8 @@ from texthumanize._word_freq_data import (
     get_fr_uni,
     get_ru_bi,
     get_ru_uni,
+    get_uk_bi,
+    get_uk_uni,
 )
 from texthumanize.sentence_split import split_sentences
 
@@ -42,36 +44,7 @@ logger = logging.getLogger(__name__)
 # Smaller languages use inline dicts below.
 
 # ── Compact models for other languages ────────────────────
-_UK_UNI: dict[str, float] = {
-    "і": 0.028, "в": 0.025, "не": 0.018,
-    "на": 0.015, "що": 0.012, "я": 0.010,
-    "з": 0.010, "він": 0.008, "а": 0.008,
-    "як": 0.007, "це": 0.007, "по": 0.005,
-    "але": 0.005, "вона": 0.004, "до": 0.005,
-    "за": 0.004, "від": 0.004, "його": 0.004,
-    "всі": 0.003, "так": 0.003, "вони": 0.003,
-    "ж": 0.003, "у": 0.003, "б": 0.003,
-    "із": 0.002, "ми": 0.003, "для": 0.003,
-    "ви": 0.002, "при": 0.002, "її": 0.002,
-    "ні": 0.002, "вже": 0.002, "мені": 0.002,
-    "ось": 0.001, "був": 0.003, "було": 0.002,
-    "бути": 0.002, "є": 0.002, "цей": 0.002,
-    "той": 0.002, "свій": 0.002, "весь": 0.002,
-    "який": 0.002, "тільки": 0.002,
-    "можна": 0.001, "треба": 0.001,
-    "себе": 0.001, "коли": 0.001,
-    "якщо": 0.001, "буде": 0.001,
-    "були": 0.001, "нас": 0.001,
-    "них": 0.001, "ніж": 0.001,
-    "де": 0.001, "тут": 0.001,
-    "дуже": 0.001, "навіть": 0.001,
-    "після": 0.001, "між": 0.001,
-    "також": 0.001, "ще": 0.001,
-    "час": 0.001, "рік": 0.001,
-    "людина": 0.001, "може": 0.001,
-}
-
-# DE, FR, ES — loaded from compressed _word_freq_data module
+# DE, FR, ES, UK — loaded from compressed _word_freq_data module
 
 _IT_UNI: dict[str, float] = {
     "di": 0.035, "e": 0.028, "il": 0.020,
@@ -225,7 +198,7 @@ _TR_UNI: dict[str, float] = {
 # EN, RU, DE, FR, ES use expanded compressed data (10K+ EN, 379+ others).
 # Remaining languages use compact inline dicts above.
 _UNIGRAMS: dict[str, dict[str, float]] = {
-    "en": get_en_uni(), "ru": get_ru_uni(), "uk": _UK_UNI,
+    "en": get_en_uni(), "ru": get_ru_uni(), "uk": get_uk_uni(),
     "de": get_de_uni(), "fr": get_fr_uni(), "es": get_es_uni(),
     "it": _IT_UNI, "pl": _PL_UNI, "pt": _PT_UNI,
     "ar": _AR_UNI, "zh": _ZH_UNI, "ja": _JA_UNI,
@@ -233,7 +206,7 @@ _UNIGRAMS: dict[str, dict[str, float]] = {
 }
 
 _BIGRAMS: dict[str, dict[tuple[str, str], float]] = {
-    "en": get_en_bi(), "ru": get_ru_bi(),
+    "en": get_en_bi(), "ru": get_ru_bi(), "uk": get_uk_bi(),
 }
 
 _LAMBDA = 0.4  # bigram interpolation weight

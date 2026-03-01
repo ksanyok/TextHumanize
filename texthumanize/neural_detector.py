@@ -90,6 +90,20 @@ _AI_PATTERNS_EN: set[str] = {
     "beacon", "linchpin", "spearhead", "embark", "unravel", "unraveling",
     "navigate", "navigating", "underpinning",
     "groundbreaking", "transformative", "cutting-edge",
+    # Extended AI markers
+    "plethora", "myriad", "crucial", "imperative", "integral",
+    "instrumental", "conducive", "propensity", "proliferation",
+    "cognizant", "burgeoning", "amalgamation", "ubiquitous",
+    "exacerbate", "exacerbates", "mitigate", "mitigates", "mitigation",
+    "bolster", "bolstering", "augment", "augmenting",
+    "catalyze", "catalyzing", "catalyst", "resonate", "resonates",
+    "underpin", "predicated", "predicate",
+    "salient", "disparate", "concomitant", "nascent",
+    "promulgate", "precipitate", "tantamount", "commensurate",
+    "juxtapose", "bifurcate", "conflate", "delineation",
+    "operationalize", "contextualize", "conceptualize",
+    "exemplify", "exemplifies", "epitomize", "epitomizes",
+    "spearheading", "vanguard", "forefront",
 }
 
 _AI_PATTERNS_RU: list[str] = [
@@ -189,6 +203,19 @@ _AI_WORDS_RU: set[str] = {
     "нивелировать", "аккумулировать",
     "инкорпорировать", "транспарентный",
     "валидный", "верифицировать",
+    # Extended RU AI words
+    "комплексный", "системный", "стратегический",
+    "эффективный", "ключевой", "целостный",
+    "неотъемлемый", "всесторонний", "концептуальный",
+    "детерминистский", "инновационный", "перспективный",
+    "компетентностный", "методологический",
+    "конвергенция", "дивергенция", "модификация",
+    "верификация", "валидация", "апробация",
+    "имплицитный", "эксплицитный", "каузальный",
+    "корреляция", "экстраполяция", "артикуляция",
+    "диверсификация", "кластеризация", "приоритизация",
+    "резюмируя", "констатируя", "акцентируя",
+    "дифференцированный", "пролиферация",
 }
 
 _AI_WORDS_UK: set[str] = {
@@ -208,6 +235,19 @@ _AI_WORDS_UK: set[str] = {
     "нівелювати", "акумулювати",
     "інкорпорувати", "транспарентний",
     "валідний", "верифікувати",
+    # Extended UK AI words
+    "комплексний", "системний", "стратегічний",
+    "ефективний", "ключовий", "цілісний",
+    "невід'ємний", "всебічний", "концептуальний",
+    "детерміністський", "інноваційний", "перспективний",
+    "компетентнісний", "методологічний",
+    "конвергенція", "дивергенція", "модифікація",
+    "верифікація", "валідація", "апробація",
+    "імпліцитний", "експліцитний", "каузальний",
+    "кореляція", "екстраполяція", "артикуляція",
+    "диверсифікація", "кластеризація", "пріоритизація",
+    "резюмуючи", "констатуючи", "акцентуючи",
+    "диференційований", "проліферація",
 }
 
 # Per-language feature normalization: Cyrillic text has different char_entropy
