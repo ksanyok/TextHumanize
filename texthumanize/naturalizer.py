@@ -1170,6 +1170,11 @@ class TextNaturalizer:
         # EN: "very good" → "excellent", RU: "очень хороший" → "отличный"
         text = self._collapse_intensity_clusters(text, prob)
 
+        # 2c. Simplify complex words — reduce avg_word_length,
+        # avg_syllables_per_word, word_length_variance (all clamped
+        # at +3.0 for AI text and barely move without this).
+        text = self._simplify_complex_words(text, prob)
+
         # 3-5: Эти методы используют split_sentences + join → обрабатываем
         # каждый абзац/строку отдельно, чтобы не разрушать структуру
         text = self._per_paragraph(text, self._inject_burstiness, prob)
@@ -1188,9 +1193,28 @@ class TextNaturalizer:
         if self.intensity >= 25:
             text = self._per_paragraph(text, self._inject_dashes, prob)
 
-        # 5b. Разбивка длинных абзацев (avg_paragraph_length: UK Δ=+0.32)
+        # 5b. Inject questions & exclamations — targets question_rate and
+        # exclamation_rate (both stuck at –0.75 / –0.67 for AI text).
+        text = self._per_paragraph(
+            text, self._inject_questions_exclamations, prob,
+        )
+
+        # 5c. Разбивка длинных абзацев (avg_paragraph_length: UK Δ=+0.32)
         if self.intensity >= 30:
             text = self._split_long_paragraphs(text)
+
+        # 5d. Normalize starter diversity — MUST run LAST because all
+        # preceding transforms insert new sentences (burstiness fragments,
+        # rhetorical questions, discourse markers) that affect first-word
+        # distribution.  Targets ``starter_diversity`` (f31).
+        # NOTE: Runs on FULL text (not per-paragraph) because the feature
+        # is computed across all sentences regardless of paragraph breaks.
+        text = self._normalize_starter_diversity(text, prob)
+
+        # 5e. Aggressive long-word shortening — targets word_length_variance.
+        # Runs last so it can mop up any remaining very long words (>10 chars)
+        # that survived earlier transforms.
+        text = self._shorten_longest_words(text, prob)
 
         # 6. Контрактива — перенесена в sentence_restructurer.inject_contractions()
         # (75+ паттернов vs 15 здесь); не дублируем.
@@ -2092,6 +2116,556 @@ class TextNaturalizer:
 
         if modified:
             return ' '.join(result)
+
+        return text
+
+    # ─── Neural-feature-targeted transforms ─────────────────
+
+    def _simplify_complex_words(self, text: str, prob: float) -> str:
+        """Replace complex multi-syllable words with shorter equivalents.
+
+        Targets neural features:
+        - ``avg_word_length`` (f2) — long words push this high
+        - ``avg_syllables_per_word`` (f29) — complex words are AI signal
+        - ``word_length_variance`` (f3) — uniform long words = low variance
+
+        These three features are frequently clamped at +3.0 after
+        normalization for AI text. Swapping 3-5 long words per paragraph
+        can move them below the clamp threshold.
+        """
+        if prob < 0.30:
+            return text
+
+        _SIMPLIFICATIONS: dict[str, dict[str, list[str]]] = {
+            "en": {
+                "approximately": ["about", "roughly", "around"],
+                "additionally": ["also", "plus", "and"],
+                "significantly": ["greatly", "a lot", "much"],
+                "particularly": ["mostly", "mainly", "especially"],
+                "simultaneously": ["at once", "together"],
+                "communication": ["talk", "speech"],
+                "consideration": ["thought", "idea"],
+                "understanding": ["grasp", "idea"],
+                "substantially": ["mostly", "largely", "a lot"],
+                "unfortunately": ["sadly", "alas"],
+                "establishment": ["setup", "body"],
+                "determination": ["drive", "will", "grit"],
+                "possibilities": ["options", "ways", "paths"],
+                "opportunities": ["chances", "options"],
+                "characteristics": ["traits", "features"],
+                "recommendation": ["advice", "tip"],
+                "implementation": ["setup", "use"],
+                "infrastructure": ["base", "setup"],
+                "organizations": ["groups", "firms", "bodies"],
+                "responsibility": ["duty", "task", "role"],
+                "entertainment": ["fun", "shows"],
+                "professionals": ["pros", "experts"],
+                "investigation": ["study", "probe", "check"],
+                "collaboration": ["teamwork", "co-op"],
+                "functionality": ["features", "uses"],
+                "transformation": ["shift", "change"],
+                "comprehensive": ["full", "broad", "wide"],
+                "environmental": ["green", "eco"],
+                "nevertheless": ["still", "yet", "even so"],
+                "consequently": ["so", "thus", "hence"],
+                "demonstrate": ["show", "prove"],
+                "demonstrates": ["shows", "proves"],
+                "accommodate": ["fit", "hold", "house"],
+                "effectiveness": ["impact", "power"],
+                "encouragement": ["support", "boost"],
+                "independently": ["alone", "on its own"],
+                "manufacturing": ["making", "output"],
+                "technological": ["tech", "digital"],
+                "relationships": ["ties", "bonds", "links"],
+                "circumstances": ["cases", "events"],
+            },
+            "ru": {
+                "приблизительно": ["около", "где-то", "примерно"],
+                "дополнительно": ["ещё", "также", "плюс"],
+                "существенно": ["сильно", "очень", "заметно"],
+                "значительно": ["сильно", "много", "заметно"],
+                "одновременно": ["сразу", "вместе", "разом"],
+                "первоначально": ["сперва", "сначала"],
+                "последовательно": ["по порядку", "поэтапно"],
+                "предварительно": ["заранее", "заблаговременно"],
+                "соответственно": ["так что", "значит"],
+                "непосредственно": ["прямо", "напрямую"],
+                "систематически": ["часто", "всегда", "регулярно"],
+                "исключительно": ["только", "лишь", "сугубо"],
+                "предположительно": ["видимо", "похоже", "вроде"],
+                "продолжительность": ["срок", "время", "период"],
+                "обстоятельства": ["условия", "факторы"],
+                "функционирование": ["работа", "действие"],
+                "совершенствование": ["улучшение", "рост"],
+                "осуществление": ["проведение", "запуск"],
+                "использование": ["применение", "работа"],
+                "предоставление": ["выдача", "подача"],
+                "взаимодействие": ["связь", "контакт"],
+                "формирование": ["создание", "рост"],
+                "неоднократно": ["часто", "не раз"],
+                "свидетельствует": ["говорит", "указывает"],
+                "характеризуется": ["отличается", "известен"],
+                "воздействие": ["влияние", "эффект"],
+                "мероприятие": ["событие", "акция"],
+                "обеспечение": ["гарантия", "поддержка"],
+            },
+            "uk": {
+                "приблизно": ["десь", "біля", "близько"],
+                "додатково": ["ще", "також", "плюс"],
+                "суттєво": ["сильно", "дуже", "помітно"],
+                "значно": ["сильно", "багато", "помітно"],
+                "одночасно": ["разом", "зразу"],
+                "послідовно": ["по черзі", "поетапно"],
+                "попередньо": ["заздалегідь", "раніше"],
+                "відповідно": ["отже", "тому"],
+                "безпосередньо": ["прямо", "напряму"],
+                "систематично": ["часто", "завжди", "регулярно"],
+                "виключно": ["тільки", "лише"],
+                "функціонування": ["робота", "дія"],
+                "використання": ["застосування", "робота"],
+                "забезпечення": ["гарантія", "підтримка"],
+                "характеризується": ["відрізняється", "відомий"],
+                "неодноразово": ["часто", "не раз"],
+            },
+        }
+
+        lang_simpl = _SIMPLIFICATIONS.get(self.lang, {})
+        if not lang_simpl:
+            return text
+
+        replaced = 0
+        max_replacements = max(5, len(text.split()) // 10)
+
+        for word, replacements in lang_simpl.items():
+            if replaced >= max_replacements:
+                break
+            if self.rng.random() > prob * 0.7:
+                continue
+
+            pattern = re.compile(r'\b' + re.escape(word) + r'\b', re.IGNORECASE)
+            m = pattern.search(text)
+            if m:
+                original = m.group(0)
+                replacement = self.rng.choice(replacements)
+
+                if original[0].isupper() and replacement[0].islower():
+                    replacement = replacement[0].upper() + replacement[1:]
+                if original.isupper():
+                    replacement = replacement.upper()
+
+                text = text[:m.start()] + replacement + text[m.end():]
+                replaced += 1
+                self.changes.append({
+                    "type": "naturalize_simplify",
+                    "original": original,
+                    "replacement": replacement,
+                })
+
+        return text
+
+    def _inject_questions_exclamations(self, text: str, prob: float) -> str:
+        """Inject questions and exclamations into the text.
+
+        Targets neural features:
+        - ``question_rate`` (f24) — AI text has 0 questions → norm ≈ -0.75
+        - ``exclamation_rate`` (f25) — AI text has 0 exclamations → norm ≈ -0.67
+
+        Even 1 question + 1 exclamation per ~500 chars moves these features
+        from their clamped negative values toward the human-mean.
+        """
+        if prob < 0.30:
+            return text
+
+        sentences = split_sentences(text, lang=self.lang)
+        if len(sentences) < 3:
+            return text
+
+        # Count existing questions/exclamations
+        q_count = sum(1 for s in sentences if s.strip().endswith('?'))
+        excl_count = sum(1 for s in sentences if s.strip().endswith('!'))
+
+        result = list(sentences)
+        modified = False
+
+        # ── Inject rhetorical questions ──
+        _QUESTIONS: dict[str, list[str]] = {
+            "en": [
+                "But why?", "And what's the result?",
+                "Sounds familiar?", "Makes sense, right?",
+                "But is it really that simple?", "So what changed?",
+                "Why does this matter?", "What's the catch?",
+                "Hard to believe?", "See the pattern?",
+            ],
+            "ru": [
+                "Но почему?", "И каков результат?",
+                "Знакомо?", "Логично, правда?",
+                "Но так ли всё просто?", "И что изменилось?",
+                "Почему это важно?", "В чём подвох?",
+                "Трудно поверить?", "Видите закономерность?",
+            ],
+            "uk": [
+                "Але чому?", "І який результат?",
+                "Знайомо?", "Логічно, правда?",
+                "Але чи все так просто?", "І що змінилося?",
+                "Чому це важливо?", "У чому підступ?",
+                "Важко повірити?", "Бачите закономірність?",
+            ],
+        }
+        lang_questions = _QUESTIONS.get(self.lang, _QUESTIONS["en"])
+
+        # Always inject at least 1 question when none exist — this is the
+        # single highest-impact change for question_rate (moves -0.75 → +0.5)
+        target_q = max(1, len(sentences) // 8)
+        if q_count < target_q:
+            needed = target_q - q_count
+            step = max(2, len(result) // (needed + 1))
+            inserted = 0
+            pos = step
+            while inserted < needed and pos < len(result):
+                q = self.rng.choice(lang_questions)
+                result.insert(pos, q)
+                inserted += 1
+                modified = True
+                self.changes.append({
+                    "type": "naturalize_question",
+                    "detail": f"inject_question '{q}'",
+                })
+                pos += step + 1
+            # Guarantee at least 1 question if loop didn't fire
+            if inserted == 0 and len(result) > 2:
+                q = self.rng.choice(lang_questions)
+                ins_pos = max(1, len(result) * 2 // 3)
+                result.insert(ins_pos, q)
+                modified = True
+                self.changes.append({
+                    "type": "naturalize_question",
+                    "detail": f"inject_question_fallback '{q}'",
+                })
+
+        # ── Convert 1 period to exclamation ──
+        if excl_count == 0:
+            # Find a short-to-medium sentence to convert
+            for i in range(len(result)):
+                s = result[i].strip()
+                if not s.endswith('.'):
+                    continue
+                words = s.split()
+                if 2 <= len(words) <= 16:
+                    result[i] = s[:-1] + '!'
+                    modified = True
+                    self.changes.append({
+                        "type": "naturalize_exclamation",
+                        "detail": "period_to_exclamation",
+                    })
+                    break
+
+        if modified:
+            return ' '.join(result)
+        return text
+
+    def _normalize_starter_diversity(self, text: str, prob: float) -> str:
+        """Normalize sentence starter diversity across the FULL text.
+
+        Targets neural feature ``starter_diversity`` (f31).
+        Mean ≈ 0.7 (human). AI text typically has diversity ≈ 1.0 (every
+        sentence starts with a unique word — too perfect).
+
+        Operates on ALL sentences in the text (not per-paragraph) because
+        the neural detector computes this feature across the entire input.
+        """
+        if prob < 0.30:
+            return text
+
+        # Collect ALL sentences from full text, preserving paragraph structure
+        paragraphs = text.split('\n')
+        all_sentences: list[tuple[int, int, str]] = []  # (para_idx, sent_idx, text)
+        para_sentences: list[list[str]] = []
+
+        for p_idx, para in enumerate(paragraphs):
+            if not para.strip():
+                para_sentences.append([para])
+                continue
+            sents = split_sentences(para, lang=self.lang)
+            para_sentences.append(sents)
+            for s_idx, sent in enumerate(sents):
+                all_sentences.append((p_idx, s_idx, sent))
+
+        if len(all_sentences) < 4:
+            return text
+
+        # Calculate diversity across all sentences
+        first_words: list[str] = []
+        for _, _, sent in all_sentences:
+            words = sent.split()
+            if words:
+                first_words.append(words[0].lower().rstrip('.,;:'))
+            else:
+                first_words.append('')
+
+        n_unique = len(set(w for w in first_words if w))
+        diversity = n_unique / max(len(first_words), 1)
+
+        modified = False
+
+        # CASE 1: Too diverse (>0.82) — reduce toward 0.7
+        if diversity > 0.82:
+            _COMMON_STARTS: dict[str, list[str]] = {
+                "en": ["The", "This", "It"],
+                "ru": ["Это", "Но", "И"],
+                "uk": ["Це", "Але", "І"],
+            }
+            starts = _COMMON_STARTS.get(self.lang, _COMMON_STARTS["en"])
+            starter = self.rng.choice(starts)
+
+            # How many starters to repeat to reach ~0.7 diversity
+            # current: n_unique/n = diversity; target: (n_unique - K)/n = 0.7
+            # K = n * (diversity - 0.7)
+            n = len(all_sentences)
+            k_needed = max(1, int(n * (diversity - 0.68)))
+
+            replaced = 0
+            for idx in range(1, len(all_sentences) - 1):
+                if replaced >= k_needed:
+                    break
+                p_idx, s_idx, sent = all_sentences[idx]
+                words = sent.split()
+                if not words or len(words) < 3:
+                    continue
+                if skip_placeholder_sentence(sent):
+                    continue
+                # First replacement is guaranteed; rest probabilistic
+                if replaced > 0 and self.rng.random() > prob * 0.8:
+                    continue
+
+                old_start = words[0]
+                words[0] = words[0][0].lower() + words[0][1:]
+                new_sent = f"{starter} {' '.join(words)}"
+                para_sentences[p_idx][s_idx] = new_sent
+                replaced += 1
+                modified = True
+                self.changes.append({
+                    "type": "naturalize_starter_diversity",
+                    "detail": f"reduce_diversity: prepend '{starter}' (was '{old_start}')",
+                })
+
+        # CASE 2: Too uniform (<0.55) — diversify repeated starters
+        elif diversity < 0.55:
+            counter = Counter(first_words)
+            repeated = [(w, c) for w, c in counter.most_common()
+                         if c >= 3 and w]
+
+            if repeated:
+                _OPENERS: dict[str, list[str]] = {
+                    "en": ["Well,", "Now,", "See,", "Look,", "True,",
+                           "Sure,", "Yet", "Still,", "So", "Right,"],
+                    "ru": ["Ну,", "Вот,", "Да,", "Нет,", "Так,",
+                           "Впрочем,", "Знаете,", "Словом,", "Итак,"],
+                    "uk": ["Ну,", "Ось,", "Так,", "Ні,", "Отже,",
+                           "Втім,", "Знаєте,", "Словом,", "Загалом,"],
+                }
+                openers = _OPENERS.get(self.lang, _OPENERS["en"])
+
+                for rep_word, rep_count in repeated:
+                    fixed = 0
+                    for idx in range(len(all_sentences)):
+                        if fixed >= rep_count - 1:
+                            break
+                        p_idx, s_idx, sent = all_sentences[idx]
+                        words = sent.split()
+                        if not words:
+                            continue
+                        if words[0].lower().rstrip('.,;:') != rep_word:
+                            continue
+                        if fixed == 0:
+                            fixed += 1
+                            continue
+                        if self.rng.random() > prob * 0.7:
+                            fixed += 1
+                            continue
+                        opener = self.rng.choice(openers)
+                        lower_first = sent[0].lower() + sent[1:]
+                        para_sentences[p_idx][s_idx] = f"{opener} {lower_first}"
+                        fixed += 1
+                        modified = True
+                        self.changes.append({
+                            "type": "naturalize_starter_diversity",
+                            "detail": f"add_opener '{opener}' to '{rep_word}'",
+                        })
+
+        if modified:
+            # Reconstruct text preserving paragraph structure
+            rebuilt_paras: list[str] = []
+            for sents in para_sentences:
+                if len(sents) == 1 and not sents[0].strip():
+                    rebuilt_paras.append(sents[0])  # empty line
+                else:
+                    rebuilt_paras.append(' '.join(sents))
+            return '\n'.join(rebuilt_paras)
+
+        return text
+
+    def _shorten_longest_words(self, text: str, prob: float) -> str:
+        """Replace the longest words (>9 chars) with shorter alternatives.
+
+        Final cleanup pass targeting ``word_length_variance`` (f3).
+        The feature measures variance of word lengths; AI text has high
+        variance (mix of 12+ char words and short ones). Replacing the
+        longest outliers narrows the distribution substantially.
+
+        Uses regex-based search for very long words and replaces them
+        with shorter synonyms from a curated list.
+        """
+        if prob < 0.30:
+            return text
+
+        _LONG_TO_SHORT: dict[str, dict[str, str]] = {
+            "en": {
+                "technological": "tech",
+                "technologies": "tools",
+                "technology": "tech",
+                "sophisticated": "clever",
+                "infrastructure": "base",
+                "organizations": "groups",
+                "organizational": "company",
+                "communication": "talk",
+                "traditionally": "often",
+                "significantly": "much",
+                "approximately": "about",
+                "understanding": "grasp",
+                "establishment": "setup",
+                "determination": "drive",
+                "comprehensive": "full",
+                "effectiveness": "impact",
+                "manufacturing": "making",
+                "opportunities": "chances",
+                "collaboration": "teamwork",
+                "functionality": "features",
+                "transformation": "change",
+                "unfortunately": "sadly",
+                "independently": "alone",
+                "relationships": "ties",
+                "circumstances": "cases",
+                "entertainment": "fun",
+                "professionals": "pros",
+                "investigation": "study",
+                "environmental": "green",
+                "recommendation": "advice",
+                "characteristics": "traits",
+                "implementation": "use",
+                "possibilities": "options",
+                "responsibility": "duty",
+                "substantially": "mostly",
+                "simultaneously": "at once",
+                "consideration": "thought",
+                "additionally": "also",
+                "consequently": "so",
+                "nevertheless": "still",
+                "demonstrates": "shows",
+                "demonstrate": "show",
+                "accommodate": "fit",
+                "accordingly": "thus",
+                "acknowledge": "admit",
+                "fundamental": "basic",
+                "particularly": "mainly",
+                "alternative": "other",
+                "performance": "speed",
+                "development": "growth",
+                "interesting": "notable",
+                "perspective": "view",
+                "significant": "big",
+                "information": "data",
+                "application": "use",
+                "environment": "setting",
+                "appropriate": "right",
+                "communicate": "talk",
+                "consequence": "result",
+                "temperature": "heat",
+                "opportunity": "chance",
+                "immediately": "at once",
+                "potentially": "maybe",
+                "arrangement": "setup",
+                "combination": "mix",
+                "competition": "rivalry",
+                "comfortable": "cozy",
+                "requirement": "need",
+            },
+            "ru": {
+                "использование": "применение",
+                "предоставление": "выдача",
+                "функционирование": "работа",
+                "совершенствование": "улучшение",
+                "взаимодействие": "связь",
+                "осуществление": "запуск",
+                "формирование": "создание",
+                "информирование": "оповещение",
+                "свидетельствует": "говорит",
+                "характеризуется": "отличается",
+                "представляется": "кажется",
+                "предварительно": "заранее",
+                "предположительно": "видимо",
+                "непосредственно": "прямо",
+                "исключительно": "лишь",
+                "первоначально": "сперва",
+                "одновременно": "сразу",
+                "систематически": "часто",
+                "последовательно": "по порядку",
+                "соответственно": "значит",
+                "дополнительно": "ещё",
+                "приблизительно": "около",
+                "продолжительность": "срок",
+                "обстоятельства": "условия",
+                "мероприятие": "событие",
+                "обеспечение": "гарантия",
+                "воздействие": "влияние",
+                "существенно": "сильно",
+                "значительно": "много",
+            },
+            "uk": {
+                "використання": "робота",
+                "забезпечення": "гарантія",
+                "функціонування": "робота",
+                "характеризується": "відомий",
+                "безпосередньо": "прямо",
+                "систематично": "часто",
+                "виключно": "лише",
+                "послідовно": "по черзі",
+                "попередньо": "раніше",
+                "відповідно": "тому",
+                "одночасно": "разом",
+                "неодноразово": "часто",
+            },
+        }
+
+        word_map = _LONG_TO_SHORT.get(self.lang, {})
+        if not word_map:
+            return text
+
+        replaced = 0
+        max_reps = max(4, len(text.split()) // 12)
+
+        for long_word, short_word in word_map.items():
+            if replaced >= max_reps:
+                break
+            if self.rng.random() > prob * 0.8:
+                continue
+
+            pattern = re.compile(r'\b' + re.escape(long_word) + r'\b', re.IGNORECASE)
+            m = pattern.search(text)
+            if m:
+                original = m.group(0)
+                replacement = short_word
+                if original[0].isupper() and replacement[0].islower():
+                    replacement = replacement[0].upper() + replacement[1:]
+                if original.isupper():
+                    replacement = replacement.upper()
+
+                text = text[:m.start()] + replacement + text[m.end():]
+                replaced += 1
+                self.changes.append({
+                    "type": "naturalize_shorten",
+                    "original": original,
+                    "replacement": replacement,
+                })
 
         return text
 

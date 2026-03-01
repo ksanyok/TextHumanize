@@ -230,13 +230,13 @@ class Pipeline:
         """
 
         # Adaptive max_change_ratio: higher intensity allows more changes
-        # intensity 30 → 0.34, intensity 50 → 0.40, intensity 80 → 0.49
+        # intensity 30 → 0.42, intensity 50 → 0.50, intensity 80 → 0.62
         _user_max = self.options.constraints.get("max_change_ratio", None)
         if _user_max is not None:
             max_change = _user_max
         else:
             _i = self.options.intensity / 100.0
-            max_change = min(0.55, 0.25 + _i * 0.30)
+            max_change = min(0.68, 0.30 + _i * 0.40)
         deadline = time.monotonic() + self.PIPELINE_TIMEOUT
 
         def _check_deadline() -> None:
@@ -253,7 +253,7 @@ class Pipeline:
         # Graduated retry: если change_ratio слишком высокий,
         # повторяем с пониженной интенсивностью
         if result.change_ratio > max_change:
-            for factor in (0.4, 0.15):
+            for factor in (0.4, 0.20, 0.10, 0.05):
                 _check_deadline()
                 retry = self._run_pipeline(text, lang, intensity_factor=factor)
                 if retry.change_ratio <= max_change:
@@ -303,16 +303,28 @@ class Pipeline:
                 # to prevent inverse monotonicity (low intensity getting more
                 # total change than high intensity via the loop)
                 loop_change = self._calc_change_ratio(text, best_result.text)
-                _headroom = max(0.04, (self.options.intensity / 100) * 0.10)
-                _max_total = max_change + _headroom
+                # When user explicitly sets max_change_ratio, use tight
+                # headroom (5%) to respect their constraint.
+                if _user_max is not None:
+                    _max_total = max_change + 0.05
+                else:
+                    _headroom = max(0.10, (self.options.intensity / 100) * 0.25)
+                    _max_total = max_change + _headroom
+
+                # If AI score is still very high (>0.60) and the user hasn't
+                # set an explicit max_change_ratio, allow much more change —
+                # the text NEEDS aggressive editing to evade.
+                if best_score > 0.60 and _user_max is None:
+                    _max_total = max(0.80, _max_total)
+
                 if loop_change > _max_total:
                     break  # Already changed enough, don't risk quality
 
                 # Targeted escalation: analyze which detector features
                 # are still flagging AI, and escalate accordingly.
                 # Gentler escalation to avoid over-processing cliff.
-                escalation = 1.10 + 0.15 * loop_i  # 1.10×, 1.25×, 1.40×
-                esc_intensity = min(70, int(self.options.intensity * escalation))
+                escalation = 1.15 + 0.20 * loop_i  # 1.15×, 1.35×, 1.55×
+                esc_intensity = min(85, int(self.options.intensity * escalation))
 
                 # Use detection details to target weak features
                 loop_profile = self.options.profile
@@ -322,7 +334,7 @@ class Pipeline:
                 # If neural score is high, focus on structural transforms
                 # by using a higher-intensity profile
                 if neural_score > 0.6:
-                    esc_intensity = min(esc_intensity + 5, 75)
+                    esc_intensity = min(esc_intensity + 8, 92)
 
                 loop_opts = HumanizeOptions(
                     lang=self.options.lang,
@@ -331,7 +343,7 @@ class Pipeline:
                     preserve=dict(self.options.preserve),
                     constraints={
                         **self.options.constraints,
-                        "max_change_ratio": 0.30,  # Tighter per-loop limit
+                        "max_change_ratio": 0.45,  # Per-loop limit (raised)
                     },
                     seed=(self.options.seed or 42) + loop_i + 1,
                 )
@@ -363,7 +375,18 @@ class Pipeline:
                         )
                         best_score = loop_score
 
-            result = best_result
+            # If user set an explicit max_change_ratio constraint,
+            # reject loop results that violate it. Fall back to the
+            # pre-loop result which respects the constraint.
+            if _user_max is not None:
+                loop_change = self._calc_change_ratio(text, best_result.text)
+                if loop_change > _user_max + 0.05:
+                    # Detection loop overshot the constraint; keep pre-loop
+                    pass  # result is still the pre-loop one captured above
+                else:
+                    result = best_result
+            else:
+                result = best_result
 
         # ── Regression guard ─────────────────────────────────
         # If humanization made the AI score WORSE (increased), try
@@ -407,6 +430,18 @@ class Pipeline:
                 })
         except Exception:
             pass  # Guard is advisory, never blocks return
+
+        # ── Hard constraint enforcement ────────────────────────
+        # If the user set max_change_ratio explicitly, guarantee the final
+        # result respects it (within 5% tolerance). Re-run at progressively
+        # lower intensity if necessary.
+        if _user_max is not None and result.change_ratio > _user_max + 0.05:
+            for fb_factor in (0.3, 0.15, 0.08, 0.03):
+                _check_deadline()
+                fb = self._run_pipeline(text, lang, intensity_factor=fb_factor)
+                if fb.change_ratio <= _user_max + 0.05:
+                    result = fb
+                    break
 
         return result
 
@@ -600,8 +635,9 @@ class Pipeline:
         else:
             adjusted = base_intensity
 
-        if adjusted != base_intensity:
+        if adjusted != self.options.intensity:
             # Создаём копию опций с адаптированной интенсивностью
+            # (either intensity_factor changed it OR ai_score adjustment)
             effective_options = HumanizeOptions(
                 lang=self.options.lang,
                 profile=self.options.profile,

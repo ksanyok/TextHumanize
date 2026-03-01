@@ -38,7 +38,7 @@ _mul = operator.mul
 
 def _dot(a: Vec, b: Vec) -> float:
     """Dot product of two vectors (optimized)."""
-    return sum(map(_mul, a, b))
+    return float(sum(map(_mul, a, b)))
 
 
 def _matvec(m: Mat, v: Vec) -> Vec:
