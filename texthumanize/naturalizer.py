@@ -136,7 +136,6 @@ _AI_WORD_REPLACEMENTS = {
         "utilize": ["use", "apply", "work with"],
         "leverage": ["use", "take advantage of", "build on"],
         "facilitate": ["help", "make easier", "support"],
-        "implement": ["set up", "put in place", "build"],
         "comprehensive": ["full", "complete", "thorough", "detailed"],
         "crucial": ["key", "important", "central", "major"],
         "pivotal": ["key", "important", "central"],
@@ -169,7 +168,6 @@ _AI_WORD_REPLACEMENTS = {
         "facilitates": ["helps", "supports", "enables"],
         "facilitation": ["help", "support", "assistance"],
         "optimization": ["improvement", "tuning", "fine-tuning"],
-        "implementation": ["setup", "rollout", "execution"],
         "demonstrates": ["shows", "proves", "reveals"],
         "encompasses": ["covers", "includes", "spans"],
         "encompass": ["cover", "include", "span"],
@@ -2154,7 +2152,6 @@ class TextNaturalizer:
                 "opportunities": ["chances", "options"],
                 "characteristics": ["traits", "features"],
                 "recommendation": ["advice", "tip"],
-                "implementation": ["setup", "use"],
                 "infrastructure": ["base", "setup"],
                 "organizations": ["groups", "firms", "bodies"],
                 "responsibility": ["duty", "task", "role"],
@@ -2178,6 +2175,48 @@ class TextNaturalizer:
                 "technological": ["tech", "digital"],
                 "relationships": ["ties", "bonds", "links"],
                 "circumstances": ["cases", "events"],
+                # Additional high-syllable AI words
+                "artificial": ["man-made", "fake", "built"],
+                "intelligence": ["smarts", "brains", "AI"],
+                "operational": ["daily", "working", "running"],
+                "efficiency": ["speed", "output", "gains"],
+                "utilization": ["use", "usage"],
+                "algorithms": ["methods", "steps", "rules"],
+                "meaningful": ["useful", "real", "key"],
+                "facilitate": ["help", "ease", "aid"],
+                "facilitates": ["helps", "eases", "aids"],
+                "demonstrated": ["shown", "proved", "made clear"],
+                "significant": ["big", "major", "key"],
+                "optimization": ["tuning", "fixing", "boosting"],
+                "optimizing": ["tuning", "boosting", "fixing"],
+                "proliferation": ["spread", "growth", "rise"],
+                "contemporary": ["modern", "current", "today's"],
+                "integration": ["blending", "adding", "merging"],
+                "unprecedented": ["new", "rare", "first"],
+                "educational": ["learning", "school", "teaching"],
+                "dissemination": ["spread", "sharing"],
+                "geographical": ["regional", "world", "local"],
+                "democratizing": ["opening up", "spreading"],
+                "fundamentally": ["deeply", "at its core"],
+                "transformed": ["changed", "shifted", "reshaped"],
+                "traditional": ["classic", "old", "standard"],
+                "considerable": ["large", "big", "notable"],
+                "establishing": ["setting up", "building"],
+                "contribution": ["input", "help", "part"],
+                "experiencing": ["seeing", "going through"],
+                "specifically": ["namely", "in fact"],
+                "continuously": ["always", "still", "non-stop"],
+                "requirements": ["needs", "rules", "specs"],
+                "developments": ["changes", "updates", "news"],
+                "productivity": ["output", "work rate"],
+                "incorporating": ["adding", "using", "blending"],
+                "methodologies": ["methods", "ways", "approaches"],
+                "accessibility": ["access", "ease of use"],
+                "capabilities": ["skills", "powers", "features"],
+                "improvements": ["gains", "fixes", "upgrades"],
+                "perspectives": ["views", "angles", "takes"],
+                "applications": ["uses", "apps", "tools"],
+                "implications": ["effects", "results", "impacts"],
             },
             "ru": {
                 "приблизительно": ["около", "где-то", "примерно"],
@@ -2234,32 +2273,38 @@ class TextNaturalizer:
             return text
 
         replaced = 0
-        max_replacements = max(5, len(text.split()) // 10)
+        max_replacements = max(8, len(text.split()) // 6)
 
         for word, replacements in lang_simpl.items():
             if replaced >= max_replacements:
                 break
-            if self.rng.random() > prob * 0.7:
-                continue
 
             pattern = re.compile(r'\b' + re.escape(word) + r'\b', re.IGNORECASE)
             m = pattern.search(text)
-            if m:
-                original = m.group(0)
-                replacement = self.rng.choice(replacements)
+            if not m:
+                continue
 
-                if original[0].isupper() and replacement[0].islower():
-                    replacement = replacement[0].upper() + replacement[1:]
-                if original.isupper():
-                    replacement = replacement.upper()
+            # Skip probabilistically only for marginal replacements;
+            # always replace words that are LONG (10+ chars) since
+            # those are the strongest AI signal.
+            if len(word) < 10 and self.rng.random() > prob * 0.85:
+                continue
 
-                text = text[:m.start()] + replacement + text[m.end():]
-                replaced += 1
-                self.changes.append({
-                    "type": "naturalize_simplify",
-                    "original": original,
-                    "replacement": replacement,
-                })
+            original = m.group(0)
+            replacement = self.rng.choice(replacements)
+
+            if original[0].isupper() and replacement[0].islower():
+                replacement = replacement[0].upper() + replacement[1:]
+            if original.isupper():
+                replacement = replacement.upper()
+
+            text = text[:m.start()] + replacement + text[m.end():]
+            replaced += 1
+            self.changes.append({
+                "type": "naturalize_simplify",
+                "original": original,
+                "replacement": replacement,
+            })
 
         return text
 
@@ -2551,7 +2596,6 @@ class TextNaturalizer:
                 "environmental": "green",
                 "recommendation": "advice",
                 "characteristics": "traits",
-                "implementation": "use",
                 "possibilities": "options",
                 "responsibility": "duty",
                 "substantially": "mostly",

@@ -257,6 +257,8 @@ def humanize(
         seed=seed,
         target_style=target_style,
         custom_dict=custom_dict,
+        openai_api_key=openai_api_key,
+        openai_model=openai_model,
     )
 
     if preserve:

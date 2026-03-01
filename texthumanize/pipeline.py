@@ -287,8 +287,15 @@ class Pipeline:
         max_loops = self.options.constraints.get("max_detection_loops", 3)
         ai_before = result.metrics_before.get("artificiality_score", 0)
 
-        # Only loop if original text was actually AI-like (>40%)
-        if max_loops > 0 and ai_before > 40:
+        # Also check the full combined detection score on the original text.
+        # The heuristic analyzer (artificiality_score) may underestimate AI
+        # probability for texts the neural MLP detector catches. Use the
+        # higher of the two signals to decide whether to loop.
+        _full_before = _cached_detect(text, lang=lang).get("combined_score", 0.0)
+        _trigger = ai_before > 40 or _full_before > 0.50
+
+        # Only loop if original text was actually AI-like
+        if max_loops > 0 and _trigger:
             best_result = result
             detect_result = _cached_detect(result.text, lang=lang)
             best_score = detect_result.get("combined_score", 1.0)
@@ -388,6 +395,34 @@ class Pipeline:
             else:
                 result = best_result
 
+        # ── LLM-assisted evasion ─────────────────────────────
+        # When an OpenAI API key is provided and the AI score is still
+        # above the target after local transforms, use the LLM to
+        # rewrite the text at sentence level for deeper evasion.
+        _api_key = self.options.openai_api_key
+        if _api_key:
+            try:
+                _check_deadline()
+                llm_score = _cached_detect(result.text, lang=lang).get(
+                    "combined_score", 0.0,
+                )
+                if llm_score > target_ai:
+                    llm_result = self._llm_assisted_rewrite(
+                        original=text,
+                        current=result,
+                        lang=lang,
+                        api_key=_api_key,
+                        model=self.options.openai_model,
+                        target_score=target_ai,
+                        max_change=max_change,
+                        detect_fn=_cached_detect,
+                        check_deadline=_check_deadline,
+                    )
+                    if llm_result is not None:
+                        result = llm_result
+            except (TimeoutError, Exception):
+                pass  # LLM evasion is advisory, never blocks return
+
         # ── Regression guard ─────────────────────────────────
         # If humanization made the AI score WORSE (increased), try
         # graduated fallback with decreasing intensity factors.
@@ -444,6 +479,110 @@ class Pipeline:
                     break
 
         return result
+
+    # ── LLM-assisted rewrite helper ─────────────────────────
+
+    _LLM_SYSTEM_PROMPT = (
+        "You are a text rewriter. Rewrite the following text to sound "
+        "completely natural and human-written in {lang}. "
+        "CRITICAL RULES:\n"
+        "- Use short, simple words (1-2 syllables preferred)\n"
+        "- Vary sentence lengths dramatically: mix very short (3-5 words) "
+        "with medium (10-15 words) sentences\n"
+        "- Add minor imperfections: contractions, informal transitions, "
+        "occasional fragments\n"
+        "- Avoid formal/academic vocabulary\n"
+        "- Start sentences with different words\n"
+        "- Preserve the original meaning\n"
+        "Only output the rewritten text, nothing else."
+    )
+
+    def _llm_assisted_rewrite(
+        self,
+        original: str,
+        current: HumanizeResult,
+        lang: str,
+        api_key: str,
+        model: str,
+        target_score: float,
+        max_change: float,
+        detect_fn: Callable[..., dict],
+        check_deadline: Callable[[], None],
+    ) -> HumanizeResult | None:
+        """Use OpenAI LLM to rewrite text that local transforms couldn't evade.
+
+        Returns an improved HumanizeResult or None if LLM didn't help.
+        """
+        from texthumanize.ai_backend import AIBackend
+
+        check_deadline()
+
+        try:
+            ai = AIBackend(
+                openai_api_key=api_key,
+                openai_model=model,
+                prefer="openai",
+            )
+            # Rewrite the already-humanized text for deeper evasion
+            rewritten = ai.paraphrase(
+                current.text, lang=lang, style=self.options.profile,
+            )
+        except Exception:
+            return None
+
+        if not rewritten or not rewritten.strip():
+            return None
+
+        # Also try improve_naturalness for a second variant
+        try:
+            check_deadline()
+            natural = ai.improve_naturalness(current.text, lang=lang)
+        except Exception:
+            natural = None
+
+        # Evaluate both variants, pick the best
+        candidates = [rewritten]
+        if natural and natural.strip() and natural != rewritten:
+            candidates.append(natural)
+
+        best_text: str | None = None
+        pre_score = detect_fn(current.text, lang=lang).get("combined_score", 1.0)
+        best_score = pre_score
+
+        for candidate in candidates:
+            check_deadline()
+            try:
+                cand_detect = detect_fn(candidate, lang=lang)
+            except Exception:
+                continue
+            cand_score = cand_detect.get("combined_score", 1.0)
+            if cand_score < best_score:
+                best_text = candidate
+                best_score = cand_score
+
+        if best_text is None:
+            return None
+
+        # Build result
+        return HumanizeResult(
+            original=original,
+            text=best_text,
+            lang=lang,
+            profile=self.options.profile,
+            intensity=self.options.intensity,
+            changes=[
+                *current.changes,
+                {
+                    "type": "llm_evasion",
+                    "description": (
+                        f"LLM rewrite ({model}): "
+                        f"AI {pre_score:.0%}→{best_score:.0%}"
+                    ),
+                },
+            ],
+            metrics_before=current.metrics_before,
+            metrics_after=current.metrics_after,
+        )
 
     @staticmethod
     def _calc_change_ratio(original: str, current: str) -> float:

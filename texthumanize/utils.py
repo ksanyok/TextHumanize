@@ -29,7 +29,6 @@ class HumanizeOptions:
         "brand_terms": [],
     })
     constraints: dict[str, Any] = field(default_factory=lambda: {
-        "max_change_ratio": 0.4,
         "min_sentence_length": 3,
         "keep_keywords": [],
     })
@@ -38,6 +37,9 @@ class HumanizeOptions:
     target_style: Any | None = None  # StylisticFingerprint, preset name (str), or None
     # Пользовательский словарь замен: {"слово": "замена"} или {"слово": ["вар1", "вар2"]}
     custom_dict: dict[str, str | list[str]] | None = None
+    # OpenAI API key для LLM-assisted evasion в детектор-петле
+    openai_api_key: str | None = None
+    openai_model: str = "gpt-4o-mini"
 
     def __post_init__(self) -> None:
         if self.intensity < 0:
