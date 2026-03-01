@@ -4,8 +4,8 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from texthumanize import humanize, detect_ai
-from texthumanize.pipeline import Pipeline, HumanizeOptions
+from texthumanize import humanize
+from texthumanize.pipeline import HumanizeOptions, Pipeline
 
 
 class TestLLMOptionsPropagation(unittest.TestCase):
