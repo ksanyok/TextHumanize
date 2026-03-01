@@ -248,12 +248,10 @@ _AI_WORD_REPLACEMENTS = {
         "understanding": ["grasp", "sense", "view"],
         "establishment": ["setup", "start", "founding"],
         "transformation": ["shift", "change", "switch"],
-        "significantly": ["a lot", "greatly", "much"],
         "functionality": ["features", "tools", "uses"],
         "accessibility": ["access", "reach", "ease"],
         "sustainability": ["lasting", "green", "viable"],
         "challenges": ["issues", "hurdles", "snags"],
-        "landscape": ["scene", "field", "space"],
         "stakeholders": ["parties", "groups", "people"],
         "continuously": ["always", "non-stop", "still"],
         "accumulated": ["built up", "gathered", "saved"],
@@ -277,7 +275,6 @@ _AI_WORD_REPLACEMENTS = {
         "circumstances": ["conditions", "cases", "situations"],
         "communication": ["contact", "talk", "exchange"],
         "collaboration": ["teamwork", "joint work", "effort"],
-        "establishment": ["setup", "creation", "founding"],
         "determination": ["resolve", "grit", "drive"],
         "consideration": ["thought", "care", "attention"],
         "investigation": ["study", "look", "research"],
@@ -292,7 +289,6 @@ _AI_WORD_REPLACEMENTS = {
         "imperative": ["vital", "key", "pressing"],
         "significant": ["big", "major", "important"],
         "particularly": ["especially", "mainly", "notably"],
-        "demonstrates": ["shows", "proves", "reveals"],
         "technological": ["tech", "digital", "modern"],
         "advancements": ["advances", "progress", "gains"],
         "convergence": ["meeting", "merging", "joining"],
@@ -1205,10 +1201,6 @@ class TextNaturalizer:
                 "Key point.", "Makes sense.",
             ]
         return self.rng.choice(fragments)
-
-        if modified:
-            return ' '.join(s for s in result if s.strip())
-        return text
 
     def _smart_split(self, sentence: str) -> str | None:
         """Умная разбивка предложения для burstiness."""

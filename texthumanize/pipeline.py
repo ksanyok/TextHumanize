@@ -14,7 +14,7 @@ from texthumanize.coherence_repair import CoherenceRepairer
 from texthumanize.decancel import Debureaucratizer
 from texthumanize.fingerprint_randomizer import FingerprintRandomizer
 from texthumanize.grammar_fix import GrammarCorrector
-from texthumanize.lang import has_deep_support, get_language_tier
+from texthumanize.lang import get_language_tier
 from texthumanize.liveliness import LivelinessInjector
 from texthumanize.naturalizer import TextNaturalizer
 from texthumanize.normalizer import TypographyNormalizer
@@ -347,13 +347,7 @@ class Pipeline:
                             lang=lang,
                             profile=self.options.profile,
                             intensity=self.options.intensity,
-                            changes=best_result.changes + [
-                                {"type": "detection_loop",
-                                 "description": (
-                                     f"Loop {loop_i + 1}: AI "
-                                     f"{best_score:.0%}→{loop_score:.0%}"
-                                 )},
-                            ] + loop_result.changes,
+                            changes=[*best_result.changes, {"type": "detection_loop", "description": f"Loop {loop_i + 1}: AI " f"{best_score:.0%}→{loop_score:.0%}"}, *loop_result.changes],
                             metrics_before=best_result.metrics_before,
                             metrics_after=loop_result.metrics_after,
                         )

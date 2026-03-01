@@ -23,7 +23,6 @@ import math
 import re
 from typing import Any
 
-from texthumanize.sentence_split import split_sentences
 from texthumanize._word_freq_data import (
     get_de_uni,
     get_en_bi,
@@ -33,6 +32,7 @@ from texthumanize._word_freq_data import (
     get_ru_bi,
     get_ru_uni,
 )
+from texthumanize.sentence_split import split_sentences
 
 logger = logging.getLogger(__name__)
 

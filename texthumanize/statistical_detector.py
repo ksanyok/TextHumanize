@@ -247,7 +247,6 @@ _CONJUNCTIONS_RU: set[str] = {
     "если",
     "когда",
     "после",
-    "пока",
     "чтобы",
     "что",
     "как",
@@ -706,7 +705,7 @@ def _count_ai_markers(
         # Count single-word markers from all categories
         all_words: set[str] = set()
         all_phrases: list[str] = []
-        for category, words in lang_markers.items():
+        for _category, words in lang_markers.items():
             for w in words:
                 if " " in w:
                     all_phrases.append(w.lower())

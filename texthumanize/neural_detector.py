@@ -23,8 +23,6 @@ import re
 from collections import Counter
 from typing import Any
 
-from texthumanize.sentence_split import split_sentences
-
 from texthumanize.ai_markers import load_ai_markers
 from texthumanize.neural_engine import (
     DenseLayer,
@@ -32,6 +30,7 @@ from texthumanize.neural_engine import (
     Vec,
     _sigmoid,
 )
+from texthumanize.sentence_split import split_sentences
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +122,7 @@ _CONJUNCTIONS_RU: set[str] = {
 _CONJUNCTIONS_UK: set[str] = {
     "і", "й", "а", "але", "або", "проте", "однак", "зате", "тому",
     "хоча", "поки", "коли", "якщо", "щоб", "бо", "адже", "отже",
-    "або", "хай", "нехай", "також", "теж",
+    "хай", "нехай", "також", "теж",
 }
 
 _TRANSITIONS_EN: set[str] = {
@@ -141,7 +140,7 @@ _TRANSITIONS_RU: set[str] = {
     "наоборот", "альтернативно", "конкретно", "безусловно",
     "существенно", "фундаментально", "действительно", "несомненно",
     "очевидно", "таким", "прежде", "во-первых", "во-вторых",
-    "в-третьих", "наконец", "итак", "впрочем", "тем",
+    "в-третьих", "наконец", "итак", "впрочем",
 }
 
 _TRANSITIONS_UK: set[str] = {

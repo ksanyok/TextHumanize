@@ -788,11 +788,10 @@ class ParaphraseEngine:
                     after = text[end:]
                     # Strip trailing comma+space left by connector-style MWEs
                     # e.g. "Кроме того, ..." → "Ещё ..." (not "Ещё, ...")
-                    if after.startswith(", ") and not new.endswith(","):
+                    if after.startswith(", ") and not new.endswith(",") and len(new.split()) <= 3:
                         # Only strip if the replacement is a short word/phrase
                         # (connectors, not clause-level replacements)
-                        if len(new.split()) <= 3:
-                            after = " " + after[2:]
+                        after = " " + after[2:]
                     text = text[:idx] + new + after
                     self._changes.append(f"mwe: '{old}' → '{new}'")
 
@@ -929,7 +928,7 @@ class ParaphraseEngine:
         if not result.endswith((".", "!", "?")):
             result += "."
 
-        self._changes.append(f"embed: merged 2 sentences")
+        self._changes.append("embed: merged 2 sentences")
         return result
 
     # ---------------------------------------------------------------

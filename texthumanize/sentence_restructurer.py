@@ -117,7 +117,7 @@ def inject_contractions(
     if rng is None:
         rng = random.Random()
 
-    for pat, full, short in _CONTRACTION_PATTERNS:
+    for pat, _full, short in _CONTRACTION_PATTERNS:
         def _replacer(m: re.Match, _short: str = short) -> str:
             if rng.random() > probability:
                 return m.group()
@@ -289,10 +289,9 @@ def _try_split_at_conjunction(
             continue
         # Count words before the conjunction
         words_before = len(sent[:idx].split())
-        if min_third <= words_before <= max_third:
-            if best_pos == -1 or abs(words_before - wc // 2) < abs(best_pos - wc // 2):
-                best_pos = words_before
-                best_conj = conj
+        if min_third <= words_before <= max_third and (best_pos == -1 or abs(words_before - wc // 2) < abs(best_pos - wc // 2)):
+            best_pos = words_before
+            best_conj = conj
 
     if best_pos == -1:
         return None

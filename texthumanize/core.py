@@ -779,7 +779,7 @@ def _compute_adaptive_overrides(
         overrides[area] = max(overrides.get(area, 0), scaled_boost)
 
     if verbose:
-        for metric_name, value, boost in flagged[:5]:
+        for metric_name, value, _boost in flagged[:5]:
             area = area_map.get(metric_name, "general")
             logger.info(
                 "  Adaptive: %s=%.3f (flagged) → boost %s +%d",

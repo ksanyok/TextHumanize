@@ -26,10 +26,8 @@ import logging
 import math
 import os
 import random
-import re
 from typing import Any
 
-from texthumanize.sentence_split import split_sentences
 from texthumanize.neural_engine import (
     FeedForwardNet,
     LSTMCell,
@@ -46,6 +44,7 @@ from texthumanize.neural_engine import (
     _zeros,
     compress_weights,
 )
+from texthumanize.sentence_split import split_sentences
 
 logger = logging.getLogger(__name__)
 

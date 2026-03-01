@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import logging
 import math
-import re
 from collections import Counter
 
 from texthumanize.sentence_split import split_sentences

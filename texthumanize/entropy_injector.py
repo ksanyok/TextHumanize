@@ -18,9 +18,7 @@ Works for all languages, no external dependencies.
 
 from __future__ import annotations
 
-import math
 import random
-import re
 from typing import Optional
 
 from texthumanize.sentence_split import split_sentences
@@ -45,7 +43,7 @@ class EntropyInjector:
         Text profile ('chat', 'web', 'seo', 'docs', 'formal').
     """
 
-    __slots__ = ("_lang", "_intensity", "_rng", "_profile", "_changes")
+    __slots__ = ("_changes", "_intensity", "_lang", "_profile", "_rng")
 
     def __init__(
         self,
@@ -260,7 +258,7 @@ class EntropyInjector:
         second = " ".join(words[best_split:])
 
         # Ensure first part has sentence-ending punctuation
-        if first and not first[-1] in ".!?":
+        if first and first[-1] not in ".!?":
             first += "."
         # Capitalize second part
         if second:
@@ -753,7 +751,7 @@ class EntropyInjector:
 
             modified = False
             for j, w in enumerate(words):
-                clean = w.strip(".,;:!?\"'()—–-«»""''").lower()
+                clean = w.strip(".,;:!?\"'()—–-«»""''").lower()  # noqa: B005
                 if clean in swaps and self._rng.random() < 0.25:
                     replacement = self._rng.choice(swaps[clean])
                     # Preserve original casing
@@ -1016,7 +1014,7 @@ class EntropyInjector:
         freq: dict[str, int] = {}
         for sent in sentences:
             for w in sent.split():
-                clean = w.strip(".,;:!?\"'()—–-«»""''").lower()
+                clean = w.strip(".,;:!?\"'()—–-«»""''").lower()  # noqa: B005
                 if len(clean) >= 4:  # Only track substantive words
                     freq[clean] = freq.get(clean, 0) + 1
 
@@ -1037,7 +1035,7 @@ class EntropyInjector:
             words = sent.split()
             modified = False
             for j, w in enumerate(words):
-                clean = w.strip(".,;:!?\"'()—–-«»""''").lower()
+                clean = w.strip(".,;:!?\"'()—–-«»""''").lower()  # noqa: B005
                 if clean in overused:
                     seen[clean] = seen.get(clean, 0) + 1
                     # Replace only on 3rd+ occurrence with some probability
