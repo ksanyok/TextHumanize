@@ -147,6 +147,28 @@ _SPLIT_CONJUNCTIONS_EN = [
     ", although ", ", however ", ", therefore ",
 ]
 
+_SPLIT_CONJUNCTIONS_RU = [
+    ", который ", ", которая ", ", которое ", ", которые ",
+    ", и ", ", но ", "; ", ", а ",
+    ", однако ", ", поэтому ", ", хотя ",
+    ", причём ", ", при этом ", " — ",
+    ", так как ", ", потому что ", ", ведь ",
+]
+
+_SPLIT_CONJUNCTIONS_UK = [
+    ", який ", ", яка ", ", яке ", ", які ",
+    ", і ", ", але ", "; ", ", а ",
+    ", однак ", ", тому ", ", хоча ",
+    ", причому ", ", при цьому ", " — ",
+    ", бо ", ", тому що ", ", адже ",
+]
+
+_SPLIT_CONJUNCTIONS = {
+    "en": _SPLIT_CONJUNCTIONS_EN,
+    "ru": _SPLIT_CONJUNCTIONS_RU,
+    "uk": _SPLIT_CONJUNCTIONS_UK,
+}
+
 _SHORT_FRAGMENTS_EN = [
     "Right.", "True.", "Not quite.", "Fair point.", "No doubt.",
     "Exactly.", "In theory.", "Sometimes.", "Hopefully.", "Perhaps.",
@@ -154,6 +176,32 @@ _SHORT_FRAGMENTS_EN = [
     "More or less.", "Hard to say.", "It depends.", "Maybe.",
     "Not always.", "Good point.", "That said.", "Interesting.",
 ]
+
+_SHORT_FRAGMENTS_RU = [
+    "Верно.", "Точно.", "Не совсем.", "Логично.", "Без сомнений.",
+    "Именно.", "В теории.", "Иногда.", "Надеюсь.", "Возможно.",
+    "Спорно.", "Очевидно.", "Ясное дело.", "Ну, как бы да.",
+    "Примерно так.", "Трудно сказать.", "Зависит от ситуации.", "Может быть.",
+    "Не всегда.", "Хороший аргумент.", "При этом.", "Интересно.",
+    "Факт.", "Вот так.", "Бывает.", "А что поделаешь.", "Увы.",
+    "Но нет.", "Само собой.", "И правда.",
+]
+
+_SHORT_FRAGMENTS_UK = [
+    "Вірно.", "Точно.", "Не зовсім.", "Логічно.", "Без сумнівів.",
+    "Саме так.", "В теорії.", "Іноді.", "Сподіваюсь.", "Можливо.",
+    "Спірно.", "Очевидно.", "Ясна річ.", "Ну, приблизно так.",
+    "Приблизно.", "Важко сказати.", "Залежить від ситуації.", "Може бути.",
+    "Не завжди.", "Гарний аргумент.", "При цьому.", "Цікаво.",
+    "Факт.", "Ось так.", "Буває.", "А що вдієш.", "На жаль.",
+    "Але ні.", "Само собою.", "І справді.",
+]
+
+_SHORT_FRAGMENTS = {
+    "en": _SHORT_FRAGMENTS_EN,
+    "ru": _SHORT_FRAGMENTS_RU,
+    "uk": _SHORT_FRAGMENTS_UK,
+}
 
 
 def reshape_sentence_lengths(
@@ -168,8 +216,8 @@ def reshape_sentence_lengths(
     Splits overly uniform sentences and occasionally inserts short
     fragments to increase coefficient of variation.
     """
-    if lang != "en":
-        return text  # Only EN for now
+    if lang not in _SPLIT_CONJUNCTIONS:
+        return text  # Unsupported language
 
     if rng is None:
         rng = random.Random()
@@ -196,7 +244,7 @@ def reshape_sentence_lengths(
 
         # Strategy 1: Split long uniform sentences
         if wc >= 22 and rng.random() < intensity * 0.6:
-            parts = _try_split_at_conjunction(sent, rng)
+            parts = _try_split_at_conjunction(sent, lang, rng)
             if parts:
                 result.extend(parts)
                 continue
@@ -210,7 +258,7 @@ def reshape_sentence_lengths(
             and rng.random() < intensity * 0.2
         ):
             result.append(sent)
-            result.append(rng.choice(_SHORT_FRAGMENTS_EN))
+            result.append(rng.choice(_SHORT_FRAGMENTS.get(lang, _SHORT_FRAGMENTS_EN)))
             continue
 
         result.append(sent)
@@ -219,7 +267,7 @@ def reshape_sentence_lengths(
 
 
 def _try_split_at_conjunction(
-    sent: str, rng: random.Random,
+    sent: str, lang: str, rng: random.Random,
 ) -> list[str] | None:
     """Try to split a sentence at a conjunction point."""
     words = sent.split()
@@ -227,13 +275,15 @@ def _try_split_at_conjunction(
     if wc < 15:
         return None
 
+    conj_list = _SPLIT_CONJUNCTIONS.get(lang, _SPLIT_CONJUNCTIONS_EN)
+
     # Find best split point (in middle third)
     best_pos = -1
     best_conj = ""
     min_third = wc // 3
     max_third = 2 * wc // 3
 
-    for conj in _SPLIT_CONJUNCTIONS_EN:
+    for conj in conj_list:
         idx = sent.find(conj)
         if idx == -1:
             continue
@@ -351,10 +401,94 @@ _FORMAL_TO_INFORMAL_EN: dict[str, list[str]] = {
     "in close proximity to": ["near", "close to"],
 }
 
-_FORMAL_TO_INFORMAL_RE: list[tuple[re.Pattern[str], list[str]]] = [
-    (re.compile(r'\b' + re.escape(k) + r'\b', re.IGNORECASE), v)
-    for k, v in _FORMAL_TO_INFORMAL_EN.items()
-]
+_FORMAL_TO_INFORMAL_RU: dict[str, list[str]] = {
+    "осуществлять": ["делать", "проводить"],
+    "реализовывать": ["делать", "проводить", "воплощать"],
+    "имплементировать": ["внедрять", "вводить"],
+    "оптимизировать": ["улучшать", "настраивать"],
+    "генерировать": ["создавать", "выдавать"],
+    "трансформировать": ["менять", "преобразовывать"],
+    "интегрировать": ["встраивать", "объединять"],
+    "верифицировать": ["проверять", "подтверждать"],
+    "валидировать": ["проверять", "одобрять"],
+    "координировать": ["согласовывать", "организовывать"],
+    "стимулировать": ["поощрять", "побуждать"],
+    "модернизировать": ["обновлять", "улучшать"],
+    "систематизировать": ["упорядочить", "разложить по полочкам"],
+    "структурировать": ["организовать", "упорядочить"],
+    "аккумулировать": ["накопить", "собрать"],
+    "нивелировать": ["сгладить", "убрать"],
+    "максимизировать": ["увеличить", "поднять"],
+    "минимизировать": ["уменьшить", "сократить"],
+    "фундаментально": ["в корне", "по сути"],
+    "принципиально": ["в корне", "по-настоящему"],
+    "систематически": ["регулярно", "методично"],
+    "перманентно": ["постоянно", "всё время"],
+    "существенно": ["заметно", "ощутимо", "сильно"],
+    "безусловно": ["конечно", "точно"],
+    "несомненно": ["конечно", "точно"],
+    "в настоящее время": ["сейчас", "на данный момент"],
+    "в рамках": ["в пределах", "в ходе"],
+    "посредством": ["при помощи", "через"],
+    "вследствие": ["из-за", "по причине"],
+    "с целью": ["чтобы", "для того чтобы"],
+    "представляет собой": ["является", "это"],
+    "в значительной степени": ["во многом", "сильно"],
+    "тем не менее": ["но", "однако"],
+    "таким образом": ["итак", "так что"],
+    "следовательно": ["а значит", "стало быть"],
+}
+
+_FORMAL_TO_INFORMAL_UK: dict[str, list[str]] = {
+    "здійснювати": ["робити", "проводити"],
+    "реалізовувати": ["робити", "проводити", "втілювати"],
+    "імплементувати": ["впроваджувати", "вводити"],
+    "оптимізувати": ["поліпшувати", "налаштовувати"],
+    "генерувати": ["створювати", "видавати"],
+    "трансформувати": ["змінювати", "перетворювати"],
+    "інтегрувати": ["вбудовувати", "об'єднувати"],
+    "верифікувати": ["перевіряти", "підтверджувати"],
+    "валідувати": ["перевіряти", "ухвалювати"],
+    "координувати": ["узгоджувати", "організовувати"],
+    "стимулювати": ["заохочувати", "спонукати"],
+    "модернізувати": ["оновлювати", "поліпшувати"],
+    "систематизувати": ["упорядкувати", "розкласти по поличках"],
+    "структурувати": ["організувати", "упорядкувати"],
+    "акумулювати": ["накопичити", "зібрати"],
+    "нівелювати": ["згладити", "прибрати"],
+    "максимізувати": ["збільшити", "підняти"],
+    "мінімізувати": ["зменшити", "скоротити"],
+    "фундаментально": ["докорінно", "по суті"],
+    "принципово": ["докорінно", "по-справжньому"],
+    "систематично": ["регулярно", "методично"],
+    "перманентно": ["постійно", "весь час"],
+    "суттєво": ["помітно", "відчутно", "сильно"],
+    "безумовно": ["звичайно", "точно"],
+    "безсумнівно": ["звичайно", "точно"],
+    "наразі": ["зараз", "на даний момент"],
+    "у рамках": ["в межах", "у ході"],
+    "за допомогою": ["через", "при допомозі"],
+    "внаслідок": ["через", "з причини"],
+    "з метою": ["щоб", "для того щоб"],
+    "являє собою": ["є", "це"],
+    "значною мірою": ["багато в чому", "сильно"],
+    "тим не менш": ["але", "однак"],
+    "таким чином": ["отже", "тож"],
+    "відповідно": ["значить", "як наслідок"],
+}
+
+_FORMAL_TO_INFORMAL_ALL = {
+    "en": _FORMAL_TO_INFORMAL_EN,
+    "ru": _FORMAL_TO_INFORMAL_RU,
+    "uk": _FORMAL_TO_INFORMAL_UK,
+}
+
+_FORMAL_TO_INFORMAL_RE: dict[str, list[tuple[re.Pattern[str], list[str]]]] = {}
+for _lang_code, _map in _FORMAL_TO_INFORMAL_ALL.items():
+    _FORMAL_TO_INFORMAL_RE[_lang_code] = [
+        (re.compile(r'\b' + re.escape(k) + r'\b', re.IGNORECASE), v)
+        for k, v in _map.items()
+    ]
 
 
 def mix_register(
@@ -368,13 +502,13 @@ def mix_register(
     Only fires for a fraction of matches to create natural register
     variation (not uniformly formal or informal).
     """
-    if lang != "en":
+    if lang not in _FORMAL_TO_INFORMAL_RE:
         return text
 
     if rng is None:
         rng = random.Random()
 
-    for pat, replacements in _FORMAL_TO_INFORMAL_RE:
+    for pat, replacements in _FORMAL_TO_INFORMAL_RE[lang]:
         def _replacer(m: re.Match, _repls: list[str] = replacements) -> str:
             if rng.random() > probability:
                 return m.group()
@@ -407,6 +541,32 @@ _DISCOURSE_STARTERS_EN = [
     "For what it's worth, ",
 ]
 
+_DISCOURSE_STARTERS_RU = [
+    "Слушайте, ", "Ну вот, ", "Дело в том, что ", "Честно говоря, ",
+    "Вот что важно: ", "То есть ", "Проще говоря, ",
+    "Так вот, ", "Смотрите, ", "Правда в том, что ", "Суть вот в чём: ",
+    "Забавно, но ", "Оказывается, ", "Если по-честному: ",
+    "Как ни крути, ", "Кстати, ", "Между прочим, ",
+    "Надо сказать, ", "Знаете что, ", "А вообще, ",
+    "Ну и ", "К слову, ", "Вот что интересно: ",
+]
+
+_DISCOURSE_STARTERS_UK = [
+    "Слухайте, ", "Ну ось, ", "Справа в тому, що ", "Чесно кажучи, ",
+    "Ось що важливо: ", "Тобто ", "Простіше кажучи, ",
+    "Так ось, ", "Дивіться, ", "Правда в тому, що ", "Суть ось у чому: ",
+    "Кумедно, але ", "Виявляється, ", "Якщо чесно: ",
+    "Як не крути, ", "До речі, ", "Між іншим, ",
+    "Треба сказати, ", "Знаєте що, ", "А взагалі, ",
+    "Ну і ", "До слова, ", "Ось що цікаво: ",
+]
+
+_DISCOURSE_STARTERS = {
+    "en": _DISCOURSE_STARTERS_EN,
+    "ru": _DISCOURSE_STARTERS_RU,
+    "uk": _DISCOURSE_STARTERS_UK,
+}
+
 
 def inject_discourse_markers(
     text: str,
@@ -418,7 +578,8 @@ def inject_discourse_markers(
 
     Only inserts in ~15-25% of sentences to maintain natural feel.
     """
-    if lang != "en":
+    starters = _DISCOURSE_STARTERS.get(lang)
+    if starters is None:
         return text
 
     if rng is None:
@@ -439,13 +600,13 @@ def inject_discourse_markers(
             continue
 
         # Check if sentence already starts with a discourse marker
-        lower_start = sent[:15].lower()
-        if any(lower_start.startswith(m.lower().rstrip()) for m in _DISCOURSE_STARTERS_EN):
+        lower_start = sent[:20].lower()
+        if any(lower_start.startswith(m.lower().rstrip()) for m in starters):
             result.append(sent)
             continue
 
         if rng.random() < intensity * 0.2:
-            marker = rng.choice(_DISCOURSE_STARTERS_EN)
+            marker = rng.choice(starters)
             # Lowercase the sentence start after marker
             if sent and sent[0].isupper():
                 sent = sent[0].lower() + sent[1:]
@@ -531,7 +692,7 @@ def apply_existential_transform(sent: str, rng: random.Random) -> Optional[str]:
 #  7. Rhetorical question generation
 # ═══════════════════════════════════════════════════════════════
 
-_QUESTION_TRIGGERS = {
+_QUESTION_TRIGGERS_EN = {
     "important": "But why does this matter?",
     "significant": "Why is this significant?",
     "crucial": "So why is this crucial?",
@@ -546,6 +707,46 @@ _QUESTION_TRIGGERS = {
     "result": "And what was the result?",
 }
 
+_QUESTION_TRIGGERS_RU = {
+    "важн": "Но почему это вообще важно?",
+    "значител": "Почему это имеет значение?",
+    "ключев": "Так почему это ключевой момент?",
+    "необходим": "А почему это необходимо?",
+    "проблем": "Так в чём же реальная проблема?",
+    "вызов": "Но в чём тут сложность?",
+    "преимущ": "Какое преимущество это даёт?",
+    "выгод": "А в чём тут выгода?",
+    "решени": "Так какое же решение?",
+    "разниц": "Какая тут разница?",
+    "влияни": "Но какое реальное влияние?",
+    "результат": "И каков результат?",
+    "эффект": "Но какой от этого эффект?",
+    "причин": "Но в чём причина?",
+}
+
+_QUESTION_TRIGGERS_UK = {
+    "важлив": "Але чому це взагалі важливо?",
+    "значн": "Чому це має значення?",
+    "ключов": "Так чому це ключовий момент?",
+    "необхідн": "А чому це необхідно?",
+    "проблем": "Так у чому ж справжня проблема?",
+    "виклик": "Але в чому тут складність?",
+    "переваг": "Яку перевагу це дає?",
+    "вигод": "А в чому тут вигода?",
+    "рішенн": "Так яке ж рішення?",
+    "різниц": "Яка тут різниця?",
+    "вплив": "Але який реальний вплив?",
+    "результат": "І який результат?",
+    "ефект": "Але який від цього ефект?",
+    "причин": "Але в чому причина?",
+}
+
+_QUESTION_TRIGGERS = {
+    "en": _QUESTION_TRIGGERS_EN,
+    "ru": _QUESTION_TRIGGERS_RU,
+    "uk": _QUESTION_TRIGGERS_UK,
+}
+
 
 def inject_rhetorical_questions(
     text: str,
@@ -554,7 +755,8 @@ def inject_rhetorical_questions(
     intensity: float = 0.5,
 ) -> str:
     """Insert rhetorical questions before sentences about key concepts."""
-    if lang != "en":
+    triggers = _QUESTION_TRIGGERS.get(lang)
+    if triggers is None:
         return text
 
     if rng is None:
@@ -574,7 +776,7 @@ def inject_rhetorical_questions(
             continue
 
         lower = sent.lower()
-        for trigger, question in _QUESTION_TRIGGERS.items():
+        for trigger, question in triggers.items():
             if (
                 trigger in lower
                 and rng.random() < intensity * 0.15
@@ -594,10 +796,26 @@ def inject_rhetorical_questions(
 # ═══════════════════════════════════════════════════════════════
 
 # Patterns: ", and " / ", but " / ", which " can become " — "
-_DASH_TARGETS = re.compile(
+_DASH_TARGETS_EN = re.compile(
     r",\s+(and|but|which|or)\s+",
     re.IGNORECASE,
 )
+
+_DASH_TARGETS_RU = re.compile(
+    r",\s+(и|но|а|или|однако|который|которая|которое|которые|что|хотя)\s+",
+    re.IGNORECASE,
+)
+
+_DASH_TARGETS_UK = re.compile(
+    r",\s+(і|але|а|або|однак|який|яка|яке|які|що|хоча)\s+",
+    re.IGNORECASE,
+)
+
+_DASH_TARGETS_ALL = {
+    "en": _DASH_TARGETS_EN,
+    "ru": _DASH_TARGETS_RU,
+    "uk": _DASH_TARGETS_UK,
+}
 
 
 def inject_dashes(
@@ -610,7 +828,8 @@ def inject_dashes(
 
     Targets `dash_rate` feature in the neural/stat detectors.
     """
-    if lang != "en":
+    pattern = _DASH_TARGETS_ALL.get(lang)
+    if pattern is None:
         return text
     if rng is None:
         rng = random.Random()
@@ -624,18 +843,50 @@ def inject_dashes(
             return " \u2014 "
         return m.group(0)
 
-    return _DASH_TARGETS.sub(_dash_replacer, text)
+    return pattern.sub(_dash_replacer, text)
 
 
 # Also inject parenthetical asides with dashes
-_ASIDE_PATTERNS = [
-    (re.compile(r"\b(This|These|That|Such)\s+(is|are|was|were)\s+"),
-     ["— and this is key — ", "— importantly — ", "— to put it simply — "]),
+_ASIDE_EN = [
+    " \u2014 at least for now",
+    " \u2014 or so it seems",
+    " \u2014 surprisingly enough",
+    " \u2014 in a way",
+    " \u2014 to some extent",
 ]
+
+_ASIDE_RU = [
+    " \u2014 по крайней мере пока",
+    " \u2014 во всяком случае",
+    " \u2014 как ни странно",
+    " \u2014 в каком-то смысле",
+    " \u2014 до некоторой степени",
+    " \u2014 если можно так выразиться",
+    " \u2014 что характерно",
+    " \u2014 надо заметить",
+]
+
+_ASIDE_UK = [
+    " \u2014 принаймні поки що",
+    " \u2014 у будь-якому разі",
+    " \u2014 як не дивно",
+    " \u2014 у певному сенсі",
+    " \u2014 до певної міри",
+    " \u2014 якщо можна так сказати",
+    " \u2014 що характерно",
+    " \u2014 треба зауважити",
+]
+
+_ASIDE_ALL = {
+    "en": _ASIDE_EN,
+    "ru": _ASIDE_RU,
+    "uk": _ASIDE_UK,
+}
 
 
 def inject_parenthetical_dashes(
     text: str,
+    lang: str = "en",
     rng: random.Random | None = None,
     intensity: float = 0.5,
 ) -> str:
@@ -643,10 +894,13 @@ def inject_parenthetical_dashes(
 
     Human writers frequently use em-dashes for asides.
     """
+    asides = _ASIDE_ALL.get(lang)
+    if asides is None:
+        return text
     if rng is None:
         rng = random.Random()
 
-    sentences = split_sentences(text, "en")
+    sentences = split_sentences(text, lang)
     if len(sentences) < 3:
         return text
 
@@ -656,14 +910,7 @@ def inject_parenthetical_dashes(
 
     for sent in sentences:
         if injected < max_inject and rng.random() < intensity * 0.12:
-            # Insert dash-aside before the period
-            aside = rng.choice([
-                " \u2014 at least for now",
-                " \u2014 or so it seems",
-                " \u2014 surprisingly enough",
-                " \u2014 in a way",
-                " \u2014 to some extent",
-            ])
+            aside = rng.choice(asides)
             if sent.endswith("."):
                 sent = sent[:-1] + aside + "."
                 injected += 1
@@ -736,7 +983,7 @@ class SentenceRestructurer:
                 self._record_change("contraction_injection", "Injected natural contractions")
 
         # 2. Register mixing (formal → informal vocabulary)
-        if self.lang == "en" and prob >= 0.25:
+        if prob >= 0.25:
             before = text
             text = mix_register(
                 text, self.lang,
@@ -759,7 +1006,7 @@ class SentenceRestructurer:
                 self._record_change("length_reshaping", "Reshaped sentence-length distribution")
 
         # 4. Discourse markers (medium intensity)
-        if self.lang == "en" and prob >= 0.35:
+        if prob >= 0.35:
             before = text
             text = inject_discourse_markers(
                 text, self.lang,
@@ -770,7 +1017,7 @@ class SentenceRestructurer:
                 self._record_change("discourse_markers", "Added human-like discourse markers")
 
         # 5. Rhetorical questions (higher intensity)
-        if self.lang == "en" and prob >= 0.45:
+        if prob >= 0.45:
             before = text
             text = inject_rhetorical_questions(
                 text, self.lang,
@@ -796,16 +1043,16 @@ class SentenceRestructurer:
             text = self._apply_structural_transforms(text, prob)
 
         # 8. Dash injection (comma→em-dash for punctuation variety)
-        if self.lang == "en" and prob >= 0.25:
+        if prob >= 0.25:
             before = text
             text = inject_dashes(text, self.lang, rng=self._rng, intensity=prob)
             if text != before:
                 self._record_change("dash_injection", "Replaced commas with em-dashes for variety")
 
         # 9. Parenthetical asides with dashes
-        if self.lang == "en" and prob >= 0.50:
+        if prob >= 0.50:
             before = text
-            text = inject_parenthetical_dashes(text, rng=self._rng, intensity=prob)
+            text = inject_parenthetical_dashes(text, self.lang, rng=self._rng, intensity=prob)
             if text != before:
                 self._record_change("parenthetical_dashes", "Added parenthetical asides with em-dashes")
 

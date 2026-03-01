@@ -115,6 +115,8 @@ def humanize(
     openai_api_key: str | None = None,
     openai_model: str = "gpt-4o-mini",
     oss_api_url: str | None = None,
+    ollama_model: str = "llama3.2",
+    ollama_url: str | None = None,
 ) -> HumanizeResult:
     """Гуманизировать текст — сделать его более естественным.
 
@@ -161,12 +163,15 @@ def humanize(
             При списке вариантов выбирается случайный.
         backend: Бэкенд гуманизации:
             - 'local' — встроенный rule-based движок (по умолчанию, offline)
+            - 'ollama' — локальная LLM через Ollama (без API key, нужен сервер)
             - 'oss' — бесплатная OSS LLM (amd/gpt-oss-120b) через Gradio, без ключей
             - 'openai' — OpenAI API (требуется api_key)
-            - 'auto' — пробует openai → oss → local (fallback)
+            - 'auto' — пробует openai → ollama → oss → local (fallback)
         openai_api_key: API ключ OpenAI (только для backend='openai'/'auto').
         openai_model: Модель OpenAI (по умолчанию 'gpt-4o-mini').
         oss_api_url: URL для OSS Gradio endpoint (по умолчанию amd/gpt-oss-120b-chatbot).
+        ollama_model: Модель Ollama (по умолчанию 'llama3.2').
+        ollama_url: URL сервера Ollama (по умолчанию 'http://localhost:11434').
 
     Returns:
         HumanizeResult с полями:
@@ -205,7 +210,7 @@ def humanize(
         raise InputTooLargeError(len(text), MAX_TEXT_LENGTH)
 
     # ── AI backend routing ──────────────────────────────────────
-    _valid_backends = ("local", "oss", "openai", "auto")
+    _valid_backends = ("local", "ollama", "oss", "openai", "auto")
     if backend not in _valid_backends:
         raise ConfigError(
             f"backend must be one of {_valid_backends}, got {backend!r}"
@@ -220,6 +225,8 @@ def humanize(
             openai_api_key=openai_api_key,
             openai_model=openai_model,
             oss_api_url=oss_api_url,
+            ollama_model=ollama_model,
+            ollama_url=ollama_url,
         )
 
     # Определяем язык
@@ -282,10 +289,12 @@ def _humanize_via_backend(
     openai_api_key: str | None,
     openai_model: str,
     oss_api_url: str | None,
+    ollama_model: str = "llama3.2",
+    ollama_url: str | None = None,
 ) -> HumanizeResult:
     """Route humanization through an AI backend, then polish via local pipeline.
 
-    1. Sends text to the chosen backend (oss / openai / auto).
+    1. Sends text to the chosen backend (ollama / oss / openai / auto).
     2. Runs the result through the local pipeline at low intensity
        for typography, grammar, and coherence cleanup.
     """
@@ -297,6 +306,7 @@ def _humanize_via_backend(
 
     # Build backend with appropriate settings
     enable_oss = backend in ("oss", "auto")
+    enable_ollama = backend in ("ollama", "auto")
     api_key = openai_api_key if backend in ("openai", "auto") else None
 
     prefer = "auto" if backend == "auto" else backend
@@ -304,11 +314,16 @@ def _humanize_via_backend(
         prefer = "oss"
     elif prefer == "openai":
         prefer = "openai"
+    elif prefer == "ollama":
+        prefer = "ollama"
 
     try:
         ai = ab.AIBackend(
             openai_api_key=api_key,
             openai_model=openai_model,
+            enable_ollama=enable_ollama,
+            ollama_model=ollama_model,
+            ollama_url=ollama_url,
             enable_oss=enable_oss,
             oss_api_url=oss_api_url,
             prefer=prefer,
@@ -600,11 +615,14 @@ def humanize_until_human(
     intensity_step: int = 10,
     seed: int | None = None,
     verbose: bool = False,
+    strategy: str = "adaptive",
 ) -> HumanizeResult:
     """Humanize text repeatedly until AI detection score drops below target.
 
-    Each attempt increases intensity by ``intensity_step`` (up to 100).
-    Returns the best result within ``max_attempts``.
+    Two strategies:
+    - ``"escalate"`` — simple intensity escalation each round (legacy).
+    - ``"adaptive"`` — analyses per-metric AI signals and adjusts
+      pipeline parameters to target the weakest metrics (default).
 
     Args:
         text: Text to humanize.
@@ -616,6 +634,7 @@ def humanize_until_human(
         intensity_step: Intensity increase per retry.
         seed: Random seed for reproducibility.
         verbose: Log each attempt.
+        strategy: ``"adaptive"`` (default) or ``"escalate"``.
 
     Returns:
         HumanizeResult from the best (lowest AI score) attempt.
@@ -628,11 +647,21 @@ def humanize_until_human(
     current_text = text
     current_intensity = min(intensity, 100)
 
+    # Adaptive state: per-metric overrides accumulate across rounds
+    _adapt_overrides: dict[str, int] = {}
+
     for attempt in range(max_attempts):
+        # Build effective intensity for this round
+        effective_intensity = current_intensity
+        if strategy == "adaptive" and _adapt_overrides:
+            # Use the max of all individual boosts
+            boost = max(_adapt_overrides.values())
+            effective_intensity = min(current_intensity + boost, 100)
+
         # Humanize
         result = humanize(
             current_text, lang=lang, profile=profile,
-            intensity=current_intensity, seed=seed,
+            intensity=effective_intensity, seed=seed,
         )
 
         # Detect AI score on humanized text
@@ -641,8 +670,10 @@ def humanize_until_human(
 
         if verbose:
             logger.info(
-                "Attempt %d/%d: intensity=%d, ai_score=%.3f (target <%.3f)",
-                attempt + 1, max_attempts, current_intensity, score, target_score,
+                "Attempt %d/%d: intensity=%d (eff=%d), ai_score=%.3f (target <%.3f)%s",
+                attempt + 1, max_attempts, current_intensity,
+                effective_intensity, score, target_score,
+                f" overrides={_adapt_overrides}" if _adapt_overrides else "",
             )
 
         if score < best_score:
@@ -655,6 +686,13 @@ def humanize_until_human(
                 logger.info("Target reached at attempt %d", attempt + 1)
             break
 
+        # ── Adaptive metric analysis ────────────────────────
+        if strategy == "adaptive":
+            metrics = detection.get("metrics", {})
+            _adapt_overrides = _compute_adaptive_overrides(
+                metrics, current_intensity, verbose=verbose,
+            )
+
         # Increase intensity for next attempt
         current_intensity = min(current_intensity + intensity_step, 100)
         # Use the humanized text as input for next round
@@ -665,6 +703,90 @@ def humanize_until_human(
         best_result = humanize(text, lang=lang, profile=profile, intensity=intensity)
 
     return best_result
+
+
+# Metric → pipeline capability mapping for adaptive strategy.
+# Each entry: (threshold_above_which_flagged, intensity_boost).
+_METRIC_BOOST_MAP: dict[str, tuple[float, int]] = {
+    "entropy":                  (0.55, 15),  # low entropy → boost entropy_injection
+    "burstiness":               (0.55, 15),  # uniform sentence length → boost variation
+    "vocabulary":               (0.55, 12),  # limited vocab → boost lexical diversity
+    "ai_patterns":              (0.55, 15),  # AI phrase patterns → boost naturalizer
+    "punctuation":              (0.55, 8),   # perfect punctuation → boost typography
+    "coherence":                (0.55, 10),  # too coherent → boost entropy
+    "grammar_perfection":       (0.55, 8),   # too perfect → inject imperfections
+    "opening_diversity":        (0.55, 10),  # repetitive openings → boost restructuring
+    "readability_consistency":  (0.55, 8),   # uniform readability → boost burstiness
+    "rhythm":                   (0.55, 12),  # rhythmic patterns → boost entropy
+    "stylometry":               (0.55, 10),  # stylistic uniformity → boost paraphrasing
+    "zipf":                     (0.55, 8),   # non-Zipfian dist → boost vocab diversity
+}
+
+
+def _compute_adaptive_overrides(
+    metrics: dict[str, float],
+    current_intensity: int,
+    *,
+    verbose: bool = False,
+) -> dict[str, int]:
+    """Analyze detection metrics and compute per-area intensity boosts.
+
+    Returns a dict of area → extra intensity to apply.
+    """
+    overrides: dict[str, int] = {}
+
+    if not metrics:
+        return overrides
+
+    # Find metrics that are still flagging AI (score > threshold)
+    flagged: list[tuple[str, float, int]] = []
+    for metric_name, (threshold, boost) in _METRIC_BOOST_MAP.items():
+        value = metrics.get(metric_name, 0.0)
+        if value > threshold:
+            flagged.append((metric_name, value, boost))
+
+    if not flagged:
+        return overrides
+
+    # Sort by severity (highest score first)
+    flagged.sort(key=lambda x: x[1], reverse=True)
+
+    # Group boosted metrics into pipeline areas
+    # entropy/burstiness/rhythm/coherence/readability_consistency → "entropy"
+    # vocabulary/zipf → "vocabulary"
+    # ai_patterns/grammar_perfection/punctuation → "naturalizer"
+    # opening_diversity/stylometry → "structure"
+    area_map = {
+        "entropy": "entropy",
+        "burstiness": "entropy",
+        "rhythm": "entropy",
+        "coherence": "entropy",
+        "readability_consistency": "entropy",
+        "vocabulary": "vocabulary",
+        "zipf": "vocabulary",
+        "ai_patterns": "naturalizer",
+        "grammar_perfection": "naturalizer",
+        "punctuation": "naturalizer",
+        "opening_diversity": "structure",
+        "stylometry": "structure",
+    }
+
+    for metric_name, value, boost in flagged:
+        area = area_map.get(metric_name, "general")
+        # Scale boost by severity: the higher the score, the more boost
+        severity_factor = min((value - 0.55) / 0.3, 1.0)  # 0..1
+        scaled_boost = int(boost * (0.5 + 0.5 * severity_factor))
+        overrides[area] = max(overrides.get(area, 0), scaled_boost)
+
+    if verbose:
+        for metric_name, value, boost in flagged[:5]:
+            area = area_map.get(metric_name, "general")
+            logger.info(
+                "  Adaptive: %s=%.3f (flagged) → boost %s +%d",
+                metric_name, value, area, overrides.get(area, 0),
+            )
+
+    return overrides
 
 
 def humanize_chunked(

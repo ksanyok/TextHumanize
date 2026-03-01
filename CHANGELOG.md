@@ -3,6 +3,42 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.24.0] - 2025-07-03
+
+### Added
+- **Transition-phrase deletion** — new `_delete_transition_starters()` in naturalizer strips AI-typical sentence openers outright (EN: 22 patterns like "Furthermore", "Moreover", "Additionally"; RU: 23 patterns like "Более того", "Кроме того"; UK: 23 patterns like "Крім того", "Більш того"). Directly reduces `transition_rate` and `ai_pattern_rate` features.
+- **Em-dash injection** — new `_inject_dashes()` with two strategies: `_comma_to_dash()` converts comma-conjunction patterns to em-dash variants, `_insert_dash_aside()` adds parenthetical asides framed by em-dashes. Pushes `dash_rate` feature away from zero (AI baseline).
+- **Burstiness fragment insertion** — new Strategy 3 in `_inject_burstiness()` inserts short discourse fragments ("True.", "Факт.", "Ну от так.") to break sentence-length uniformity. Language-specific fragment pools for EN/RU/UK via `_get_burstiness_fragment()`.
+- **Light perplexity boost** — new `_light_perplexity_boost()` inserts rhetorical questions into formal profiles ("Is that a stretch?", "Чи не так?", "Хіба ні?"), reducing `question_rate=0` signal characteristic of AI text.
+- **Paragraph splitting** — new `_split_long_paragraphs()` breaks paragraphs with 5+ sentences in half, reducing monotonic paragraph structure.
+- **Per-language neural feature normalization** — added `_FEATURE_MEAN_RU/_STD_RU` and `_FEATURE_MEAN_UK/_STD_UK` vectors to neural detector. Cyrillic char_entropy baseline 4.8-4.9 (vs 4.3 EN). `normalize_features()` now accepts `lang` parameter.
+- **Expanded RU/UK linguistic resources** — `_CONJUNCTIONS_RU` (21), `_CONJUNCTIONS_UK` (22), `_TRANSITIONS_RU` (25), `_TRANSITIONS_UK` (24), `_AI_WORDS_RU` (~35), `_AI_WORDS_UK` (~35) for features 27, 33, 34 of the MLP.
+- **+30 EN word simplification entries** — "capabilities"→"skills", "transformation"→"shift", "comprehensive"→"full", "implementation"→"setup", "significant"→"big", etc. Targets `avg_word_length` feature.
+
+### Changed
+- **Pipeline intensity cap** — raised from 70→85 (base), 75→90 (AI ≥ 70), 75→85 (AI ≥ 50). Multipliers increased: 1.15→1.20 (high AI), 1.1→1.15 (medium AI). Allows deeper humanization for strongly AI-scored text.
+- **Stage 13a: final entropy re-injection** — added post-grammar/coherence entropy injection at capped intensity=50 to counteract the smoothing effect of grammar correction and coherence repair.
+- **Burstiness thresholds** — minimum trigger threshold lowered from 25→16-20 words average; minimum sentence count reduced from 5→3. More aggressive splitting for RU/UK.
+- **Naturalizer `process()` pipeline** — added steps 2a (transition deletion), 5a (dash injection), 5b (paragraph split), formal perplexity boost after standard processing.
+- **Pipeline description** — updated to "20-stage pipeline" (was "17-stage").
+
+### Performance
+- **Local backend humanization** (3-sentence AI paragraphs, intensity=60):
+  - EN: 0.920 → 0.372 (Δ=+0.548) — **human ✅**
+  - RU: 0.880 → 0.390 (Δ=+0.490) — **human ✅**
+  - UK: 0.840 → 0.351 (Δ=+0.489) — **human ✅**
+- **OSS backend humanization** (`backend="oss"`):
+  - EN: 0.801 → 0.692 (Δ=+0.109)
+  - RU: 0.611 → 0.610 (Δ=+0.001)
+  - UK: 0.546 → 0.478 (Δ=+0.068)
+- **Auto backend** (`backend="auto"`, local+OSS cascade):
+  - EN: 0.801 → 0.699 (Δ=+0.102)
+  - RU: 0.611 → 0.518 (Δ=+0.094)
+- **Detection separation** (AI vs Human score gap):
+  - EN: Δ=0.860 | RU: Δ=0.756 | UK: Δ=0.751
+- **Tests**: 1984 passed (231s), zero failures.
+- **Fully offline**: all improvements work with `backend="local"` (default) — no API keys, no internet required.
+
 ## [0.23.0] - 2026-02-28
 
 ### Added

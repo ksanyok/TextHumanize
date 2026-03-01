@@ -1,4 +1,4 @@
-"""Entropy & burstiness injector — Phase 1 humanization.
+"""Entropy & burstiness injector — Phases 1 + 3 humanization.
 
 Targets core statistical signals that AI detectors look for:
 1. Sentence-length distribution → reshape to log-normal (human-like)
@@ -6,6 +6,12 @@ Targets core statistical signals that AI detectors look for:
 3. Cadence → alternate long/short sentences instead of uniform
 4. Word-level surprise → insert discourse markers, fragments,
    parentheticals to raise token-level entropy
+5. Word-length variation → replace uniform long/short words with
+   synonyms of different lengths to diversify char-per-word distribution
+6. Micro-imperfections → inject subtle stylistic deviations humans make
+   (informal connectors, casual punctuation, self-corrections)
+7. Lexical diversity boost → reduce type-token repetition by swapping
+   repeated words with contextual synonyms
 
 Works for all languages, no external dependencies.
 """
@@ -110,6 +116,18 @@ class EntropyInjector:
             # Step 5: Discourse surprise injection (raise token entropy)
             if self._intensity >= 30:
                 sentences = self._inject_discourse_surprise(sentences, prob)
+
+            # Step 6: Word-length variation (diversify char-per-word distribution)
+            if self._intensity >= 25:
+                sentences = self._inject_word_length_variation(sentences, prob)
+
+            # Step 7: Micro-imperfections (subtle human-like style deviations)
+            if self._intensity >= 35:
+                sentences = self._inject_micro_imperfections(sentences, prob)
+
+            # Step 8: Lexical diversity boost (reduce word repetition)
+            if self._intensity >= 20:
+                sentences = self._boost_lexical_diversity(sentences, prob)
 
             result_paragraphs.append(self._join_sentences(sentences))
 
@@ -352,6 +370,12 @@ class EntropyInjector:
                 "Звучит логично.", "Стоит задуматься.",
                 "Не всё так просто.", "Это ещё не всё.",
                 "И вот почему.", "Вопрос непростой.",
+                "Это ключевой момент.", "Именно так.",
+                "И это не случайно.", "Разница заметна.",
+                "Суть вот в чём.", "Это работает.",
+                "Важный нюанс.", "Прямо скажем.",
+                "Тут есть подвох.", "По-другому никак.",
+                "Вот и всё.", "И это только начало.",
             ]
         if self._lang == "uk":
             return [
@@ -359,6 +383,12 @@ class EntropyInjector:
                 "Звучить логічно.", "Варто замислитися.",
                 "Не все так просто.", "Це ще не все.",
                 "І ось чому.", "Питання непросте.",
+                "Це ключовий момент.", "Саме так.",
+                "І це не випадково.", "Різниця помітна.",
+                "Суть ось у чому.", "Це працює.",
+                "Важливий нюанс.", "Прямо скажемо.",
+                "Тут є підступ.", "Інакше ніяк.",
+                "Ось і все.", "І це лише початок.",
             ]
         if self._lang == "de":
             return [
@@ -490,12 +520,20 @@ class EntropyInjector:
                 "— что важно —", "— и это ключевой момент —",
                 "— что интересно —", "— по сути —",
                 "— стоит отметить —", "— как ни странно —",
+                "— к слову —", "— между прочим —",
+                "— надо заметить —", "— что характерно —",
+                "— и вот тут важно —", "— если вдуматься —",
+                "— пожалуй —", "— вообще-то —",
             ]
         if self._lang == "uk":
             return [
                 "— що важливо —", "— і це ключовий момент —",
                 "— що цікаво —", "— по суті —",
                 "— варто зазначити —", "— як не дивно —",
+                "— до речі —", "— між іншим —",
+                "— треба зауважити —", "— що характерно —",
+                "— і ось тут важливо —", "— якщо вдуматись —",
+                "— мабуть —", "— взагалі-то —",
             ]
         if self._lang == "de":
             return [
@@ -566,13 +604,19 @@ class EntropyInjector:
             return [
                 "Пожалуй,", "Скорее всего,", "Вероятно,",
                 "По всей видимости,", "Надо сказать,",
-                "Как мне кажется,",
+                "Как мне кажется,", "Думаю,", "Похоже,",
+                "Видимо,", "Как правило,", "В принципе,",
+                "Честно говоря,", "Не исключено, что",
+                "По ощущениям,", "Если не ошибаюсь,",
             ]
         if self._lang == "uk":
             return [
                 "Мабуть,", "Найімовірніше,", "Ймовірно,",
                 "Вочевидь,", "Треба сказати,",
-                "Як на мене,",
+                "Як на мене,", "Думаю,", "Схоже,",
+                "Видимо,", "Як правило,", "В принципі,",
+                "Чесно кажучи,", "Не виключено, що",
+                "За відчуттями,", "Якщо не помиляюсь,",
             ]
         if self._lang == "de":
             return [
@@ -637,13 +681,19 @@ class EntropyInjector:
             return [
                 "При этом", "К слову,", "Между тем,",
                 "Что касается этого,", "В целом,",
-                "С другой стороны,",
+                "С другой стороны,", "Кстати,",
+                "В то же время,", "Впрочем,",
+                "Забавно, но", "По сути,",
+                "Если подумать,", "Ну и потом,",
             ]
         if self._lang == "uk":
             return [
                 "При цьому", "До речі,", "Тим часом,",
                 "Що стосується цього,", "Загалом,",
-                "З іншого боку,",
+                "З іншого боку,", "До слова,",
+                "Водночас,", "Втім,",
+                "Кумедно, але", "По суті,",
+                "Якщо подумати,", "Ну і потім,",
             ]
         if self._lang == "de":
             return [
@@ -671,6 +721,421 @@ class EntropyInjector:
             "In practice,", "On this point,", "Notably,",
             "In this regard,", "It is also worth noting that",
         ]
+
+    # ── Word-length variation ────────────────────────────────
+
+    def _inject_word_length_variation(
+        self,
+        sentences: list[str],
+        prob: float,
+    ) -> list[str]:
+        """Diversify character-per-word distribution.
+
+        AI text tends toward uniform word lengths (mostly 5-8 chars).
+        Humans use more extremes (short 1-3 and long 10+ chars).
+        Replace some mid-length words with shorter/longer synonyms.
+        """
+        swaps = self._get_word_length_swaps()
+        if not swaps:
+            return sentences
+
+        result = []
+        changed = False
+        for sent in sentences:
+            if self._rng.random() > prob * 0.30:
+                result.append(sent)
+                continue
+
+            words = sent.split()
+            if len(words) < 4:
+                result.append(sent)
+                continue
+
+            modified = False
+            for j, w in enumerate(words):
+                clean = w.strip(".,;:!?\"'()—–-«»""''").lower()
+                if clean in swaps and self._rng.random() < 0.25:
+                    replacement = self._rng.choice(swaps[clean])
+                    # Preserve original casing
+                    if w[0].isupper():
+                        replacement = replacement[0].upper() + replacement[1:]
+                    # Preserve trailing punctuation
+                    trail = ""
+                    for ch in reversed(w):
+                        if ch in ".,;:!?\"'()—–-«»""''":
+                            trail = ch + trail
+                        else:
+                            break
+                    words[j] = replacement + trail
+                    modified = True
+
+            if modified:
+                result.append(" ".join(words))
+                changed = True
+            else:
+                result.append(sent)
+
+        if changed:
+            self._changes.append({
+                "type": "word_length_variation",
+                "description": "Diversified word-length distribution",
+            })
+        return result
+
+    def _get_word_length_swaps(self) -> dict[str, list[str]]:
+        """Get language-specific word-length variation swaps.
+
+        Maps mid-length words to shorter/longer synonyms.
+        """
+        if self._lang == "en":
+            return {
+                "important": ["key", "big", "vital", "crucial"],
+                "significant": ["big", "key", "major", "notable"],
+                "demonstrate": ["show", "prove", "exhibit"],
+                "approximately": ["about", "roughly", "near", "circa"],
+                "additionally": ["also", "plus", "and"],
+                "consequently": ["so", "thus", "hence"],
+                "nevertheless": ["but", "still", "yet", "however"],
+                "furthermore": ["also", "plus", "more"],
+                "particularly": ["especially", "notably"],
+                "environment": ["setting", "context", "world"],
+                "information": ["data", "info", "facts"],
+                "development": ["growth", "progress", "advance"],
+                "established": ["set up", "built", "formed"],
+                "comprehensive": ["full", "broad", "thorough"],
+                "understanding": ["grasp", "sense", "view"],
+                "communication": ["talk", "exchange", "dialogue"],
+                "organization": ["group", "body", "outfit"],
+                "technologies": ["tech", "tools", "methods"],
+                "opportunities": ["chances", "openings", "options"],
+                "implementation": ["rollout", "use", "execution"],
+                "consideration": ["thought", "factor", "aspect"],
+                "characteristics": ["traits", "features", "qualities"],
+            }
+        if self._lang == "ru":
+            return {
+                "значительный": ["большой", "крупный", "заметный"],
+                "определённый": ["некий", "конкретный", "ясный"],
+                "необходимый": ["нужный", "важный"],
+                "представляет": ["даёт", "являет", "показывает"],
+                "осуществляет": ["делает", "ведёт", "проводит"],
+                "демонстрирует": ["показывает", "являет"],
+                "использование": ["применение", "работа с"],
+                "формирование": ["создание", "развитие"],
+                "обеспечивает": ["даёт", "гарантирует"],
+                "деятельность": ["работа", "дело", "занятие"],
+                "существенный": ["весомый", "заметный", "крупный"],
+                "современный": ["нынешний", "теперешний", "актуальный"],
+                "результат": ["итог", "исход", "плод"],
+                "применение": ["использование", "практика"],
+                "перспектива": ["шанс", "будущее", "вид"],
+                "возможность": ["шанс", "опция", "путь"],
+                "преимущество": ["плюс", "выгода", "бонус"],
+                "характеристика": ["черта", "свойство", "признак"],
+                "рассматривать": ["смотреть", "изучать", "думать о"],
+                "разнообразный": ["разный", "всякий", "пёстрый"],
+            }
+        if self._lang == "uk":
+            return {
+                "значний": ["великий", "помітний", "чималий"],
+                "визначений": ["певний", "конкретний", "ясний"],
+                "необхідний": ["потрібний", "важливий"],
+                "представляє": ["дає", "являє", "показує"],
+                "здійснює": ["робить", "веде", "проводить"],
+                "демонструє": ["показує", "являє"],
+                "використання": ["застосування", "робота з"],
+                "формування": ["створення", "розвиток"],
+                "забезпечує": ["дає", "гарантує"],
+                "діяльність": ["робота", "справа", "заняття"],
+                "суттєвий": ["вагомий", "помітний", "чималий"],
+                "сучасний": ["нинішній", "теперішній", "актуальний"],
+                "результат": ["підсумок", "наслідок", "плід"],
+                "застосування": ["використання", "практика"],
+                "перспектива": ["шанс", "майбутнє", "вигляд"],
+                "можливість": ["шанс", "опція", "шлях"],
+                "перевага": ["плюс", "вигода", "бонус"],
+                "характеристика": ["риса", "властивість", "ознака"],
+                "розглядати": ["дивитися", "вивчати", "думати про"],
+                "різноманітний": ["різний", "всілякий", "строкатий"],
+            }
+        return {}
+
+    # ── Micro-imperfections ───────────────────────────────────
+
+    def _inject_micro_imperfections(
+        self,
+        sentences: list[str],
+        prob: float,
+    ) -> list[str]:
+        """Inject subtle stylistic imperfections that humans naturally make.
+
+        AI text is "too perfect" — uniform punctuation, no self-corrections,
+        no casual connectors. Humans often:
+        - Start with "And" or "But" at sentence beginning
+        - Use self-corrections: "or rather", "well, actually"
+        - End with trailing thoughts: "...at least for now"
+        - Use informal connectors between sentences
+        """
+        imperfections = self._get_micro_imperfections()
+        if not imperfections:
+            return sentences
+
+        result = []
+        injected = 0
+        max_inject = max(1, int(len(sentences) * 0.20))
+
+        for i, sent in enumerate(sentences):
+            if i == 0 or injected >= max_inject:
+                result.append(sent)
+                continue
+
+            if self._rng.random() < prob * 0.15:
+                kind = self._rng.choice(list(imperfections.keys()))
+                items = imperfections[kind]
+
+                if kind == "sentence_starter":
+                    # Prepend casual starter
+                    starter = self._rng.choice(items)
+                    if sent and sent[0].isupper():
+                        sent = sent[0].lower() + sent[1:]
+                    result.append(starter + sent)
+                    injected += 1
+
+                elif kind == "self_correction":
+                    # Insert self-correction before last clause
+                    words = sent.split()
+                    if len(words) >= 6:
+                        pos = len(words) * 2 // 3
+                        correction = self._rng.choice(items)
+                        words.insert(pos, correction)
+                        result.append(" ".join(words))
+                        injected += 1
+                    else:
+                        result.append(sent)
+
+                elif kind == "trailing_thought":
+                    # Append trailing thought before final punct
+                    thought = self._rng.choice(items)
+                    if sent.rstrip().endswith("."):
+                        sent = sent.rstrip()[:-1] + thought + "."
+                        result.append(sent)
+                        injected += 1
+                    else:
+                        result.append(sent)
+                else:
+                    result.append(sent)
+            else:
+                result.append(sent)
+
+        if injected > 0:
+            self._changes.append({
+                "type": "micro_imperfections",
+                "description": f"Injected {injected} human-like micro-imperfections",
+            })
+        return result
+
+    def _get_micro_imperfections(self) -> dict[str, list[str]]:
+        """Get language-specific micro-imperfection patterns."""
+        if self._lang == "en":
+            return {
+                "sentence_starter": [
+                    "And ", "But ", "So ", "Now, ", "Plus, ",
+                    "Thing is, ", "Granted, ", "Sure, ",
+                ],
+                "self_correction": [
+                    "— or rather,", "— well, actually,",
+                    "— no, wait,", "— or more precisely,",
+                    "— to be exact,",
+                ],
+                "trailing_thought": [
+                    " — or something like that",
+                    " — at least in theory",
+                    " — give or take",
+                    " — more or less",
+                    " — if that makes sense",
+                ],
+            }
+        if self._lang == "ru":
+            return {
+                "sentence_starter": [
+                    "И ", "А ", "Но ", "Так вот, ", "Ну и ",
+                    "Дело в том, что ", "Допустим, ", "Разумеется, ",
+                ],
+                "self_correction": [
+                    "— вернее,", "— ну, точнее,",
+                    "— нет, стоп,", "— точнее говоря,",
+                    "— если быть точным,",
+                ],
+                "trailing_thought": [
+                    " — или что-то в этом роде",
+                    " — по крайней мере в теории",
+                    " — плюс-минус",
+                    " — более-менее",
+                    " — если это имеет смысл",
+                ],
+            }
+        if self._lang == "uk":
+            return {
+                "sentence_starter": [
+                    "І ", "А ", "Але ", "Так ось, ", "Ну і ",
+                    "Справа в тому, що ", "Припустімо, ", "Звісно, ",
+                ],
+                "self_correction": [
+                    "— вірніше,", "— ну, точніше,",
+                    "— ні, стоп,", "— точніше кажучи,",
+                    "— якщо бути точним,",
+                ],
+                "trailing_thought": [
+                    " — чи щось таке",
+                    " — принаймні в теорії",
+                    " — плюс-мінус",
+                    " — більш-менш",
+                    " — якщо це має сенс",
+                ],
+            }
+        return {}
+
+    # ── Lexical diversity boost ───────────────────────────────
+
+    def _boost_lexical_diversity(
+        self,
+        sentences: list[str],
+        prob: float,
+    ) -> list[str]:
+        """Reduce repetition of content words across sentences.
+
+        AI text frequently reuses the same words. Count word frequency
+        across all sentences, then swap 2nd+ occurrences of overused
+        words with synonyms.
+        """
+        synonyms = self._get_diversity_synonyms()
+        if not synonyms:
+            return sentences
+
+        # Count word frequencies (lowercased, stripped of punct)
+        freq: dict[str, int] = {}
+        for sent in sentences:
+            for w in sent.split():
+                clean = w.strip(".,;:!?\"'()—–-«»""''").lower()
+                if len(clean) >= 4:  # Only track substantive words
+                    freq[clean] = freq.get(clean, 0) + 1
+
+        # Find overused words (3+ occurrences) that have synonyms
+        overused = {
+            w for w, c in freq.items()
+            if c >= 3 and w in synonyms
+        }
+        if not overused:
+            return sentences
+
+        # Track per-word occurrence count as we process
+        seen: dict[str, int] = {}
+        result = []
+        replaced_count = 0
+
+        for sent in sentences:
+            words = sent.split()
+            modified = False
+            for j, w in enumerate(words):
+                clean = w.strip(".,;:!?\"'()—–-«»""''").lower()
+                if clean in overused:
+                    seen[clean] = seen.get(clean, 0) + 1
+                    # Replace only on 3rd+ occurrence with some probability
+                    if seen[clean] >= 3 and self._rng.random() < prob * 0.5:
+                        replacement = self._rng.choice(synonyms[clean])
+                        # Preserve casing
+                        if w[0].isupper():
+                            replacement = replacement[0].upper() + replacement[1:]
+                        # Preserve trailing punctuation
+                        trail = ""
+                        for ch in reversed(w):
+                            if ch in ".,;:!?\"'()—–-«»""''":
+                                trail = ch + trail
+                            else:
+                                break
+                        words[j] = replacement + trail
+                        modified = True
+                        replaced_count += 1
+
+            result.append(" ".join(words) if modified else sent)
+
+        if replaced_count > 0:
+            self._changes.append({
+                "type": "lexical_diversity",
+                "description": f"Diversified {replaced_count} repeated words",
+            })
+        return result
+
+    def _get_diversity_synonyms(self) -> dict[str, list[str]]:
+        """Get synonyms for common overused words."""
+        if self._lang == "en":
+            return {
+                "important": ["crucial", "key", "vital", "critical"],
+                "significant": ["major", "notable", "substantial"],
+                "provides": ["offers", "gives", "delivers", "supplies"],
+                "approach": ["method", "strategy", "technique", "way"],
+                "various": ["different", "diverse", "several", "multiple"],
+                "process": ["procedure", "workflow", "mechanism"],
+                "system": ["framework", "platform", "setup"],
+                "effective": ["efficient", "productive", "successful"],
+                "specific": ["particular", "concrete", "distinct"],
+                "analysis": ["examination", "review", "assessment"],
+                "development": ["growth", "progress", "evolution"],
+                "additional": ["extra", "further", "supplementary"],
+                "research": ["study", "investigation", "inquiry"],
+                "potential": ["possible", "prospective", "likely"],
+                "technology": ["tech", "innovation", "tooling"],
+                "challenge": ["obstacle", "hurdle", "difficulty"],
+                "increase": ["rise", "growth", "boost", "uptick"],
+                "strategies": ["methods", "tactics", "approaches"],
+                "implement": ["deploy", "roll out", "execute"],
+                "essential": ["vital", "key", "necessary", "core"],
+            }
+        if self._lang == "ru":
+            return {
+                "важный": ["ключевой", "существенный", "значимый"],
+                "значительный": ["заметный", "весомый", "крупный"],
+                "обеспечивает": ["даёт", "гарантирует", "предоставляет"],
+                "подход": ["метод", "способ", "приём"],
+                "различный": ["разный", "всевозможный", "иной"],
+                "процесс": ["ход", "механизм", "порядок"],
+                "система": ["структура", "платформа", "устройство"],
+                "эффективный": ["действенный", "продуктивный", "результативный"],
+                "определённый": ["конкретный", "некий", "заданный"],
+                "развитие": ["рост", "прогресс", "эволюция"],
+                "дополнительный": ["лишний", "добавочный", "сверх того"],
+                "исследование": ["изучение", "анализ", "разбор"],
+                "потенциал": ["возможности", "ресурс", "запас"],
+                "технология": ["метод", "инструмент", "подход"],
+                "проблема": ["задача", "трудность", "сложность"],
+                "увеличение": ["рост", "подъём", "прирост"],
+                "реализация": ["внедрение", "выполнение", "запуск"],
+                "необходимый": ["нужный", "требуемый", "обязательный"],
+                "является": ["выступает", "служит", "представляет собой"],
+            }
+        if self._lang == "uk":
+            return {
+                "важливий": ["ключовий", "суттєвий", "значущий"],
+                "значний": ["помітний", "вагомий", "чималий"],
+                "забезпечує": ["дає", "гарантує", "надає"],
+                "підхід": ["метод", "спосіб", "прийом"],
+                "різний": ["різноманітний", "всілякий", "інший"],
+                "процес": ["хід", "механізм", "порядок"],
+                "система": ["структура", "платформа", "устрій"],
+                "ефективний": ["дієвий", "продуктивний", "результативний"],
+                "визначений": ["конкретний", "певний", "заданий"],
+                "розвиток": ["зростання", "прогрес", "еволюція"],
+                "додатковий": ["зайвий", "добавковий", "понад"],
+                "дослідження": ["вивчення", "аналіз", "розбір"],
+                "потенціал": ["можливості", "ресурс", "запас"],
+                "технологія": ["метод", "інструмент", "підхід"],
+                "проблема": ["задача", "труднощі", "складність"],
+                "збільшення": ["зростання", "підйом", "приріст"],
+                "реалізація": ["впровадження", "виконання", "запуск"],
+                "необхідний": ["потрібний", "обов'язковий"],
+                "є": ["виступає", "слугує", "являє собою"],
+            }
+        return {}
 
     # ── Utility methods ───────────────────────────────────────
 

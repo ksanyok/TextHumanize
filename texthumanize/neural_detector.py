@@ -114,6 +114,18 @@ _CONJUNCTIONS_EN: set[str] = {
     "though", "even", "whether", "after", "before", "when",
 }
 
+_CONJUNCTIONS_RU: set[str] = {
+    "и", "а", "но", "или", "однако", "зато", "потому", "поэтому",
+    "хотя", "пока", "когда", "если", "чтобы", "пусть", "ведь",
+    "либо", "ибо", "причём", "притом", "тоже", "также",
+}
+
+_CONJUNCTIONS_UK: set[str] = {
+    "і", "й", "а", "але", "або", "проте", "однак", "зате", "тому",
+    "хоча", "поки", "коли", "якщо", "щоб", "бо", "адже", "отже",
+    "або", "хай", "нехай", "також", "теж",
+}
+
 _TRANSITIONS_EN: set[str] = {
     "however", "therefore", "furthermore", "moreover", "additionally",
     "consequently", "nevertheless", "nonetheless", "meanwhile",
@@ -121,6 +133,24 @@ _TRANSITIONS_EN: set[str] = {
     "specifically", "particularly", "notably", "importantly",
     "significantly", "essentially", "fundamentally", "ultimately",
     "regardless", "indeed", "certainly", "undoubtedly", "evidently",
+}
+
+_TRANSITIONS_RU: set[str] = {
+    "однако", "поэтому", "следовательно", "кроме", "более",
+    "дополнительно", "тем", "вместе", "впоследствии", "соответственно",
+    "наоборот", "альтернативно", "конкретно", "безусловно",
+    "существенно", "фундаментально", "действительно", "несомненно",
+    "очевидно", "таким", "прежде", "во-первых", "во-вторых",
+    "в-третьих", "наконец", "итак", "впрочем", "тем",
+}
+
+_TRANSITIONS_UK: set[str] = {
+    "однак", "тому", "отже", "крім", "більше",
+    "додатково", "разом", "згодом", "відповідно",
+    "навпаки", "конкретно", "безумовно",
+    "суттєво", "фундаментально", "дійсно", "безсумнівно",
+    "очевидно", "таким", "насамперед", "по-перше", "по-друге",
+    "по-третє", "нарешті", "отож", "втім", "зрештою",
 }
 
 _VOWELS_EN = set("aeiouyAEIOUY")
@@ -140,6 +170,75 @@ _AI_PATTERNS_UK: list[str] = [
     "є невід'ємною", "відіграє важливу роль", "слід враховувати",
     "не менш важливим", "ключовим аспектом", "істотним чином",
     "має місце", "що стосується",
+]
+
+# AI-characteristic individual WORDS for RU/UK (complement phrase lists)
+_AI_WORDS_RU: set[str] = {
+    "трансформировал", "трансформирует", "трансформация",
+    "беспрецедентные", "беспрецедентный",
+    "фундаментальный", "фундаментально",
+    "кардинально", "ландшафт", "парадигма", "парадигму",
+    "оптимизировать", "оптимизация", "имплементация",
+    "интеграция", "интегрировать",
+    "предиктивный", "предиктивных", "предиктивные",
+    "паттерн", "паттернов", "паттерны",
+    "синергия", "синергетический",
+    "релевантный", "релевантных",
+    "холистический", "всеобъемлющий",
+    "многогранный", "многоаспектный",
+    "обусловливает", "детерминирует",
+    "нивелировать", "аккумулировать",
+    "инкорпорировать", "транспарентный",
+    "валидный", "верифицировать",
+}
+
+_AI_WORDS_UK: set[str] = {
+    "трансформував", "трансформує", "трансформація",
+    "безпрецедентні", "безпрецедентний",
+    "фундаментальний", "фундаментально",
+    "кардинально", "ландшафт", "парадигма", "парадигму",
+    "оптимізувати", "оптимізація", "імплементація",
+    "інтеграція", "інтегрувати",
+    "предиктивний", "предиктивних", "предиктивні",
+    "патерн", "патернів", "патерни",
+    "синергія", "синергетичний",
+    "релевантний", "релевантних",
+    "холістичний", "всеосяжний",
+    "багатогранний", "багатоаспектний",
+    "обумовлює", "детермінує",
+    "нівелювати", "акумулювати",
+    "інкорпорувати", "транспарентний",
+    "валідний", "верифікувати",
+}
+
+# Per-language feature normalization: Cyrillic text has different char_entropy
+# baseline, different word/sentence length distributions.
+_FEATURE_MEAN_RU: list[float] = [
+    0.62, 0.52, 5.2, 4.2, 14.0, 28.0, 0.3, 75.0, 0.96, 6.5,
+    0.05, 0.02, 0.95, 4.8, 6.5, 7.5, -0.2, 0.6, 0.3, 0.5, 0.05,
+    0.016, 0.0003, 0.006, 0.002, 0.001, 0.015, 1.0, 2.0, 2.0, 0.5,
+    0.7, 0.06, 0.01, 2.0,
+]
+
+_FEATURE_STD_RU: list[float] = [
+    0.14, 0.16, 0.8, 1.4, 5.5, 22.0, 0.8, 45.0, 0.03, 2.3,
+    0.05, 0.025, 0.05, 0.30, 1.3, 1.8, 0.18, 0.18, 0.2, 0.25, 0.1,
+    0.010, 0.0008, 0.005, 0.003, 0.002, 0.02, 0.8, 1.5, 0.25, 0.25,
+    0.18, 0.03, 0.012, 1.2,
+]
+
+_FEATURE_MEAN_UK: list[float] = [
+    0.63, 0.53, 5.1, 4.0, 13.5, 26.0, 0.3, 72.0, 0.96, 6.8,
+    0.05, 0.02, 0.95, 4.9, 6.5, 7.4, -0.2, 0.6, 0.3, 0.5, 0.05,
+    0.015, 0.0003, 0.005, 0.002, 0.001, 0.014, 1.0, 2.0, 2.1, 0.5,
+    0.7, 0.06, 0.01, 2.0,
+]
+
+_FEATURE_STD_UK: list[float] = [
+    0.14, 0.16, 0.8, 1.3, 5.5, 22.0, 0.8, 45.0, 0.03, 2.3,
+    0.05, 0.025, 0.05, 0.28, 1.3, 1.7, 0.18, 0.18, 0.2, 0.25, 0.1,
+    0.010, 0.0008, 0.005, 0.003, 0.002, 0.02, 0.8, 1.5, 0.25, 0.25,
+    0.18, 0.03, 0.012, 1.2,
 ]
 
 # Sentence boundary regex
@@ -314,9 +413,12 @@ def extract_features(text: str, lang: str = "en") -> Vec:
     if lang == "ru":
         for phrase in _AI_PATTERNS_RU:
             ai_count += lower_text.count(phrase)
+        # Also match individual AI-characteristic words
+        ai_count += sum(1 for t in tokens if t in _AI_WORDS_RU)
     elif lang == "uk":
         for phrase in _AI_PATTERNS_UK:
             ai_count += lower_text.count(phrase)
+        ai_count += sum(1 for t in tokens if t in _AI_WORDS_UK)
 
     # Also load language-specific markers from ai_markers module
     if lang not in ("en", "ru", "uk"):
@@ -375,12 +477,22 @@ def extract_features(text: str, lang: str = "en") -> Vec:
             first_words.append(st[0])
     starter_div = len(set(first_words)) / max(len(first_words), 1)
 
-    # 33. Conjunction rate
-    conj_count = sum(1 for t in tokens if t in _CONJUNCTIONS_EN)
+    # 33. Conjunction rate (language-aware)
+    _conj_set = (
+        _CONJUNCTIONS_RU if lang == "ru" else
+        _CONJUNCTIONS_UK if lang == "uk" else
+        _CONJUNCTIONS_EN
+    )
+    conj_count = sum(1 for t in tokens if t in _conj_set)
     conj_rate = conj_count / max(n_tokens, 1)
 
-    # 34. Transition word rate
-    trans_count = sum(1 for t in tokens if t in _TRANSITIONS_EN)
+    # 34. Transition word rate (language-aware)
+    _trans_set = (
+        _TRANSITIONS_RU if lang == "ru" else
+        _TRANSITIONS_UK if lang == "uk" else
+        _TRANSITIONS_EN
+    )
+    trans_count = sum(1 for t in tokens if t in _trans_set)
     trans_rate = trans_count / max(n_tokens, 1)
 
     # 35. Consecutive length difference variance
@@ -407,10 +519,21 @@ def extract_features(text: str, lang: str = "en") -> Vec:
     ]
 
 
-def normalize_features(raw: Vec) -> Vec:
-    """Normalize features: z-score then clip to [-3, 3]."""
+def normalize_features(raw: Vec, lang: str = "en") -> Vec:
+    """Normalize features: z-score then clip to [-3, 3].
+
+    Uses per-language normalization for RU/UK to account for
+    different char_entropy baselines and word length distributions.
+    """
+    if lang == "ru":
+        means, stds = _FEATURE_MEAN_RU, _FEATURE_STD_RU
+    elif lang == "uk":
+        means, stds = _FEATURE_MEAN_UK, _FEATURE_STD_UK
+    else:
+        means, stds = _FEATURE_MEAN, _FEATURE_STD
+
     out = []
-    for _i, (val, mu, sig) in enumerate(zip(raw, _FEATURE_MEAN, _FEATURE_STD)):
+    for _i, (val, mu, sig) in enumerate(zip(raw, means, stds)):
         if sig > 0:
             z = (val - mu) / sig
         else:
@@ -628,7 +751,7 @@ class NeuralAIDetector:
                 - features: dict — top contributing features
         """
         raw_features = extract_features(text, lang)
-        normed = normalize_features(raw_features)
+        normed = normalize_features(raw_features, lang=lang)
 
         # Forward pass through MLP
         if self._trained:

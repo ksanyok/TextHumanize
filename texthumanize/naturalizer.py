@@ -40,6 +40,15 @@ import random
 import re
 from collections import Counter
 
+from texthumanize._replacement_data import (
+    EN_EXTRA,
+    RU_BOOSTERS_EXTRA,
+    RU_EXPANDED,
+    RU_PHRASE_EXTRA,
+    UK_BOOSTERS_EXTRA,
+    UK_EXPANDED,
+    UK_PHRASE_EXTRA,
+)
 from texthumanize.collocation_engine import CollocEngine
 from texthumanize.decancel import _is_replacement_safe
 from texthumanize.segmenter import has_placeholder, skip_placeholder_sentence
@@ -84,6 +93,17 @@ _AI_OVERUSED_RU = {
     "необходимо подчеркнуть", "следует отметить",
     "играет ключевую роль", "имеет первостепенное значение",
     "в современном мире", "на сегодняшний день",
+    # Phase-2 additions
+    "имплементировать", "оптимизировать", "генерировать",
+    "трансформировать", "интегрировать", "верифицировать",
+    "координировать", "стимулировать", "модернизировать",
+    "парадигма", "методология", "инфраструктура",
+    "трансформация", "имплементация", "диверсификация",
+    "кардинально", "перманентно", "систематически",
+    "беспрецедентный", "высокотехнологичный", "многоаспектный",
+    "приоритетный", "релевантный", "когнитивный",
+    "в рамках", "в контексте", "посредством",
+    "тем не менее", "таким образом", "следовательно",
 }
 
 # Украинские AI-паттерны
@@ -97,6 +117,17 @@ _AI_OVERUSED_UK = {
     "необхідно підкреслити", "слід зазначити",
     "відіграє ключову роль", "має першочергове значення",
     "у сучасному світі", "на сьогоднішній день",
+    # Phase-2 additions
+    "імплементувати", "оптимізувати", "генерувати",
+    "трансформувати", "інтегрувати", "верифікувати",
+    "координувати", "стимулювати", "модернізувати",
+    "парадигма", "методологія", "інфраструктура",
+    "трансформація", "імплементація", "диверсифікація",
+    "кардинально", "перманентно", "систематично",
+    "безпрецедентний", "високотехнологічний", "багатоаспектний",
+    "пріоритетний", "релевантний", "когнітивний",
+    "у рамках", "в контексті", "за допомогою",
+    "тим не менш", "таким чином", "відповідно",
 }
 
 # Замены для характерных слов автогенерации (язык → {слово → [замены]})
@@ -195,6 +226,37 @@ _AI_WORD_REPLACEMENTS = {
         "embark": ["start", "begin", "set out"],
         "spearhead": ["lead", "drive", "champion"],
         "unravel": ["untangle", "figure out", "break down"],
+        # ── Additional word shortening ──
+        # (highest-impact feature: avg_word_length Δ=+0.23 for EN)
+        "capabilities": ["skills", "tools", "powers"],
+        "recognition": ["spotting", "ID", "finding"],
+        "integration": ["adding", "mixing", "blend"],
+        "predictions": ["guesses", "calls", "bets"],
+        "enhancement": ["boost", "lift", "gain"],
+        "improvement": ["fix", "boost", "gain"],
+        "information": ["info", "data", "facts"],
+        "environment": ["setting", "space", "world"],
+        "organization": ["group", "body", "firm"],
+        "architecture": ["layout", "setup", "design"],
+        "dramatically": ["hugely", "wildly", "a lot"],
+        "applications": ["apps", "uses", "tools"],
+        "opportunities": ["chances", "shots", "ways"],
+        "requirements": ["needs", "rules", "specs"],
+        "successfully": ["well", "with ease", "nicely"],
+        "professionals": ["pros", "experts", "staff"],
+        "traditionally": ["usually", "often", "before"],
+        "understanding": ["grasp", "sense", "view"],
+        "establishment": ["setup", "start", "founding"],
+        "transformation": ["shift", "change", "switch"],
+        "significantly": ["a lot", "greatly", "much"],
+        "functionality": ["features", "tools", "uses"],
+        "accessibility": ["access", "reach", "ease"],
+        "sustainability": ["lasting", "green", "viable"],
+        "challenges": ["issues", "hurdles", "snags"],
+        "landscape": ["scene", "field", "space"],
+        "stakeholders": ["parties", "groups", "people"],
+        "continuously": ["always", "non-stop", "still"],
+        "accumulated": ["built up", "gathered", "saved"],
         # ── Academic vocabulary simplification ──
         # (reduces avg_word_length, avg_syllables, improves flesch_score)
         "sophisticated": ["complex", "advanced", "clever"],
@@ -241,38 +303,8 @@ _AI_WORD_REPLACEMENTS = {
         "rigorous": ["strict", "tough", "thorough"],
         "protocols": ["rules", "steps", "procedures"],
     },
-    "ru": {
-        "значительно": ["заметно", "ощутимо", "сильно", "намного"],
-        "существенно": ["заметно", "ощутимо", "серьёзно"],
-        "чрезвычайно": ["очень", "крайне", "сильно"],
-        "безусловно": ["конечно", "да", "точно"],
-        "несомненно": ["конечно", "понятно", "точно"],
-        "комплексный": ["сложный", "многогранный", "разносторонний"],
-        "всеобъемлющий": ["полный", "широкий", "общий"],
-        "инновационный": ["новый", "свежий", "передовой", "современный"],
-        "ключевой": ["главный", "основной", "центральный"],
-        "основополагающий": ["основной", "главный", "базовый"],
-        "первостепенный": ["главный", "важнейший", "основной"],
-        "фундаментальный": ["основной", "базовый", "коренной"],
-        "обеспечивает": ["даёт", "создаёт", "позволяет"],
-        "способствует": ["помогает", "ведёт к", "влияет на"],
-    },
-    "uk": {
-        "значно": ["помітно", "відчутно", "сильно", "набагато"],
-        "суттєво": ["помітно", "відчутно", "серйозно"],
-        "надзвичайно": ["дуже", "вкрай", "сильно"],
-        "безумовно": ["звичайно", "так", "точно"],
-        "безсумнівно": ["звичайно", "зрозуміло", "точно"],
-        "комплексний": ["складний", "багатогранний", "різнобічний"],
-        "всеосяжний": ["повний", "широкий", "загальний"],
-        "інноваційний": ["новий", "свіжий", "передовий", "сучасний"],
-        "ключовий": ["головний", "основний", "центральний"],
-        "основоположний": ["основний", "головний", "базовий"],
-        "першочерговий": ["головний", "найважливіший", "основний"],
-        "фундаментальний": ["основний", "базовий", "корінний"],
-        "забезпечує": ["дає", "створює", "дозволяє"],
-        "сприяє": ["допомагає", "веде до", "впливає на"],
-    },
+    "ru": RU_EXPANDED,
+    "uk": UK_EXPANDED,
     "de": {
         "implementieren": ["umsetzen", "einführen", "einrichten"],
         "Implementierung": ["Umsetzung", "Einführung"],
@@ -419,6 +451,9 @@ _AI_WORD_REPLACEMENTS = {
     },
 }
 
+# Merge expanded dictionaries from _replacement_data module
+_AI_WORD_REPLACEMENTS["en"].update(EN_EXTRA)
+
 # Фразовые паттерны AI (для замены целиком)
 _AI_PHRASE_PATTERNS = {
     "en": {
@@ -529,6 +564,10 @@ _AI_PHRASE_PATTERNS = {
         "reveste-se de importância": ["é importante", "importa"],
     },
 }
+
+# Merge expanded phrase patterns
+_AI_PHRASE_PATTERNS["ru"].update(RU_PHRASE_EXTRA)
+_AI_PHRASE_PATTERNS["uk"].update(UK_PHRASE_EXTRA)
 
 # Вставки для повышения перплексии (естественные «человеческие» конструкции)
 _PERPLEXITY_BOOSTERS = {
@@ -747,6 +786,16 @@ _PERPLEXITY_BOOSTERS = {
     },
 }
 
+# Merge expanded perplexity boosters for RU/UK
+for _category, _items in RU_BOOSTERS_EXTRA.items():
+    _PERPLEXITY_BOOSTERS["ru"].setdefault(_category, []).extend(_items)
+for _category, _items in UK_BOOSTERS_EXTRA.items():
+    _PERPLEXITY_BOOSTERS["uk"].setdefault(_category, []).extend(_items)
+# De-duplicate lists
+for _lang_data in _PERPLEXITY_BOOSTERS.values():
+    for _cat in _lang_data:
+        _lang_data[_cat] = list(dict.fromkeys(_lang_data[_cat]))
+
 class TextNaturalizer:
     """Модуль стилевой натурализации текста.
 
@@ -802,14 +851,32 @@ class TextNaturalizer:
         # 2. Замена AI-характерных слов (regex на полном тексте — безопасно)
         text = self._replace_ai_words(text, prob)
 
+        # 2a. Удаление transition-стартеров предложений (самый сильный
+        # сигнал для нейродетектора — feature 27 ai_pattern_rate и
+        # feature 34 transition_word_rate)
+        text = self._delete_transition_starters(text, prob)
+
         # 3-5: Эти методы используют split_sentences + join → обрабатываем
         # каждый абзац/строку отдельно, чтобы не разрушать структуру
         text = self._per_paragraph(text, self._inject_burstiness, prob)
 
         if self.profile in ("chat", "web"):
             text = self._per_paragraph(text, self._boost_perplexity, prob)
+        elif self.intensity >= 30:
+            # Лёгкий перплексивный буст для формальных профилей —
+            # вставляем 1-2 риторических вопроса и фрагмента
+            text = self._per_paragraph(text, self._light_perplexity_boost, prob)
 
         text = self._per_paragraph(text, self._vary_sentence_structure, prob)
+
+        # 5a. Инъекция тире (em-dash) — высокоимпактная фича в нейродетекторе
+        # dash_rate: EN Δ=-0.12, RU Δ=-0.26, UK Δ=-0.28
+        if self.intensity >= 25:
+            text = self._per_paragraph(text, self._inject_dashes, prob)
+
+        # 5b. Разбивка длинных абзацев (avg_paragraph_length: UK Δ=+0.32)
+        if self.intensity >= 30:
+            text = self._split_long_paragraphs(text)
 
         # 6. Контрактива (regex — безопасно)
         if self.lang == "en" and self.profile in ("chat", "web"):
@@ -952,6 +1019,86 @@ class TextNaturalizer:
 
         return text
 
+    # ── Transition starters — deletion/simplification ──────────
+
+    # These sentence-initial transition phrases are the #1 AI signal.
+    # Removing them entirely (not replacing) has the strongest effect
+    # on neural feature 27 (ai_pattern_rate, LR w=-2.10) and
+    # feature 34 (transition_word_rate, LR w=-0.45).
+    _TRANSITION_STARTERS_EN: list[str] = [
+        "Furthermore, ", "Moreover, ", "Additionally, ",
+        "Consequently, ", "Subsequently, ", "Nevertheless, ",
+        "Nonetheless, ", "Accordingly, ", "Conversely, ",
+        "Importantly, ", "Significantly, ", "Essentially, ",
+        "Fundamentally, ", "Ultimately, ", "Indeed, ",
+        "Notably, ", "Evidently, ", "Undoubtedly, ",
+        "It is important to note that ", "It should be noted that ",
+        "It is worth mentioning that ", "It is noteworthy that ",
+    ]
+
+    _TRANSITION_STARTERS_RU: list[str] = [
+        "Кроме того, ", "Более того, ", "Помимо этого, ",
+        "Следовательно, ", "Тем не менее, ", "Вместе с тем, ",
+        "В связи с этим, ", "Таким образом, ", "Безусловно, ",
+        "Несомненно, ", "Очевидно, ", "Существенно, ",
+        "Важно отметить, что ", "Следует отметить, что ",
+        "Необходимо отметить, что ", "Стоит упомянуть, что ",
+        "Следует подчеркнуть, что ", "Важно понимать, что ",
+        "Прежде всего, ", "В первую очередь, ", "В целом, ",
+        "В частности, ", "На сегодняшний день, ",
+    ]
+
+    _TRANSITION_STARTERS_UK: list[str] = [
+        "Крім того, ", "Більше того, ", "Окрім цього, ",
+        "Відповідно, ", "Тим не менш, ", "Разом з тим, ",
+        "У зв'язку з цим, ", "Таким чином, ", "Безумовно, ",
+        "Безсумнівно, ", "Очевидно, ", "Суттєво, ",
+        "Важливо зазначити, що ", "Слід зазначити, що ",
+        "Необхідно зазначити, що ", "Варто зазначити, що ",
+        "Слід підкреслити, що ", "Важливо розуміти, що ",
+        "Насамперед, ", "У першу чергу, ", "Загалом, ",
+        "Зокрема, ", "На сьогоднішній день, ",
+    ]
+
+    def _delete_transition_starters(self, text: str, prob: float) -> str:
+        """Delete AI-characteristic sentence-initial transition phrases.
+
+        Instead of replacing them, outright deletion is more effective
+        because it eliminates the AI signal entirely.
+        """
+        if self.lang == "en":
+            starters = self._TRANSITION_STARTERS_EN
+        elif self.lang == "ru":
+            starters = self._TRANSITION_STARTERS_RU
+        elif self.lang == "uk":
+            starters = self._TRANSITION_STARTERS_UK
+        else:
+            return text
+
+        deleted = 0
+        max_deletes = max(2, int(len(text.split('.')) * 0.35))
+
+        for starter in starters:
+            if deleted >= max_deletes:
+                break
+            if self.rng.random() > prob * 0.8:
+                continue
+            if starter in text:
+                # After deletion, capitalize the next character
+                idx = text.index(starter)
+                after = text[idx + len(starter):]
+                if after and after[0].islower():
+                    after = after[0].upper() + after[1:]
+                text = text[:idx] + after
+                deleted += 1
+                self.changes.append({
+                    "type": "naturalize_delete_transition",
+                    "original": starter.strip(),
+                    "replacement": "(deleted)",
+                })
+
+        return text
+
     def _inject_burstiness(self, text: str, prob: float) -> str:
         """Внедрить вариативность длины предложений.
 
@@ -959,7 +1106,7 @@ class TextNaturalizer:
         характерный признак автоматически сгенерированного текста.
         """
         sentences = split_sentences(text, lang=self.lang)
-        if len(sentences) < 5:
+        if len(sentences) < 3:
             return text
 
         lengths = [len(s.split()) for s in sentences]
@@ -975,6 +1122,9 @@ class TextNaturalizer:
         if cv > 0.6:
             return text
 
+        # Более агрессивный порог split для RU/UK (слова длиннее → меньше слов в предложении)
+        split_threshold = 16 if self.lang in ("ru", "uk") else 20
+
         result = list(sentences)
         modified = False
 
@@ -983,8 +1133,8 @@ class TextNaturalizer:
             words = sent.split()
             wlen = len(words)
 
-            # Стратегия 1: Разбить очень длинные (> 25 слов)
-            if wlen > 25 and self.rng.random() < prob * 0.7:
+            # Стратегия 1: Разбить длинные предложения
+            if wlen > split_threshold and self.rng.random() < prob * 0.7:
                 split = self._smart_split(sent)
                 if split:
                     result[i] = split
@@ -997,7 +1147,7 @@ class TextNaturalizer:
             # Стратегия 2: Объединить два коротких (< 8 слов каждое)
             elif (wlen <= 6 and i + 1 < len(result)
                   and len(result[i + 1].split()) <= 8
-                  and self.rng.random() < prob * 0.4):
+                  and self.rng.random() < prob * 0.5):
                 # Объединяем через тире или запятую
                 first = sent.rstrip().rstrip('.!?')
                 second = result[i + 1]
@@ -1013,6 +1163,48 @@ class TextNaturalizer:
                     "type": "naturalize_burstiness",
                     "description": "Объединение коротких предложений",
                 })
+
+            # Стратегия 3: Вставить короткий фрагмент для разбивки
+            # монотонности (3 подряд "средних" предложения)
+            elif (i >= 2 and wlen > 8
+                  and abs(wlen - avg) < avg * 0.25
+                  and abs(len(result[i-1].split()) - avg) < avg * 0.25
+                  and abs(len(result[i-2].split()) - avg) < avg * 0.25
+                  and self.rng.random() < prob * 0.35):
+                fragment = self._get_burstiness_fragment()
+                if fragment:
+                    result[i] = fragment + " " + sent
+                    modified = True
+                    self.changes.append({
+                        "type": "naturalize_burstiness",
+                        "description": "Вставка фрагмента перед монотонным предложением",
+                    })
+
+        if modified:
+            return ' '.join(s for s in result if s.strip())
+        return text
+
+    def _get_burstiness_fragment(self) -> str:
+        """Получить короткий дискурсивный фрагмент для cadence."""
+        if self.lang == "ru":
+            fragments = [
+                "Вот что важно.", "К слову.", "Однако.",
+                "И это не всё.", "Суть в другом.",
+                "Но.", "А впрочем.", "Проще говоря.",
+            ]
+        elif self.lang == "uk":
+            fragments = [
+                "Ось що важливо.", "До речі.", "Однак.",
+                "І це не все.", "Суть в іншому.",
+                "Але.", "А втім.", "Простіше кажучи.",
+            ]
+        else:
+            fragments = [
+                "Here's the thing.", "Worth noting.", "That said.",
+                "Actually.", "In short.", "But wait.",
+                "Key point.", "Makes sense.",
+            ]
+        return self.rng.choice(fragments)
 
         if modified:
             return ' '.join(s for s in result if s.strip())
@@ -1077,6 +1269,186 @@ class TextNaturalizer:
             return f"{part1} {rest}"
 
         return None
+
+    # ─── Em-dash injection ──────────────────────────────────
+
+    def _inject_dashes(self, text: str, prob: float) -> str:
+        """Вставить тире (em-dashes) — одна из самых чувствительных фич нейродетектора.
+
+        dash_rate: EN Δ=-0.12, RU Δ=-0.26, UK Δ=-0.28 (lower=more AI).
+        AI текст почти не использует тире. Люди — постоянно.
+        """
+        sentences = split_sentences(text, lang=self.lang)
+        if len(sentences) < 2:
+            return text
+
+        result = list(sentences)
+        injected = 0
+        max_injections = max(1, len(sentences) // 3)
+
+        for i in range(len(result)):
+            if injected >= max_injections:
+                break
+            sent = result[i]
+            words = sent.split()
+            if len(words) < 8:
+                continue
+
+            # Стратегия 1 (40%): Заменить запятую перед союзом на тире
+            if self.rng.random() < prob * 0.4:
+                new_sent = self._comma_to_dash(sent)
+                if new_sent != sent:
+                    result[i] = new_sent
+                    injected += 1
+                    self.changes.append({
+                        "type": "dash_injection",
+                        "description": "Замена запятой на тире перед союзом",
+                    })
+                    continue
+
+            # Стратегия 2 (30%): Вставить вводное тире (parenthetical)
+            if self.rng.random() < prob * 0.3:
+                new_sent = self._insert_dash_aside(sent)
+                if new_sent and new_sent != sent:
+                    result[i] = new_sent
+                    injected += 1
+                    self.changes.append({
+                        "type": "dash_injection",
+                        "description": "Вставка вводной фразы с тире",
+                    })
+
+        if injected > 0:
+            return ' '.join(result)
+        return text
+
+    def _comma_to_dash(self, sent: str) -> str:
+        """Заменить одну запятую+союз на тире."""
+        if self.lang in ("ru", "uk"):
+            patterns = [
+                (r',\s+(и|а|но)\s+', r' — \1 '),
+                (r',\s+(що|что)\s+', r' — \1 '),
+            ]
+        else:
+            patterns = [
+                (r',\s+(and|but|or)\s+', r' — \1 '),
+                (r',\s+(which|where)\s+', r' — \1 '),
+            ]
+        for pat, repl in patterns:
+            new = re.sub(pat, repl, sent, count=1)
+            if new != sent:
+                return new
+        return sent
+
+    def _insert_dash_aside(self, sent: str) -> str | None:
+        """Вставить вводную фразу в тирах внутри предложения."""
+        words = sent.split()
+        if len(words) < 10:
+            return None
+
+        if self.lang == "ru":
+            asides = [
+                "— что важно —", "— между прочим —", "— к слову —",
+                "— как ни странно —", "— надо сказать —",
+                "— и это ключевое —", "— по сути —",
+            ]
+        elif self.lang == "uk":
+            asides = [
+                "— що важливо —", "— між іншим —", "— до речі —",
+                "— як не дивно —", "— треба сказати —",
+                "— і це ключове —", "— по суті —",
+            ]
+        else:
+            asides = [
+                "— surprisingly —", "— to be fair —", "— interestingly —",
+                "— in a way —", "— arguably —", "— at least in part —",
+                "— and this matters —",
+            ]
+
+        aside = self.rng.choice(asides)
+        # Вставляем на 1/3 предложения
+        pos = len(words) // 3
+        if pos < 2:
+            pos = 2
+        words.insert(pos, aside)
+        return ' '.join(words)
+
+    # ─── Light perplexity boost for formal profiles ──────────
+
+    def _light_perplexity_boost(self, text: str, prob: float) -> str:
+        """Лёгкий перплексивный буст для формальных профилей.
+
+        Вставляет 1-2 элемента (риторический вопрос, фрагмент) чтобы
+        поднять question_rate и token entropy. Не агрессивный как полный
+        _boost_perplexity, подходит для formal/docs/blog/seo.
+        """
+        sentences = split_sentences(text, lang=self.lang)
+        if len(sentences) < 3:
+            return text
+
+        result = list(sentences)
+        inserted = 0
+
+        # Вставить 1 риторический вопрос
+        if self.rng.random() < prob * 0.6:
+            if self.lang == "ru":
+                questions = [
+                    "Но почему это важно?", "И что это значит на практике?",
+                    "Какой из этого вывод?", "Что стоит за этим?",
+                ]
+            elif self.lang == "uk":
+                questions = [
+                    "Але чому це важливо?", "І що це означає на практиці?",
+                    "Який з цього висновок?", "Що стоїть за цим?",
+                ]
+            else:
+                questions = [
+                    "But why does this matter?", "So what does that mean in practice?",
+                    "What's the takeaway here?", "And what comes next?",
+                ]
+            q = self.rng.choice(questions)
+            # Вставляем после 2/3 текста
+            pos = max(1, 2 * len(result) // 3)
+            result.insert(pos, q)
+            inserted += 1
+            self.changes.append({
+                "type": "light_perplexity",
+                "description": f"Вставлен риторический вопрос: {q}",
+            })
+
+        if inserted > 0:
+            return ' '.join(result)
+        return text
+
+    # ─── Paragraph splitting ────────────────────────────────
+
+    def _split_long_paragraphs(self, text: str) -> str:
+        """Разбить длинные абзацы на более короткие.
+
+        avg_paragraph_length: UK Δ=+0.32, RU Δ=+0.24 (higher=more AI).
+        AI генерирует монолитные абзацы. Люди чаще ставят переносы.
+        """
+        paragraphs = text.split('\n')
+        result = []
+        for para in paragraphs:
+            if not para.strip():
+                result.append(para)
+                continue
+            sentences = split_sentences(para, lang=self.lang)
+            if len(sentences) >= 5:
+                # Разбиваем примерно пополам
+                mid = len(sentences) // 2
+                p1 = ' '.join(sentences[:mid])
+                p2 = ' '.join(sentences[mid:])
+                result.append(p1)
+                result.append('')  # Пустая строка — разделение абзацев
+                result.append(p2)
+                self.changes.append({
+                    "type": "paragraph_split",
+                    "description": f"Разбивка абзаца ({len(sentences)} → 2 части)",
+                })
+            else:
+                result.append(para)
+        return '\n'.join(result)
 
     def _boost_perplexity(self, text: str, prob: float) -> str:
         """Повысить перплексию через человеческие конструкции.

@@ -547,18 +547,18 @@ class Pipeline:
         # Применяем graduated retry factor
         base_intensity = max(5, int(base_intensity * intensity_factor))
 
-        # Cap base intensity at 70 to prevent over-processing at high
-        # user intensities. The higher user values (80-100) manifest
+        # Cap base intensity at 85 to prevent over-processing at high
+        # user intensities. The higher user values (86-100) manifest
         # through the detector-in-the-loop running extra passes, not
         # through more aggressive single-pass processing.
-        base_intensity = min(base_intensity, 70)
+        base_intensity = min(base_intensity, 85)
 
         if ai_score >= 70:
-            # Сильно «искусственный» текст — slightly boost
-            adjusted = min(75, int(base_intensity * 1.15))
+            # Сильно «искусственный» текст — boost more aggressively
+            adjusted = min(90, int(base_intensity * 1.20))
         elif ai_score >= 50:
-            # Средне «искусственный» — немного усиливаем
-            adjusted = min(75, int(base_intensity * 1.1))
+            # Средне «искусственный» — усиливаем
+            adjusted = min(85, int(base_intensity * 1.15))
         elif ai_score <= 5:
             # Полностью «живой» текст — применяем только типографику
             return self._typography_only(
@@ -1008,6 +1008,27 @@ class Pipeline:
         all_changes.extend(_ch)
         checkpoints.append(("coherence", text))
         text = self._run_plugins("coherence", text, lang, is_before=False)
+
+        # 13a. Final entropy/burstiness re-injection
+        # Stages 11-13 (readability, grammar, coherence) can re-uniformize
+        # sentence lengths and undo entropy work. This final pass ensures
+        # burstiness and statistical diversity are maintained.
+        if effective_options.intensity >= 30:
+            def _run_entropy_final() -> tuple[str, list]:
+                from texthumanize.entropy_injector import EntropyInjector
+                ei = EntropyInjector(
+                    lang=lang,
+                    intensity=min(effective_options.intensity, 50),
+                    seed=(effective_options.seed + 7) if effective_options.seed else None,
+                    profile=effective_options.profile,
+                )
+                t = ei.process(text)
+                return t, [c for c in ei.changes if "burstiness" in str(c.get("type", ""))]
+            text, _ch = self._safe_stage(
+                "entropy_final", text, lang,
+                _run_entropy_final, stage_timings,
+            )
+            all_changes.extend(_ch)
 
         # 13b. Anti-fingerprint diversification
         _fp_rand = FingerprintRandomizer(

@@ -48,9 +48,9 @@ class TestNaturalizerBurstiness:
     """Тесты _inject_burstiness."""
 
     def test_short_text(self):
-        """< 5 предложений → без изменений."""
+        """< 3 предложений → без изменений."""
         n = TextNaturalizer(lang="en", intensity=100, seed=42)
-        text = "One. Two. Three."
+        text = "One. Two."
         result = n._inject_burstiness(text, 1.0)
         assert result == text
 

@@ -1,9 +1,10 @@
 """AI backend provider for enhanced text processing.
 
-Three-tier system:
+Four-tier system:
 1. OpenAI API (if key provided — default)
-2. OSS model via Gradio (alternative, rate-limited)
-3. Built-in rule-based (always available)
+2. Ollama local LLM (if enabled — no API key needed)
+3. OSS model via Gradio (alternative, rate-limited)
+4. Built-in rule-based (always available)
 
 Usage:
     from texthumanize.ai_backend import AIBackend
@@ -72,7 +73,7 @@ _PROMPT_NATURALNESS = (
 #  Priority order for backend fallback
 # ───────────────────────────────────────────────────────
 
-_FALLBACK_ORDER = ("openai", "oss", "builtin")
+_FALLBACK_ORDER = ("openai", "ollama", "oss", "builtin")
 
 # ═══════════════════════════════════════════════════════
 #  OpenAI provider
@@ -166,6 +167,138 @@ class _OpenAIProvider:
             raise RuntimeError(
                 "OpenAI API: unexpected response format"
             ) from exc
+
+# ═══════════════════════════════════════════════════════
+#  Ollama local LLM provider
+# ═══════════════════════════════════════════════════════
+
+
+class _OllamaProvider:
+    """Calls a local Ollama instance via its REST API.
+
+    Ollama runs LLMs locally — no API key needed.
+    Default URL: ``http://localhost:11434``.
+
+    Supports any model pulled into Ollama (e.g.
+    ``llama3.2``, ``mistral``, ``gemma2``).
+    """
+
+    _DEFAULT_URL = "http://localhost:11434"
+
+    def __init__(
+        self,
+        model: str = "llama3.2",
+        url: str | None = None,
+        timeout: float = 120.0,
+        temperature: float = 0.7,
+    ) -> None:
+        self._model = model
+        self._base_url = (url or self._DEFAULT_URL).rstrip("/")
+        self._timeout = timeout
+        self._temperature = temperature
+        self._available: bool | None = None  # lazy ping
+
+    # ── availability check ─────────────────────────
+
+    @property
+    def is_available(self) -> bool:
+        """Check if Ollama server is reachable (cached)."""
+        if self._available is not None:
+            return self._available
+        try:
+            req = urllib.request.Request(
+                f"{self._base_url}/api/tags",
+                method="GET",
+            )
+            with urllib.request.urlopen(req, timeout=5.0) as resp:
+                self._available = resp.status == 200
+        except Exception:
+            self._available = False
+        return self._available
+
+    def reset_availability(self) -> None:
+        """Force re-check on next call."""
+        self._available = None
+
+    # ── public ─────────────────────────────────────
+
+    def call(
+        self,
+        system_prompt: str,
+        user_text: str,
+    ) -> str:
+        """Send a generation request to Ollama.
+
+        Uses ``/api/chat`` (chat completion format).
+
+        Args:
+            system_prompt: System-level instruction.
+            user_text: The user content to process.
+
+        Returns:
+            The model's reply text.
+
+        Raises:
+            RuntimeError: On connection or API errors.
+        """
+        if not self.is_available:
+            raise RuntimeError(
+                f"Ollama not available at {self._base_url}"
+            )
+
+        url = f"{self._base_url}/api/chat"
+        payload = {
+            "model": self._model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_text},
+            ],
+            "stream": False,
+            "options": {
+                "temperature": self._temperature,
+            },
+        }
+        body = json.dumps(payload).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        req = urllib.request.Request(
+            url, data=body, headers=headers, method="POST",
+        )
+        try:
+            with urllib.request.urlopen(
+                req, timeout=self._timeout
+            ) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            detail = ""
+            try:
+                detail = exc.read().decode("utf-8", "replace")
+            except Exception:
+                pass
+            self._available = None  # re-check next time
+            raise RuntimeError(
+                f"Ollama API HTTP {exc.code}: {detail}"
+            ) from exc
+        except urllib.error.URLError as exc:
+            self._available = None
+            raise RuntimeError(
+                f"Ollama connection error: {exc.reason}"
+            ) from exc
+        except Exception as exc:
+            self._available = None
+            raise RuntimeError(
+                f"Ollama API error: {exc}"
+            ) from exc
+
+        # Parse: {"message": {"content": "..."}}
+        try:
+            return str(
+                data["message"]["content"]
+            ).strip()
+        except (KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError(
+                "Ollama: unexpected response format"
+            ) from exc
+
 
 # ═══════════════════════════════════════════════════════
 #  OSS Gradio provider (rate-limited, circuit-broken)
@@ -480,12 +613,13 @@ class _BuiltinProvider:
 # ═══════════════════════════════════════════════════════
 
 class AIBackend:
-    """Unified AI backend with three-tier fallback.
+    """Unified AI backend with four-tier fallback.
 
     Priority (when ``prefer="auto"``):
-        1. OpenAI — if ``openai_api_key`` provided
-        2. OSS   — if ``enable_oss=True``
-        3. Built-in — always available
+        1. OpenAI  — if ``openai_api_key`` provided
+        2. Ollama  — if ``enable_ollama=True`` and server reachable
+        3. OSS    — if ``enable_oss=True``
+        4. Built-in — always available
 
     On failure of a higher-priority backend the next
     one in the list is tried. Built-in never fails on
@@ -494,20 +628,29 @@ class AIBackend:
     Args:
         openai_api_key: OpenAI API key (optional).
         openai_model: Model for OpenAI calls.
+        enable_ollama: Enable the Ollama local LLM backend.
+        ollama_model: Model name for Ollama (e.g. 'llama3.2').
+        ollama_url: URL for Ollama server.
         enable_oss: Enable the OSS Gradio backend.
         oss_rate_limit: Min seconds between OSS calls.
         prefer: Backend preference strategy.
             ``"auto"`` picks the best available.
-            ``"openai"``, ``"oss"``, ``"builtin"``
-            force a specific backend (with fallback).
+            ``"openai"``, ``"ollama"``, ``"oss"``,
+            ``"builtin"`` force a specific backend
+            (with fallback).
     """
 
-    _VALID_PREFER = ("auto", "openai", "oss", "builtin")
+    _VALID_PREFER = (
+        "auto", "openai", "ollama", "oss", "builtin",
+    )
 
     def __init__(
         self,
         openai_api_key: str | None = None,
         openai_model: str = "gpt-4o-mini",
+        enable_ollama: bool = False,
+        ollama_model: str = "llama3.2",
+        ollama_url: str | None = None,
         enable_oss: bool = False,
         oss_rate_limit: float = 10.0,
         oss_api_url: str | None = None,
@@ -530,6 +673,14 @@ class AIBackend:
                 model=openai_model,
             )
 
+        # Ollama provider
+        self._ollama: _OllamaProvider | None = None
+        if enable_ollama:
+            self._ollama = _OllamaProvider(
+                model=ollama_model,
+                url=ollama_url,
+            )
+
         # OSS provider
         self._oss: _OSSProvider | None = None
         if enable_oss:
@@ -548,11 +699,16 @@ class AIBackend:
         """Return names of currently available backends.
 
         Returns:
-            List such as ``["openai", "builtin"]``.
+            List such as ``["openai", "ollama", "builtin"]``.
         """
         result: list[str] = []
         if self._openai is not None:
             result.append("openai")
+        if (
+            self._ollama is not None
+            and self._ollama.is_available
+        ):
+            result.append("ollama")
         if (
             self._oss is not None
             and self._oss.is_available
@@ -580,6 +736,11 @@ class AIBackend:
             if self._openai is not None:
                 order.append("openai")
             if (
+                self._ollama is not None
+                and self._ollama.is_available
+            ):
+                order.append("ollama")
+            if (
                 self._oss is not None
                 and self._oss.is_available
             ):
@@ -604,7 +765,8 @@ class AIBackend:
         """Try calling an external backend.
 
         Args:
-            backend: ``"openai"`` or ``"oss"``.
+            backend: ``"openai"``, ``"ollama"``,
+                or ``"oss"``.
             system_prompt: The system instruction.
             user_text: The user text.
 
@@ -614,6 +776,10 @@ class AIBackend:
         try:
             if backend == "openai" and self._openai:
                 return self._openai.call(
+                    system_prompt, user_text
+                )
+            if backend == "ollama" and self._ollama:
+                return self._ollama.call(
                     system_prompt, user_text
                 )
             if backend == "oss" and self._oss:
