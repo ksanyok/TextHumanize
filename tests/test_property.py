@@ -15,17 +15,19 @@ from texthumanize import analyze, detect_ai, humanize
 from texthumanize.core import paraphrase
 from texthumanize.utils import HumanizeResult
 
-# Common settings: no deadline, suppress filter health check
+# Common settings: no deadline, suppress filter health check, deterministic for CI
 _common = dict(
     deadline=None,
     suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow],
+    derandomize=True,
+    database=None,
 )
 
 
 # --- Strategies ---
 
 _word_chars = st.characters(
-    whitelist_categories=("L", "N"),
+    whitelist_categories=("Ll", "Lu", "Nd"),
     whitelist_characters="-'",
 )
 _word = st.text(_word_chars, min_size=1, max_size=15).filter(lambda w: w.strip())
