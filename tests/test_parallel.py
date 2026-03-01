@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from texthumanize import humanize_batch, humanize_chunked
 
 _SAMPLE = (
@@ -80,6 +82,7 @@ class TestParallelBatch:
 class TestParallelChunked:
     """Tests for humanize_chunked with max_workers."""
 
+    @pytest.mark.timeout(300)
     def test_chunked_sequential(self):
         long_text = "\n\n".join([_SAMPLE] * 10)
         result = humanize_chunked(
@@ -88,6 +91,7 @@ class TestParallelChunked:
         assert result.text
         assert len(result.text) > 100
 
+    @pytest.mark.timeout(300)
     def test_chunked_parallel(self):
         long_text = "\n\n".join([_SAMPLE] * 10)
         result = humanize_chunked(
@@ -108,6 +112,7 @@ class TestParallelChunked:
         result = humanize_chunked("", chunk_size=100, lang="en")
         assert result.text == ""
 
+    @pytest.mark.timeout(300)
     def test_chunked_parallel_changes_collected(self):
         long_text = "\n\n".join([_SAMPLE] * 5)
         result = humanize_chunked(
