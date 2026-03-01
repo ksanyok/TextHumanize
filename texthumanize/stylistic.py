@@ -61,6 +61,31 @@ class StylisticFingerprint:
     # Raw распределение длин (для matching)
     length_distribution: dict[int, float] = field(default_factory=dict)
 
+    @classmethod
+    def from_text(cls, text: str, lang: str = "en") -> StylisticFingerprint:
+        """Создать стилистический профиль из текста-образца.
+
+        Анализирует образец текста автора и строит его стилистический
+        fingerprint, который затем можно передать в ``humanize(target_style=fp)``.
+
+        Аналог «кастомизации под стиль автора» у Netus AI.
+
+        Args:
+            text: Текст-образец (рекомендуется 500+ слов для точности).
+            lang: Язык текста.
+
+        Returns:
+            StylisticFingerprint с параметрами стиля автора.
+
+        Example::
+
+            sample = open("my_blog_posts.txt").read()
+            my_style = StylisticFingerprint.from_text(sample, lang="en")
+            result = humanize(ai_text, target_style=my_style)
+        """
+        analyzer = StylisticAnalyzer(lang=lang)
+        return analyzer.extract(text)
+
     def similarity(self, other: StylisticFingerprint) -> float:
         """Вычислить сходство двух отпечатков (0-1, 1=идентичные)."""
         features_self = self._to_vector()

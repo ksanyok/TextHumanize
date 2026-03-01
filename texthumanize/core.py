@@ -111,6 +111,9 @@ def humanize(
     only_flagged: bool = False,
     custom_dict: dict[str, str | list[str]] | None = None,
     *,
+    auto_evade: bool = False,
+    target_ai_score: float = 0.30,
+    max_evade_attempts: int = 4,
     backend: str = "local",
     openai_api_key: str | None = None,
     openai_model: str = "gpt-4o-mini",
@@ -195,6 +198,9 @@ def humanize(
 
         >>> # с OpenAI
         >>> result = humanize("Text.", backend="openai", openai_api_key="sk-...")
+
+        >>> # auto-evade: повторяет гуманизацию, пока AI-score не упадёт ниже 0.30
+        >>> result = humanize("AI text.", auto_evade=True, target_ai_score=0.25)
     """
     # Input sanitization
     if not isinstance(text, str):
@@ -208,6 +214,15 @@ def humanize(
     MAX_TEXT_LENGTH = 1_000_000  # 1M chars safety limit
     if len(text) > MAX_TEXT_LENGTH:
         raise InputTooLargeError(len(text), MAX_TEXT_LENGTH)
+
+    # ── auto_evade shortcut ──────────────────────────────────────
+    # Delegates to humanize_until_human() with adaptive strategy.
+    if auto_evade:
+        return humanize_until_human(
+            text, lang=lang, profile=profile, intensity=intensity,
+            target_score=target_ai_score, max_attempts=max_evade_attempts,
+            intensity_step=8, seed=seed, strategy="adaptive",
+        )
 
     # ── AI backend routing ──────────────────────────────────────
     _valid_backends = ("local", "ollama", "oss", "openai", "auto")
@@ -1070,13 +1085,18 @@ def detect_ai(text: str, lang: str = "auto") -> DetectionReport:
         pass
 
     # Enhance with neural perplexity (character-level LSTM)
+    # Use max_chars=500 — sufficient for accurate perplexity estimation
+    # while being ~4x faster than 2000. Score is derived from perplexity
+    # without a second forward pass.
     neural_ppl = None
     neural_ppl_score = None
     try:
         nlm_mod = _get_neural_lm()
         nlm = nlm_mod.get_neural_lm()
-        neural_ppl = nlm.perplexity(text, max_chars=2000)
-        neural_ppl_score = nlm.perplexity_score(text, max_chars=2000)
+        neural_ppl = nlm.perplexity(text, max_chars=500)
+        # Inline score computation (avoids second forward pass)
+        neural_ppl_score = max(0.0, min(1.0,
+            1.0 / (1.0 + __import__('math').exp(0.8 * (neural_ppl - 4.5)))))
     except Exception:
         pass
 

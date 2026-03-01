@@ -25,18 +25,19 @@ from __future__ import annotations
 
 import logging
 import math
+import operator
 import random
 from typing import Any
 
 from texthumanize.neural_engine import (
     LSTMCell,
     Vec,
-    _dot,
     _he_init,
     _log_softmax,
     _zeros,
 )
 
+_mul = operator.mul
 logger = logging.getLogger(__name__)
 
 # Character vocabulary
@@ -89,8 +90,10 @@ class _OutputProjection:
         self.b: Vec = [rng.gauss(0, 0.01) for _ in range(n_vocab)]
 
     def __call__(self, h: Vec) -> Vec:
-        """Compute logits = W @ h + b."""
-        return [_dot(self.W[i], h) + self.b[i] for i in range(len(self.b))]
+        """Compute logits = W @ h + b (optimized)."""
+        _m = _mul
+        W, b = self.W, self.b
+        return [sum(map(_m, W[i], h)) + b[i] for i in range(len(b))]
 
 
 def _load_trained_lm_weights(
