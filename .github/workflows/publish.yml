@@ -23,13 +23,14 @@ jobs:
           python-version: '3.12'
 
       - name: Install build tools
-        run: pip install build "twine<6"
+        run: pip install build "twine<6" "setuptools>=68.0,<75"
 
       - name: Build sdist and wheel
         run: python -m build
 
       - name: Check dist
-        run: twine check dist/* || echo "Warning: twine check failed (Metadata-Version 2.4 not fully supported), continuing..."
+        continue-on-error: true
+        run: twine check dist/*
 
       - name: Show built packages
         run: ls -la dist/
