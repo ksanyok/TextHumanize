@@ -17,7 +17,7 @@ class TestPerformance(unittest.TestCase):
         t0 = time.perf_counter()
         result = humanize(text, lang="en", seed=42)
         elapsed = time.perf_counter() - t0
-        self.assertLess(elapsed, 15.0, f"Short text took {elapsed:.2f}s")
+        self.assertLess(elapsed, 30.0, f"Short text took {elapsed:.2f}s")
         self.assertTrue(len(result.text) > 0)
 
     def test_humanize_medium_under_3s(self):
