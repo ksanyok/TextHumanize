@@ -1,6 +1,6 @@
 """Round 3: целевые тесты для оставшихся 114 непокрытых строк.
 
-Фокус: tokenizer, utils, tone, watermark, spinner, decancel,
+Фокус: utils, tone, watermark, spinner, decancel,
 coherence, universal, core, analyzer, detectors, api, cli,
 naturalizer, morphology, segmenter, sentence_split, liveliness,
 lang_detect, context, repetitions, structure.
@@ -13,49 +13,6 @@ from collections import Counter
 from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
-
-# ═══════════════════════════════════════════════════════════════
-#  tokenizer.py — L115, L129, L169–170
-# ═══════════════════════════════════════════════════════════════
-
-class TestTokenizerR3(unittest.TestCase):
-    """Покрытие веток tokenizer."""
-
-    def test_split_sentences_empty_text(self):
-        """L129: пустой текст → пустой список."""
-        from texthumanize.tokenizer import Tokenizer
-        tok = Tokenizer()
-        self.assertEqual(tok._split_sentences(""), [])
-        self.assertEqual(tok._split_sentences("   "), [])
-
-    def test_empty_raw_segment_skipped(self):
-        """L115: сегмент из пробелов пропускается."""
-        from texthumanize.tokenizer import Tokenizer
-        tok = Tokenizer()
-        # Два предложения с двойным пробелом-точкой между ними
-        text = "First sentence.  . Second sentence."
-        result = tok._split_sentences(text)
-        # Не должно быть пустых предложений
-        for s in result:
-            self.assertTrue(s.strip(), f"пустой сегмент: {s!r}")
-
-    def test_unicode_ellipsis_ending(self):
-        """L169–170: предложение заканчивается символом … (U+2026)."""
-        from texthumanize.tokenizer import Tokenizer
-        tok = Tokenizer()
-        text = "Something happened\u2026 Then another thing."
-        sents = tok._split_sentences(text)
-        # Первое предложение должно содержать …
-        found = any("\u2026" in s or s.strip().endswith("\u2026") for s in sents)
-        self.assertTrue(found or len(sents) >= 1)
-
-    def test_tokenize_with_ellipsis(self):
-        """Полный pipeline tokenize с Unicode …."""
-        from texthumanize.tokenizer import Tokenizer
-        tok = Tokenizer()
-        result = tok.tokenize("He said\u2026 Then left. Final.")
-        self.assertTrue(len(result.paragraphs) >= 1)
-
 
 # ═══════════════════════════════════════════════════════════════
 #  utils.py — L72

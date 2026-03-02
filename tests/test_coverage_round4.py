@@ -475,34 +475,6 @@ class TestLivelinessR4(unittest.TestCase):
 
 
 # ═══════════════════════════════════════════════════════════════
-#  tokenizer.py — L115, L169–170
-# ═══════════════════════════════════════════════════════════════
-
-
-class TestTokenizerR4(unittest.TestCase):
-    """Тесты для Tokenizer — edge cases."""
-
-    # --- L115: raw_sent.strip() пуст → skip ---
-    def test_empty_sentence_segment(self):
-        """Пустой сегмент от sentence splitter → L115."""
-        from texthumanize.tokenizer import Tokenizer
-        tok = Tokenizer()
-        # Текст с двойной пунктуацией, вызывающей пустые сегменты
-        text = "Hello.  . World."
-        result = tok.tokenize(text)
-        self.assertIsNotNone(result)
-
-    # --- L169-170: предложение заканчивается на '…' (Unicode ellipsis) ---
-    def test_sentence_unicode_ellipsis(self):
-        """Предложение с Unicode ellipsis '…' → L169-170."""
-        from texthumanize.tokenizer import Tokenizer
-        tok = Tokenizer()
-        # Вызываем _parse_sentence напрямую (в tokenize() '…' заменяется на '...')
-        sent = tok._parse_sentence("It was strange\u2026")
-        self.assertEqual(sent.ending, "\u2026")
-
-
-# ═══════════════════════════════════════════════════════════════
 #  sentence_split.py — L194–195, L247
 # ═══════════════════════════════════════════════════════════════
 

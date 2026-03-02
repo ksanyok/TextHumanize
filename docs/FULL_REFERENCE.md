@@ -27,7 +27,7 @@
 
 <br/>
 
-**42,000+ lines of code** · **73 Python modules** · **17-stage pipeline** · **14 languages + universal**
+**58,000+ lines of code** · **94 Python modules** · **20-stage pipeline** · **14 languages + universal**
 
 [Quick Start](#quick-start) · [API Reference](#api-reference) · [AI Detection](#ai-detection--how-it-works) · [Cookbook](docs/COOKBOOK.md)
 
@@ -114,7 +114,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 
 | Advantage | Details |
 |:----------|:--------|
-| 🚀 **Blazing fast** | ~3,000 chars/sec — process a full article in milliseconds, not seconds |
+| 🚀 **Blazing fast** | ~1,500 chars/sec — process a full article in 1–2 seconds |
 | 🔒 **100% private** | All processing is local. Your text never leaves your machine |
 | 🎯 **Precise control** | Intensity 0–100, 9 profiles, keyword preservation, max change ratio |
 | 🌍 **14 languages + universal** | Full dictionaries for 14 languages; statistical processor for any other |
@@ -152,7 +152,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 
 | Category | Feature | Python | TS/JS | PHP |
 |:---------|:--------|:------:|:-----:|:---:|
-| **Core** | `humanize()` — 17-stage pipeline | ✅ | ✅ | ✅ |
+| **Core** | `humanize()` — 20-stage pipeline | ✅ | ✅ | ✅ |
 | | `humanize_batch()` — parallel processing | ✅ | — | ✅ |
 | | `humanize_chunked()` — large text support | ✅ | — | ✅ |
 | | `analyze()` — artificiality scoring | ✅ | ✅ | ✅ |
@@ -220,7 +220,7 @@ It normalizes typography, simplifies bureaucratic language, diversifies sentence
 | Works offline | ✅ | ❌ |
 | Zero dependencies | ✅ | ❌ Requires API key + billing |
 | Deterministic | ✅ Same seed = same output | ❌ Non-deterministic |
-| Speed | **~3K chars/sec** | ~500 chars/sec (API) |
+| Speed | **~1.5K chars/sec** | ~500 chars/sec (API) |
 | Cost per 1M chars | **$0** | ~$15–60 (GPT-4) |
 | Preserves meaning | ✅ Controlled change ratio | ⚠️ May hallucinate |
 | Max change control | ✅ `max_change_ratio` | ❌ Unpredictable |
@@ -1401,7 +1401,7 @@ All responses include `_elapsed_ms` field with processing time in milliseconds.
 
 ## Processing Pipeline
 
-TextHumanize uses a **17-stage pipeline** with adaptive intensity:
+TextHumanize uses a **20-stage pipeline** with adaptive intensity:
 
 ```
 Input Text
@@ -2484,7 +2484,6 @@ cd js && npx vitest run             # 28 tests
 | segmenter.py | 98% |
 | lang_detect.py | 96% |
 | coherence.py | 96% |
-| tokenizer.py | 95% |
 | spinner.py | 94% |
 | normalizer.py | 94% |
 | tone.py | 94% |
@@ -2511,15 +2510,14 @@ cd js && npx vitest run             # 28 tests
 ## Architecture
 
 ```
-texthumanize/                   # 72 Python modules, 40,677 lines
+texthumanize/                   # 94 Python modules, 58,000+ lines
 ├── __init__.py                 # Public API: 25 functions + 5 classes
 ├── core.py                     # Facade: humanize(), analyze(), detect_ai(), etc.
 ├── api.py                      # REST API: zero-dependency HTTP server, 12 endpoints
 ├── cli.py                      # CLI: 15+ commands
-├── pipeline.py                 # 17-stage pipeline + adaptive intensity + graduated retry
+├── pipeline.py                 # 20-stage pipeline + adaptive intensity + graduated retry
 │
 ├── analyzer.py                 # Artificiality scoring + 6 readability metrics
-├── tokenizer.py                # Paragraph/sentence/word tokenization
 ├── sentence_split.py           # Smart sentence splitter (abbreviations, decimals)
 │
 ├── segmenter.py                # Code/URL/email/brand protection (stage 1)

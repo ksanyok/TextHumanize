@@ -947,48 +947,6 @@ class TestSegmenterFinal:
 
 
 # ═══════════════════════════════════════════════════════════════
-#  tokenizer.py — L46, L115, L129, L169-170
-# ═══════════════════════════════════════════════════════════════
-
-from texthumanize.tokenizer import Sentence, Tokenizer
-
-
-class TestTokenizerFinal:
-    def test_sentence_to_text_with_null(self):
-        """L46: Sentence ending with \\x00 placeholder → no extra ending."""
-        s = Sentence(words=["hello", "world\x00"], ending=".")
-        result = s.to_text()
-        assert "\x00" in result
-        # Should NOT have double punctuation
-        assert not result.endswith(".\x00.")
-
-    def test_sentence_word_count_excludes_placeholders(self):
-        """word_count property excludes placeholder words."""
-        s = Sentence(words=["hello", "\x00THZ_URL_1\x00", "world"], ending=".")
-        assert s.word_count == 2
-
-    def test_tokenize_with_abbreviations(self):
-        """L129+: abbreviation protection in sentence splitting."""
-        t = Tokenizer()
-        text = "Dr. Smith went to Washington D.C. for the meeting."
-        doc = t.tokenize(text)
-        assert len(doc.paragraphs) >= 1
-
-    def test_tokenize_ellipsis_protection(self):
-        """Ellipsis protection in sentence splitting."""
-        t = Tokenizer()
-        text = "Hmm... I think so. Really... yes."
-        doc = t.tokenize(text)
-        assert len(doc.paragraphs) >= 1
-
-    def test_parse_sentence_question_exclamation(self):
-        """L169-170: sentence ending with ?! or !?."""
-        t = Tokenizer()
-        s = t._parse_sentence("Are you serious?!")
-        assert s.ending == "?!"
-
-
-# ═══════════════════════════════════════════════════════════════
 #  sentence_split.py — L125, L194-195, L247, L275, L300
 # ═══════════════════════════════════════════════════════════════
 

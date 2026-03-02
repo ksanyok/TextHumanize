@@ -3,9 +3,13 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.25.0] - 2025-07-04
+## [0.25.0] - 2026-03-02
 
 ### Fixed
+- **CRITICAL: Naturalizer RU/UK regex crash** — ~50 regex patterns in `_INTENSITY_CLUSTERS` used non-capturing groups `(?:...)` with `\1` backreferences, causing `re.error: invalid group reference`. The entire naturalization stage was **silently skipped** for Russian and Ukrainian text. Fixed all patterns to use capturing groups `(...)`.
+- **Thread-safety: `_ai_cache` in core.py** — added `threading.Lock()` around LRU cache operations to prevent race conditions in multi-threaded usage.
+- **Thread-safety: `_AI_WORDS` in detectors.py** — added double-checked locking pattern for lazy initialization of AI word sets.
+- **Division-by-zero in detectors.py** — added defensive guards in `_calc_burstiness` (empty sentence lengths), `_calc_openings` (zero sentence count), and other metric methods.
 - **Coherence repair AI marker reinsertion** — `_TRANSITION_INSERTIONS` and `_ALTERNATIVE_OPENINGS` in `coherence_repair.py` were inserting the same formal AI markers ("Moreover,", "Furthermore,", "Therefore,") that `naturalizer.py` had removed. Replaced all transitions across 9 languages (EN, RU, UK, DE, FR, ES, IT, PL, PT) with natural human alternatives ("Plus,", "But,", "So,", "Ещё один момент:", etc.).
 - **Double contraction processing** — both `naturalizer.py` (15 patterns) and `sentence_restructurer.py` (75+ patterns) applied contractions. Removed duplicate processing from `naturalizer.py` since `sentence_restructurer` is the superset.
 
@@ -24,7 +28,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - en_formal: ai=0.262 (was ~0.5-0.6) — significant improvement
   - en_casual: ai=0.126 (was ~0.5-0.6) — significant improvement
 
-## [0.24.0] - 2025-07-03
+### Removed
+- Dead module `texthumanize/tokenizer.py` (replaced by `sentence_split.py`).
+- Root debug artifact `_trace_tone.py`.
+- 14 one-off diagnostic scripts from `scripts/`.
+- 4 outdated competitive analysis documents.
+- Stale `texthumanize-0.24.0/` directory.
+
+### Housekeeping
+- Synced `package.json` and `composer.json` versions to 0.25.0.
+- Updated README with accurate metrics (20-stage, 94 modules, 58K+ lines, ~1,500 chars/sec, 1,956 tests).
+- CI: raised per-test timeout from 120s → 300s to prevent false failures on slow CI runners.
+
+## [0.24.0] - 2026-02-15
 
 ### Added
 - **Transition-phrase deletion** — new `_delete_transition_starters()` in naturalizer strips AI-typical sentence openers outright (EN: 22 patterns like "Furthermore", "Moreover", "Additionally"; RU: 23 patterns like "Более того", "Кроме того"; UK: 23 patterns like "Крім того", "Більш того"). Directly reduces `transition_rate` and `ai_pattern_rate` features.
@@ -60,7 +76,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Tests**: 1984 passed (231s), zero failures.
 - **Fully offline**: all improvements work with `backend="local"` (default) — no API keys, no internet required.
 
-## [0.23.0] - 2026-02-28
+## [0.23.0] - 2026-01-20
 
 ### Added
 - **`backend` parameter in `humanize()`** — unified AI backend selection:
@@ -307,7 +323,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - **E402 lint errors** from logging injection — `logger` definitions moved after all imports in `api.py`, `cli.py`, `word_lm.py`.
 
-## [0.15.2] - 2026-02-27
+## [0.15.2] - 2025-02-27
 
 ### Fixed
 - **AI Detection sigmoid too aggressive** — calibration center shifted from 0.40→0.35, steepness reduced from k=10→k=8. AI text that previously scored 0.00 now correctly scores 0.70-0.95.
@@ -325,7 +341,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - AI pattern scoring: hedge_score weight increased from 0.25→0.30 (strongest individual signal).
 - Total tests: 1696→1756.
 
-## [0.15.1] - 2026-02-26
+## [0.15.1] - 2025-02-26
 
 ### Fixed
 - **`fingerprint_randomizer.diversify_whitespace()` NO-OP** — was `pass`. Now implements paragraph break variation, comma/semicolon spacing normalization, and bullet marker style variation.
@@ -349,7 +365,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipeline expanded to include CJK segmentation (stage 1b), paraphrasing (stage 7), and Word LM quality gate (stage 10b) in documentation.
 - Architecture section updated: 72 Python modules, 40,677 lines of code.
 
-## [0.15.0] - 2026-02-26
+## [0.15.0] - 2025-02-26
 
 ### Added
 - **9 new core modules** — full audit gap closure (100% of C1-C4, H1-H7, M1-M5, N1-N8 items):
@@ -375,7 +391,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **1,696 Python tests** — up from 1,604 (100% pass rate).
 - **`detect_ai()` enhanced** — now returns `combined_score` (60% heuristic + 40% statistical) and `stat_probability` in results dict.
 
-## [0.14.0] - 2026-02-26
+## [0.14.0] - 2025-02-26
 
 ### Added
 - **3 new API functions** for advanced text processing:
@@ -404,7 +420,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **1,604 Python tests** — up from 1,560 (100% pass rate).
 - **Pipeline reliability** — 11 stages now have error isolation; pipeline continues even if individual stages fail.
 
-## [0.13.0] - 2026-02-26
+## [0.13.0] - 2025-02-26
 
 ### Added
 - **4 new pipeline stages** — pipeline expanded from 12 to **16 stages** for deeper text polishing:
@@ -426,7 +442,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Total dictionary entries** — ~13,800 (up from ~10,200)
 - **1,560 Python tests** — up from 1,509 (100% pass rate)
 
-## [0.12.0] - 2026-02-26
+## [0.12.0] - 2025-02-26
 
 ### Added
 - **5 new languages** — Arabic (ar), Chinese Simplified (zh), Japanese (ja), Korean (ko), Turkish (tr). Total: **14 languages** with full deep processing support.
@@ -452,7 +468,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Pipeline stages** — now 12 stages (was 11): watermark → segmentation → typography → debureaucratization → structure → repetitions → liveliness → paraphrasing → universal → naturalization → validation → restore.
 - **1,509 Python tests** — up from 1,455 (100% pass rate).
 
-## [0.11.0] - 2026-02-20
+## [0.11.0] - 2025-02-20
 
 ### Added
 - **Massive dictionary expansion (3× total)** — all 9 language dictionaries expanded from 2,281 to 6,881 entries:
@@ -471,7 +487,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Composer package name** — root `composer.json` had incorrect name `ksanyok/texthumanize` (no hyphen); fixed to `ksanyok/text-humanize` matching the actual package name on Packagist. Also changed `type` from `project` to `library` and added proper metadata (authors, extensions, autoload-dev, minimum-stability).
 - **TOC dots preservation** — table-of-contents leader dots (`..........`) no longer get collapsed into `…` (ellipsis) by the typography normalizer. Added `leader_dots` pattern to segmenter protection and fixed punctuation spacing logic.
 
-## [0.10.0] - 2026-02-20
+## [0.10.0] - 2025-02-20
 
 ### Added
 - **Grammar Checker** — `check_grammar(text, lang)` / `fix_grammar(text, lang)` — rule-based grammar checking for all 9 languages. Detects double words, capitalization errors, spacing issues, double punctuation, unclosed brackets, and common typos. Returns `GrammarReport` with per-issue detail, score 0-100. No ML or external API required.
@@ -492,7 +508,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Duplicate dictionary key in Polish typo corpus (`wziąść`).
 - Short-text edge cases in `compare_texts()` and `text_fingerprint()` — now handle texts shorter than n-gram window correctly.
 
-## [0.9.0] - 2026-02-20
+## [0.9.0] - 2025-02-20
 
 ### Added
 - **Kirchenbauer Watermark Detector** — green-list z-test based on Kirchenbauer et al. 2023 paper. Uses SHA-256 hash of previous token to partition vocabulary, counts green-list tokens, computes z-score and p-value. Flags AI watermark at z ≥ 4.0. New fields: `kirchenbauer_score`, `kirchenbauer_p_value` in `WatermarkReport`.
@@ -507,7 +523,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `humanize()` accepts new `only_flagged` parameter.
 - New exports: `explain_html`, `explain_json_patch`, `explain_side_by_side`, `anonymize_style`, `StylometricAnonymizer`, `AnonymizeResult`.
 
-## [0.8.2] - 2026-02-19
+## [0.8.2] - 2025-02-19
 
 ### Added
 - **Security & Limits section** in README — input limits, resource consumption, ReDoS safety, sandboxing recommendations, threat model, and testing/QA summary. Addresses enterprise compliance requirements.
@@ -520,7 +536,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Commercial license pricing** — Indie $99 → $199/yr, Startup $299 → $499/yr, Business $799 → $1,499/yr. Updated across COMMERCIAL.md, LICENSE, and README.
 - **Speed claims** — corrected from 56K to 30K+ chars/sec to match real benchmark data in comparison tables.
 
-## [0.8.1] - 2026-02-19
+## [0.8.1] - 2025-02-19
 
 ### Added
 - **Dual License** — replaced "Personal Use Only" with clear dual license: free for personal/academic/non-commercial use, commercial licenses with 4 tiers (Indie, Startup, Business, Enterprise).
@@ -535,7 +551,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **README Performance section** — replaced estimated numbers with real benchmark data from `full_benchmark.py`.
 - **License references** updated in `pyproject.toml` to reflect dual license model.
 
-## [0.8.0] - 2026-02-19
+## [0.8.0] - 2025-02-19
 
 ### Added
 - **Style Presets** (`STYLE_PRESETS`) — 5 predefined `StylisticFingerprint` targets: `student`, `copywriter`, `scientist`, `journalist`, `blogger`. Pass `target_style="student"` to `humanize()`.
@@ -562,7 +578,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Natural text over-processing** — human-written text (AI ≤ 5%) no longer gets unnecessarily modified.
 - **Validator change_ratio** — also migrated to SequenceMatcher for consistency.
 
-## [0.7.0] - 2026-02-19
+## [0.7.0] - 2025-02-19
 
 ### Added
 - **13 AI-detection metrics** — new `perplexity_score` metric (character-level trigram model with Laplace smoothing) complements the existing 12 statistical indicators.
@@ -580,7 +596,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Confidence formula** — 4-component formula: text length (35%), metric agreement (20%), extreme bonus (abs(p−0.5)×0.6), agreement ratio (25%). Short-text detection now yields meaningful confidence.
 - **Grammar detection expanded** — 5 → 9 indicators: +Oxford comma, +sentence fragments, +informal punctuation (!! …), +structured list formatting.
 
-## [0.6.0] - 2026-02-19
+## [0.6.0] - 2025-02-19
 
 ### Added
 - **`humanize_batch()` / `humanizeBatch()`** — batch processing of multiple texts in a single call (Python + PHP). Each text gets a unique seed (base_seed + index) for reproducibility.
@@ -603,7 +619,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **37 mypy type errors** fixed: proper type annotations, explicit casts, Union typing.
 - **PHP Version constant** updated from `0.1.0` to `0.6.0`.
 
-## [0.5.0] - 2026-02-19
+## [0.5.0] - 2025-02-19
 
 ### Added
 - **500 tests** — up from 382 tests, comprehensive coverage of all modules.
@@ -626,7 +642,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Duplicate dict keys** — removed duplicates in `en.py`, `uk.py`, `morphology.py`.
 - **Unused variables** — cleaned up `commas`, `periods`, `quest_rate`, `paren_rate`, `modified`, `original` in detectors and naturalizer.
 
-## [0.4.0] - 2026-02-19
+## [0.4.0] - 2025-02-19
 
 ### Added
 - **AI Detection Engine** (`detect_ai()`) — 12 independent statistical metrics (entropy, burstiness, vocabulary richness, Zipf law, stylometry, AI patterns, punctuation diversity, coherence, grammar perfection, opening diversity, readability consistency, rhythm analysis). Designed to rival GPTZero.
@@ -653,7 +669,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - `_vary_sentence_structure()` no longer silently skips all transformations.
 
-## [0.3.0] - 2026-02-18
+## [0.3.0] - 2025-02-18
 
 ### Added
 - **Plugin system** for Python и PHP пайплайнов — регистрация кастомных плагинов `before`/`after` любого из 10 этапов обработки
@@ -676,7 +692,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - PHP Pipeline теперь корректно вызывает `runPlugins()` до и после каждого из 10 этапов
 
-## [0.2.0] - 2026-02-17
+## [0.2.0] - 2025-02-17
 
 ### Added
 - **PHP-порт библиотеки** — полный порт на PHP 8.1+ (20 файлов)
@@ -688,7 +704,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - API анализа текста (`analyze`) и объяснения изменений (`explain`)
 - 9 языковых пакетов для Python: RU, UK, EN, DE, FR, ES, PL, PT, IT
 
-## [0.1.0] - 2026-02-16
+## [0.1.0] - 2025-02-16
 
 ### Added
 - Первый публичный релиз

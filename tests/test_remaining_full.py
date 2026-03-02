@@ -1,4 +1,4 @@
-"""Покрытие остальных модулей: spinner, tokenizer, watermark, paraphrase,
+"""Покрытие остальных модулей: spinner, watermark, paraphrase,
 morphology, cli, utils, normalizer, segmenter, decancel, core, lang_detect, api, __main__."""
 
 from unittest.mock import patch
@@ -53,49 +53,6 @@ class TestContentSpinner:
     def test_count_variants_no_spintax(self):
         count = ContentSpinner._count_variants("plain text")
         assert count == 1
-
-
-# ═══════════════════════════════════════════════════════════════
-#  Tokenizer
-# ═══════════════════════════════════════════════════════════════
-
-from texthumanize.tokenizer import Sentence, Tokenizer
-
-
-class TestTokenizer:
-    def test_tokenize_basic(self):
-        tok = Tokenizer()
-        result = tok.tokenize("First sentence. Second sentence!")
-        assert len(result.paragraphs) >= 1
-
-    def test_tokenize_multi_paragraph(self):
-        tok = Tokenizer()
-        result = tok.tokenize("Paragraph one.\n\nParagraph two.")
-        assert len(result.paragraphs) >= 1
-
-    def test_sentence_to_text(self):
-        s = Sentence(words=["Hello", "world"], ending=".")
-        assert s.to_text() == "Hello world."
-
-    def test_sentence_word_count(self):
-        s = Sentence(words=["Hello", "world", "here"], ending=".")
-        assert s.word_count >= 2
-
-    def test_tokenizer_with_abbreviations(self):
-        tok = Tokenizer(abbreviations=["Dr", "Mr", "Mrs"])
-        result = tok.tokenize("Dr. Smith went home. He was tired.")
-        assert isinstance(result.paragraphs, list)
-
-    def test_split_sentences_internal(self):
-        tok = Tokenizer()
-        sents = tok._split_sentences("Hello world. How are you? Fine.")
-        assert len(sents) >= 2
-
-    def test_parse_sentence(self):
-        tok = Tokenizer()
-        s = tok._parse_sentence("Hello world!")
-        assert s.ending == "!"
-        assert len(s.words) >= 2
 
 
 # ═══════════════════════════════════════════════════════════════

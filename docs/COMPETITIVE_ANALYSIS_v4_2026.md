@@ -29,7 +29,7 @@ TextHumanize is the **only production-grade, open-source, offline-first Python l
 
 ### Bottom Line
 
-**Detection is a strength. Humanization is not.** The library's 17-stage rule-based pipeline makes cosmetic changes (connector replacement, debureaucratization) but fails to alter the statistical patterns (entropy, burstiness, perplexity distribution) that AI detectors actually measure. Not a single AI-generated text was successfully pushed below the detection threshold after humanization — a **0% evasion rate** on the library's own detector.
+**Detection is a strength. Humanization is not.** The library's 20-stage rule-based pipeline makes cosmetic changes (connector replacement, debureaucratization) but fails to alter the statistical patterns (entropy, burstiness, perplexity distribution) that AI detectors actually measure. Not a single AI-generated text was successfully pushed below the detection threshold after humanization — a **0% evasion rate** on the library's own detector.
 
 SaaS competitors (Undetectable.ai, WriteHuman, HIX Bypass, etc.) claim 90–99%+ evasion rates via LLM-based rewriting. Even if those claims are inflated, the gap between 0% and even a modest 50% bypass rate is enormous.
 
@@ -234,7 +234,7 @@ This is not a marketing problem — it's a **fundamental architectural limitatio
 
 | Feature | TextHumanize | Undetectable.ai | WriteHuman | StealthWriter | QuillBot | HIX Bypass | BypassGPT |
 |:--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **AI humanization** | ✅ 17-stage rule-based | ✅ LLM | ✅ LLM | ✅ LLM | ✅ (1 mode) | ✅ LLM | ✅ LLM |
+| **AI humanization** | ✅ 20-stage rule-based | ✅ LLM | ✅ LLM | ✅ LLM | ✅ (1 mode) | ✅ LLM | ✅ LLM |
 | **AI detection** | ✅ Neural MLP | ✅ Multi-model | ✅ Built-in | ✅ Strict | ✅ Basic | ✅ Built-in | ✅ Multi |
 | **Paraphrasing** | ✅ Syntactic | ✅ | ✅ | ✅ | ✅ 7 modes | ✅ | ✅ |
 | **Tone analysis** | ✅ 7-level | ❌ | ❌ | ❌ | ❌ | ✅ Tone | ❌ |
@@ -299,9 +299,9 @@ This is not a marketing problem — it's a **fundamental architectural limitatio
 | **Processing speed** | 5.7–8.2 texts/sec (detection) vs 2–10s per cloud API call | High-volume batch processing, real-time applications |
 | **Embeddable library** | `pip install texthumanize` — import as a module | Developers building text processing pipelines |
 | **Multi-SDK** | Python + JavaScript + PHP | Cross-platform development teams |
-| **Plugin system** | Extend the 17-stage pipeline with custom stages | Custom enterprise requirements |
+| **Plugin system** | Extend the 20-stage pipeline with custom stages | Custom enterprise requirements |
 | **Full audit trail** | `explain()` returns every change with reasoning | Compliance, editorial review, debugging |
-| **17-stage pipeline transparency** | Every stage documented and configurable | Teams that need to understand what's happening to their text |
+| **20-stage pipeline transparency** | Every stage documented and configurable | Teams that need to understand what's happening to their text |
 | **Flat-rate pricing** | Unlimited processing for fixed annual fee | High-volume users |
 | **Test suite** | ~2,000 tests across 3 platforms | Production confidence |
 
@@ -691,7 +691,7 @@ Humanize/detect within the editor. Natural fit for developer audience.
 
 ## 14. Conclusion
 
-TextHumanize is an **impressive engineering achievement** — 47K+ LOC, 17-stage pipeline, 14 languages, ~2,000 tests, zero dependencies, fully offline. It occupies a **unique and uncontested niche** as the only production-grade open-source tool in this space.
+TextHumanize is an **impressive engineering achievement** — 58K+ LOC, 20-stage pipeline, 14 languages, ~2,000 tests, zero dependencies, fully offline. It occupies a **unique and uncontested niche** as the only production-grade open-source tool in this space.
 
 However, **the core advertised function — humanizing AI text to evade detection — does not work.** The verified 0% evasion rate means the library fails at the task most users are trying to accomplish. This is not a minor gap — it's a fundamental limitation of the rule-based architecture.
 

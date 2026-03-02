@@ -26,6 +26,7 @@ import logging
 import math
 import re
 import statistics
+import threading
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any
@@ -132,13 +133,16 @@ def _load_ai_words() -> dict[str, dict[str, set[str]]]:
 
 
 _AI_WORDS: dict[str, dict[str, set[str]]] = {}
+_AI_WORDS_LOCK = threading.Lock()
 
 
 def _get_ai_words() -> dict[str, dict[str, set[str]]]:
     """Lazy-load and cache AI words on first use."""
     global _AI_WORDS
     if not _AI_WORDS:
-        _AI_WORDS = _load_ai_words()
+        with _AI_WORDS_LOCK:
+            if not _AI_WORDS:
+                _AI_WORDS = _load_ai_words()
     return _AI_WORDS
 
 # ═══════════════════════════════════════════════════════════════
@@ -705,7 +709,7 @@ class AIDetector:
         # и очень длинных (> 30 слов) предложений — у AI их мало
         short = sum(1 for sl in lengths if sl <= 5)
         long_cnt = sum(1 for sl in lengths if sl >= 30)
-        extremes = (short + long_cnt) / len(lengths)
+        extremes = (short + long_cnt) / len(lengths) if lengths else 0
 
         # Если нет экстремальных длин — слабый признак AI
         if extremes < 0.05:
@@ -1483,14 +1487,15 @@ class AIDetector:
             return 0.5
 
         # 1. Уникальность первых слов
-        unique_ratio = len(set(first_words)) / len(first_words)
+        n_first = len(first_words)
+        unique_ratio = len(set(first_words)) / n_first if n_first else 0
         # AI: unique ~0.3-0.5, Human: ~0.6-0.8
         unique_score = max(0, 1.0 - (unique_ratio - 0.2) / 0.6)
 
         # 2. Максимальное повторение одного начала
         first_counter = Counter(first_words)
         max_repeat = first_counter.most_common(1)[0][1]
-        repeat_ratio = max_repeat / len(first_words)
+        repeat_ratio = max_repeat / n_first if n_first else 0
         repeat_score = min(repeat_ratio / 0.3, 1.0)
 
         # 3. Начало с подлежащего vs. другие конструкции

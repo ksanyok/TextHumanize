@@ -36,7 +36,7 @@ class DetectRequest(BaseModel):
 
 @app.post("/humanize")
 async def humanize_endpoint(req: HumanizeRequest):
-    """Humanize text using the 17-stage pipeline."""
+    """Humanize text using the 20-stage pipeline."""
     try:
         result = await async_humanize(
             req.text,

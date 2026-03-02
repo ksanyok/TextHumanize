@@ -365,6 +365,7 @@ def _humanize_via_backend(
 
 _ai_cache: dict[Any, Any] = {}
 _ai_order: list[Any] = []
+_ai_cache_lock = threading.Lock()
 
 
 def humanize_ai(
@@ -390,18 +391,19 @@ def humanize_ai(
     # LRU cache for backend instances (preserves circuit breaker state,
     # bounded to 16 entries to prevent memory leaks in server contexts)
     _cache_key = (openai_api_key, openai_model, enable_oss)
-    if _cache_key not in _ai_cache:
-        _MAX_CACHE = 16
-        if len(_ai_order) >= _MAX_CACHE:
-            _evict = _ai_order.pop(0)
-            _ai_cache.pop(_evict, None)
-        _ai_cache[_cache_key] = ab.AIBackend(
-            openai_api_key=openai_api_key,
-            openai_model=openai_model,
-            enable_oss=enable_oss,
-        )
-        _ai_order.append(_cache_key)
-    backend = _ai_cache[_cache_key]
+    with _ai_cache_lock:
+        if _cache_key not in _ai_cache:
+            _MAX_CACHE = 16
+            if len(_ai_order) >= _MAX_CACHE:
+                _evict = _ai_order.pop(0)
+                _ai_cache.pop(_evict, None)
+            _ai_cache[_cache_key] = ab.AIBackend(
+                openai_api_key=openai_api_key,
+                openai_model=openai_model,
+                enable_oss=enable_oss,
+            )
+            _ai_order.append(_cache_key)
+        backend = _ai_cache[_cache_key]
     result_text = backend.paraphrase(text, lang=lang, style=profile)
 
     # Run through pipeline for cleanup

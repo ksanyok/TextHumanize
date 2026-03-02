@@ -126,7 +126,7 @@ on first use and cached in `~/.cache/texthumanize/`.
 
 | Tier | Languages | Detection | Humanization | Dictionary |
 |------|-----------|-----------|-------------|------------|
-| **TIER1** (Full) | en, ru, uk, de | 18-metric ensemble + statistical + neural | Full 17-stage pipeline | 700–1700 entries |
+| **TIER1** (Full) | en, ru, uk, de | 18-metric ensemble + statistical + neural | Full 20-stage pipeline | 700–1700 entries |
 | **TIER2** (Good) | fr, es, it, pl, pt | Ensemble + statistical (calibrated) | 15-stage pipeline (no syntax rewriting) | 600–800 entries |
 | **TIER3** (Basic) | ar, zh, ja, ko, tr | Statistical-only (limited markers) | Universal pipeline (typography + naturalizer) | 600+ entries |
 | **Universal** | any other | Basic heuristics | Typography + universal processing | — |

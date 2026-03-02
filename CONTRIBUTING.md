@@ -51,7 +51,7 @@ mypy texthumanize/ --ignore-missing-imports
 texthumanize/          # Main package
 ├── __init__.py        # Public API (PEP 562 lazy loading)
 ├── core.py            # humanize(), detect_ai(), and other top-level functions
-├── pipeline.py        # 17-stage processing pipeline
+├── pipeline.py        # 20-stage processing pipeline
 ├── exceptions.py      # Exception hierarchy
 ├── lang/              # Language-specific dictionaries (RU, EN, DE, FR, ES, …)
 ├── detectors.py       # AI detection heuristics

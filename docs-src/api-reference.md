@@ -6,7 +6,7 @@ Full Python API reference for TextHumanize.
 
 ### `humanize(text, lang, profile, intensity, ...)`
 
-Humanize text using the 17-stage pipeline.
+Humanize text using the 20-stage pipeline.
 
 ```python
 from texthumanize import humanize

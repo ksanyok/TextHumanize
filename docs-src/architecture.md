@@ -3,10 +3,10 @@
 ## Module Structure
 
 ```
-texthumanize/                    # 95 Python modules, 56,800+ lines
+texthumanize/                    # 94 Python modules, 58,000+ lines
 ├── core.py                      # Facade: humanize(), analyze(), detect_ai()
 ├── async_api.py                 # Async wrappers: async_humanize(), async_detect_ai()
-├── pipeline.py                  # 17-stage pipeline + adaptive intensity
+├── pipeline.py                  # 20-stage pipeline + adaptive intensity
 ├── api.py                       # REST API server (12+ endpoints + SSE)
 ├── cli.py                       # CLI (15+ commands)
 ├── exceptions.py                # Exception hierarchy
@@ -49,7 +49,7 @@ Input → Watermark Cleaning → Segmentation → CJK Segmentation → Typograph
       → Coherence Repair → Fingerprint Diversification → Validation → Output
 ```
 
-17 stages with:
+20 stages with:
 
 - **Adaptive intensity** — auto-reduces processing for already-natural text
 - **Graduated retry** — retries at lower intensity if change ratio exceeds limit
