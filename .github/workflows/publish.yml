@@ -23,7 +23,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install build tools
-        run: pip install build twine
+        run: pip install build "setuptools>=68.0,<76" twine
 
       - name: Build sdist and wheel
         run: python -m build
@@ -62,4 +62,4 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           pip install twine
-          twine upload dist/*
+          twine upload --skip-existing dist/*
