@@ -42,10 +42,10 @@ class SynonymDB:
     like 'vast' → 'brobdingnagian' from Moby Thesaurus.
     """
 
-    _instance: Optional["SynonymDB"] = None
+    _instance: Optional[SynonymDB] = None
     _loaded = False
 
-    def __new__(cls) -> "SynonymDB":
+    def __new__(cls) -> SynonymDB:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance

@@ -1589,7 +1589,7 @@ class TextNaturalizer:
                                      "of", "for", "by", "as", "if", "so",
                                      "this", "that", "these", "those",
                                      "not", "all", "also", "too", "yet",
-                                     "and", "nor", "with", "from", "into",
+                                     "nor", "with", "from", "into",
                                      "и", "а", "в", "на", "с", "по", "к",
                                      "но", "не", "да", "же", "ну", "до",
                                  }]
@@ -3340,7 +3340,7 @@ class TextNaturalizer:
             rest = sent[best_pos + len(best_split_char):].strip()
 
             # End first part with period
-            if first and not first[-1] in '.!?':
+            if first and first[-1] not in '.!?':
                 first = first.rstrip(',;:') + '.'
 
             # Capitalize rest
@@ -3363,7 +3363,7 @@ class TextNaturalizer:
                 if words_before >= 5 and (wc - words_before) >= 5:
                     first = sent[:pos].strip()
                     rest = sent[pos + len(conj):].strip()
-                    if first and not first[-1] in '.!?':
+                    if first and first[-1] not in '.!?':
                         first = first.rstrip(',;:') + '.'
                     if rest and rest[0].islower():
                         rest = rest[0].upper() + rest[1:]

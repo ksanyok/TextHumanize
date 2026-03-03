@@ -31,11 +31,9 @@ import logging
 import math
 import random
 import re
-from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any
 
-from texthumanize.sentence_split import split_sentences
 from texthumanize._word_freq_data import (
     get_en_uni,
     get_ru_uni,

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texthumanize"
-version = "0.27.0"
+version = "0.27.1"
 description = "Algorithmic text humanization with AI detection, tone analysis, paraphrasing, and spinning — 38-stage pipeline, 25 languages, SentenceValidator™, PHANTOM™"
 readme = "README.md"
 license = {text = "Dual License — Free for personal use, commercial license required for business"}
@@ -146,11 +146,22 @@ ignore = [
     "SIM108", # Use ternary — sometimes if/else is clearer
     "SIM105", # suppressible-exception — contextlib.suppress not always better
     "SIM115", # open-file-with-context-handler — sometimes impractical
+    "SIM103", # Return condition directly — sometimes if/else is clearer
+    "SIM102", # collapsible-if — nested ifs sometimes more readable
+    "SIM116", # dict-instead-of-if — if/elif chains sometimes clearer
     "B905",   # zip without strict — py39 compat
+    "B007",   # unused loop variable — common in iteration patterns
+    "B033",   # duplicate set item — harmless
+    "F601",   # duplicate dict key — intentional overrides in lang packs
+    "F841",   # unused variable — sometimes needed for API shape
+    "PT018",  # compound assertions — acceptable for readability
     "RUF001", # ambiguous-unicode-character-string — we use Cyrillic/i18n strings
     "RUF002", # ambiguous-unicode-character-docstring — Russian docstrings
     "RUF003", # ambiguous-unicode-character-comment — Russian comments
+    "RUF005", # iterable unpacking vs concat — style preference
     "RUF012", # Mutable class-var without ClassVar — too noisy
+    "RUF022", # __all__ not sorted — large module with logical grouping
+    "RUF034", # useless if-else — sometimes more explicit
     "RUF059", # unused-unpacked-variable — sometimes needed for API shape
 ]
 

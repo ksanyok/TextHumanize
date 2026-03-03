@@ -19,17 +19,17 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 __all__ = [
     "TextVisualizer",
     "VisualizationResult",
-    "perplexity_chart",
-    "detection_heatmap",
-    "sentence_length_chart",
-    "lexical_diversity_chart",
-    "entropy_chart",
     "dashboard",
+    "detection_heatmap",
+    "entropy_chart",
+    "lexical_diversity_chart",
+    "perplexity_chart",
+    "sentence_length_chart",
 ]
 
 # ═══════════════════════════════════════════════════════════════
@@ -325,7 +325,7 @@ def detection_heatmap(
     lines.append("")
 
     # Легенда
-    lines.append(f"  ' '=human  '░'=low  '▒'=mixed  '▓'=high  '█'=AI")
+    lines.append("  ' '=human  '░'=low  '▒'=mixed  '▓'=high  '█'=AI")
     lines.append("")
 
     # Таблица
@@ -351,11 +351,11 @@ def detection_heatmap(
     lines.append(f"  Средний AI-score: {mean_score:.3f}")
 
     if mean_score > 0.7:
-        lines.append(f"  ⚠ Текст сильно похож на AI-генерированный")
+        lines.append("  ⚠ Текст сильно похож на AI-генерированный")
     elif mean_score > 0.4:
-        lines.append(f"  ~ Текст имеет смешанные характеристики")
+        lines.append("  ~ Текст имеет смешанные характеристики")
     else:
-        lines.append(f"  ✓ Текст выглядит человеческим")
+        lines.append("  ✓ Текст выглядит человеческим")
 
     lines.append("")
 
@@ -413,11 +413,11 @@ def sentence_length_chart(
     lines.append(f"  CV (вариация длин): {cv:.4f}")
 
     if cv > 0.4:
-        lines.append(f"  ✓ Хорошая вариация длин (человеческий стиль)")
+        lines.append("  ✓ Хорошая вариация длин (человеческий стиль)")
     elif cv > 0.2:
-        lines.append(f"  ~ Умеренная вариация")
+        lines.append("  ~ Умеренная вариация")
     else:
-        lines.append(f"  ✗ Подозрительно однородные длины (AI-паттерн)")
+        lines.append("  ✗ Подозрительно однородные длины (AI-паттерн)")
 
     lines.append("")
 
@@ -483,11 +483,11 @@ def lexical_diversity_chart(
     lines.append("")
 
     if cv > 0.08:
-        lines.append(f"  ✓ Естественная вариация разнообразия")
+        lines.append("  ✓ Естественная вариация разнообразия")
     elif cv > 0.03:
-        lines.append(f"  ~ Умеренная стабильность")
+        lines.append("  ~ Умеренная стабильность")
     else:
-        lines.append(f"  ✗ Подозрительно стабильный TTR (AI-паттерн)")
+        lines.append("  ✗ Подозрительно стабильный TTR (AI-паттерн)")
 
     lines.append("")
 
@@ -574,7 +574,7 @@ def comparison_chart(
     """
     lines: list[str] = []
     lines.append(f"{'═' * 65}")
-    lines.append(f"  СРАВНЕНИЕ: ДО vs ПОСЛЕ ГУМАНИЗАЦИИ")
+    lines.append("  СРАВНЕНИЕ: ДО vs ПОСЛЕ ГУМАНИЗАЦИИ")
     lines.append(f"{'═' * 65}")
     lines.append("")
 
@@ -718,7 +718,7 @@ def dashboard(
     tokens = _tokenize(text)
 
     # Базовая статистика
-    lines.append(f"  📊 Базовые метрики")
+    lines.append("  📊 Базовые метрики")
     lines.append(f"  ├─ Символов: {len(text)}")
     lines.append(f"  ├─ Слов: {len(tokens)}")
     lines.append(f"  ├─ Предложений: {len(sentences)}")
@@ -730,7 +730,7 @@ def dashboard(
     ppl_res = perplexity_chart(text, lang=lang, use_color=use_color)
     ppl_data = ppl_res.data
     if ppl_data:
-        lines.append(f"  📈 Перплексия")
+        lines.append("  📈 Перплексия")
         lines.append(f"  ├─ Sparkline: {_sparkline(ppl_data.get('per_sentence_ppl', []), 40)}")
         lines.append(f"  ├─ Средняя: {ppl_data.get('mean', 0):.1f}")
         lines.append(f"  └─ CV: {ppl_data.get('cv', 0):.4f}")
@@ -742,7 +742,7 @@ def dashboard(
     if det_data:
         scores = det_data.get("scores", [])
         heatstrip = "".join(_heatmap_char(s) for s in scores)
-        lines.append(f"  🔍 AI-Detection")
+        lines.append("  🔍 AI-Detection")
         lines.append(f"  ├─ Карта: [{heatstrip}]")
         lines.append(f"  └─ Средний score: {det_data.get('mean_score', 0):.3f}")
         lines.append("")
@@ -751,7 +751,7 @@ def dashboard(
     lengths = [len(_tokenize(s)) for s in sentences]
     if lengths:
         mean_l = sum(lengths) / len(lengths)
-        lines.append(f"  📏 Длины предложений")
+        lines.append("  📏 Длины предложений")
         lines.append(f"  ├─ Sparkline: {_sparkline([float(x) for x in lengths], 40)}")
         lines.append(f"  └─ Среднее: {mean_l:.1f} слов (мин {min(lengths)}, макс {max(lengths)})")
         lines.append("")

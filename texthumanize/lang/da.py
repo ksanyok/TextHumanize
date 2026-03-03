@@ -19,9 +19,8 @@ LANG_DA = {
         "for", "med", "som", "har", "på", "af", "kan", "de",
         "var", "fra", "ikke", "men", "et", "der", "vi", "om",
         "så", "han", "hun", "sig", "sin", "sit", "sine",
-        "jeg", "du", "vi", "de", "mig", "dig", "os",
-        "alle", "denne", "dette", "disse", "her", "der",
-        "hvad", "hvem", "hvor", "hvordan", "når", "mere",
+        "jeg", "du", "mig", "dig", "os",
+        "alle", "denne", "dette", "disse", "her", "hvad", "hvem", "hvor", "hvordan", "når", "mere",
     },
 
     # Bureaukratisk sprogbrug

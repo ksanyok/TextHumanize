@@ -29,13 +29,13 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any
 
-from texthumanize.sentence_split import split_sentences
-from texthumanize.word_lm import WordLanguageModel
 from texthumanize._human_profiles import (
     get_human_profile,
-    signature_distance,
     metric_gaps,
+    signature_distance,
 )
+from texthumanize.sentence_split import split_sentences
+from texthumanize.word_lm import WordLanguageModel
 
 logger = logging.getLogger(__name__)
 
@@ -676,7 +676,7 @@ class SignatureTransfer:
         stop = {"the", "a", "an", "is", "are", "was", "were", "in", "on", "at",
                 "to", "for", "of", "and", "or", "but", "not", "it", "this", "that",
                 "и", "в", "на", "с", "по", "к", "из", "о", "не", "что", "это",
-                "і", "в", "на", "з", "по", "до", "із", "про", "не", "що", "це"}
+                "і", "з", "до", "із", "про", "що", "це"}
         repeated = [(w, c) for w, c in freq.items()
                     if c > 2 and w not in stop and len(w) > 3]
         repeated.sort(key=lambda x: x[1], reverse=True)

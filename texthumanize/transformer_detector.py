@@ -28,10 +28,8 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import os
 import zlib
-import base64
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -43,15 +41,10 @@ from texthumanize.np_ops import (
     embedding_lookup,
     he_init,
     layer_norm,
-    linear,
-    log_softmax,
     mlp_forward,
-    multi_head_attention,
     ones,
-    relu,
     sigmoid,
     sinusoidal_position_encoding,
-    softmax,
     transformer_block,
     xavier_init,
     zeros,

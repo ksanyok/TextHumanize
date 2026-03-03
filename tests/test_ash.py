@@ -5,9 +5,6 @@ Covers all 5 proprietary technologies + the unified ASH Engine.
 
 from __future__ import annotations
 
-import pytest
-
-
 # ═══════════════════════════════════════════════════════════════
 #  HUMAN PROFILES
 # ═══════════════════════════════════════════════════════════════
@@ -48,8 +45,8 @@ class TestHumanProfiles:
 
     def test_signature_distance(self):
         from texthumanize._human_profiles import (
-            get_human_profile,
             get_ai_profile,
+            get_human_profile,
             signature_distance,
         )
         human = get_human_profile("en")
@@ -62,8 +59,8 @@ class TestHumanProfiles:
 
     def test_metric_gaps(self):
         from texthumanize._human_profiles import (
-            get_human_profile,
             get_ai_profile,
+            get_human_profile,
             metric_gaps,
         )
         human = get_human_profile("en")

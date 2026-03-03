@@ -20,7 +20,7 @@ LANG_SV = {
         "kan", "ska", "om", "från", "så", "vi", "de", "jag",
         "han", "hon", "sig", "sin", "sitt", "sina", "här",
         "där", "alla", "andra", "denna", "detta", "dessa",
-        "var", "vad", "vem", "hur", "när", "där", "mer",
+        "vad", "vem", "hur", "när", "mer",
     },
 
     # Byråkratiska ord

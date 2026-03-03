@@ -21,18 +21,17 @@ Copyright (c) 2024-2026 Oleksandr K. / TextHumanize Project.
 from __future__ import annotations
 
 import logging
-import math
 import random
 import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from texthumanize._human_profiles import (
+    get_ai_profile,
+    get_human_profile,
+)
 from texthumanize.sentence_split import split_sentences
 from texthumanize.word_lm import WordLanguageModel
-from texthumanize._human_profiles import (
-    get_human_profile,
-    get_ai_profile,
-)
 
 logger = logging.getLogger(__name__)
 

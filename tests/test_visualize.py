@@ -1,20 +1,17 @@
 """Тесты для модуля visualize."""
 from __future__ import annotations
 
-import pytest
-
 from texthumanize.visualize import (
     TextVisualizer,
     VisualizationResult,
-    perplexity_chart,
-    detection_heatmap,
-    sentence_length_chart,
-    lexical_diversity_chart,
-    entropy_chart,
     comparison_chart,
     dashboard,
+    detection_heatmap,
+    entropy_chart,
+    lexical_diversity_chart,
+    perplexity_chart,
+    sentence_length_chart,
 )
-
 
 _SAMPLE = (
     "Artificial intelligence transforms industries. "

@@ -2,19 +2,16 @@
 
 from __future__ import annotations
 
-import pytest
 from texthumanize.content_classifier import (
-    ContentProfile,
     ContentType,
     classify,
 )
 from texthumanize.grammar_guard import (
     GrammarGuard,
     GuardResult,
-    extract_sentence_features,
     _mlp_forward,
+    extract_sentence_features,
 )
-
 
 # ── Content Classifier Tests ─────────────────────────────────
 
@@ -323,8 +320,10 @@ class TestIntegration:
 
     def test_import_from_package(self):
         """Public API imports work."""
-        from texthumanize import ContentType, ContentProfile, classify_content
-        from texthumanize import GrammarGuard, GuardResult
+        from texthumanize import (
+            ContentType,
+            classify_content,
+        )
         assert ContentType.CODE.value == "code"
         assert callable(classify_content)
 

@@ -16,7 +16,6 @@ This module requires NO external dependencies — all neural math is pure Python
 from __future__ import annotations
 
 import logging
-import math
 import random
 import re
 from typing import Any
@@ -33,7 +32,6 @@ from texthumanize.neural_detector import (
     normalize_features,
 )
 from texthumanize.neural_engine import (
-    DenseLayer,
     FeedForwardNet,
     Vec,
     _sigmoid,
@@ -408,7 +406,7 @@ def _fix_grammar_uk(text: str) -> str:
         'програмування', 'масштабування', 'спілкування', 'утворення',
         'призначення', 'уявлення', 'враження', 'продовження',
         'завершення', 'закінчення', 'становлення', 'прагнення',
-        'зобов\'язання', 'множина', 'середовище',
+        'зобов\'язання', 'множина',
     }
     for noun in _neuter_nouns_uk:
         # складна введення → складне введення
@@ -488,7 +486,7 @@ class Oracle:
         # Cache layer weights for backprop
         self._layers = net.layers
 
-    def analyze(self, text: str, lang: str = "en") -> "FeatureGapReport":
+    def analyze(self, text: str, lang: str = "en") -> FeatureGapReport:
         """Full analysis: features + score + gradients + gap ranking."""
         raw = extract_features(text, lang)
         normed = normalize_features(raw, lang=lang)
@@ -2093,8 +2091,7 @@ _PROTECTED_WORDS = frozenset({
     "исследование", "обучение", "обучения", "машинного", "машинное",
     "алгоритм", "алгоритмы", "алгоритмов", "сеть", "сети",
     "система", "системы", "процесс", "анализ", "данные", "данных",
-    "организация", "інформація", "освіта", "навчання", "навчання",
-    "організація", "система", "процес", "аналіз", "дані", "даних",
+    "организация", "інформація", "освіта", "навчання", "організація", "процес", "аналіз", "дані", "даних",
 })
 
 
@@ -2817,7 +2814,7 @@ class ForgeResult:
 
     def summary(self) -> str:
         lines = [
-            f"PHANTOM™ Optimization Result",
+            "PHANTOM™ Optimization Result",
             f"  Original score: {self.original_score:.4f}",
             f"  Final score:    {self.final_score:.4f}",
             f"  Improvement:    {self.improvement:.4f} ({self.improvement/max(self.original_score, 0.001)*100:.1f}%)",
@@ -2837,7 +2834,7 @@ class ForgeResult:
 # Public API
 # ═══════════════════════════════════════════════════════════════════════════
 
-_PHANTOM_INSTANCE: "PhantomEngine | None" = None
+_PHANTOM_INSTANCE: PhantomEngine | None = None
 
 
 class PhantomEngine:

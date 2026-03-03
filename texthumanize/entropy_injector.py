@@ -505,8 +505,8 @@ class EntropyInjector:
             "ein", "eine", "einem", "einen", "einer",
             "het", "de", "een",  # Dutch
             "le", "la", "les", "un", "une", "des",  # French
-            "el", "la", "los", "las", "un", "una",  # Spanish
-            "il", "lo", "la", "i", "gli", "le", "un", "una",  # Italian
+            "el", "los", "las", "una",  # Spanish
+            "il", "lo", "i", "gli",  # Italian
         }
 
         candidates = []

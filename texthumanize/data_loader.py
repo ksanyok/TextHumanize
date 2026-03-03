@@ -18,7 +18,7 @@ import json
 import logging
 import os
 import random
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ def load_jsonl(path: str, max_samples: int = 0) -> list[TextSample]:
         {"text": "...", "label": 1.0, "lang": "en", "source": "gpt4"}
     """
     samples: list[TextSample] = []
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -98,7 +98,7 @@ def load_csv(path: str, text_col: str = "text", label_col: str = "label",
              lang_col: str = "lang", max_samples: int = 0) -> list[TextSample]:
     """Load data from a CSV file."""
     samples: list[TextSample] = []
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             text = row.get(text_col, "")
@@ -120,7 +120,7 @@ def load_hc3(path: str, max_samples: int = 0) -> list[TextSample]:
         {"question": "...", "human_answers": ["..."], "chatgpt_answers": ["..."]}
     """
     samples: list[TextSample] = []
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -166,7 +166,7 @@ def load_directory(
             continue
         fpath = os.path.join(path, fname)
         try:
-            with open(fpath, "r", encoding="utf-8") as f:
+            with open(fpath, encoding="utf-8") as f:
                 text = f.read().strip()
         except (OSError, UnicodeDecodeError):
             continue
@@ -187,7 +187,7 @@ def load_auto(path: str, max_samples: int = 0) -> list[TextSample]:
         return load_csv(path, max_samples=max_samples)
     # Default to JSONL
     # Try HC3 format first
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         first_line = f.readline().strip()
     try:
         obj = json.loads(first_line)

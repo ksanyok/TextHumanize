@@ -10,8 +10,9 @@ from typing import Callable, Protocol
 
 from texthumanize.analyzer import TextAnalyzer
 from texthumanize.cjk_segmenter import CJKSegmenter, is_cjk_text
-from texthumanize.content_classifier import ContentProfile, ContentType, classify as classify_content
 from texthumanize.coherence_repair import CoherenceRepairer
+from texthumanize.content_classifier import ContentType
+from texthumanize.content_classifier import classify as classify_content
 from texthumanize.decancel import Debureaucratizer
 from texthumanize.fingerprint_randomizer import FingerprintRandomizer
 from texthumanize.grammar_fix import GrammarCorrector
@@ -23,6 +24,7 @@ from texthumanize.paraphraser_ext import SemanticParaphraser
 from texthumanize.readability_opt import ReadabilityOptimizer
 from texthumanize.repetitions import RepetitionReducer
 from texthumanize.segmenter import Segmenter
+from texthumanize.sentence_validator import SentenceValidator
 from texthumanize.structure import StructureDiversifier
 from texthumanize.stylistic import StylisticAnalyzer, StylisticFingerprint
 from texthumanize.syntax_rewriter import SyntaxRewriter
@@ -30,7 +32,6 @@ from texthumanize.tone_harmonizer import ToneHarmonizer
 from texthumanize.universal import UniversalProcessor
 from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
 from texthumanize.validator import QualityValidator
-from texthumanize.sentence_validator import SentenceValidator
 from texthumanize.watermark import WatermarkDetector
 from texthumanize.word_lm import WordLanguageModel
 

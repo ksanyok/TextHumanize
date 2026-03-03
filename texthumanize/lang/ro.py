@@ -19,8 +19,7 @@ LANG_RO = {
         "cea", "cu", "da", "dar", "de", "din", "ele", "este",
         "eu", "fost", "iar", "la", "le", "lui", "mai", "meu",
         "ne", "ni", "nu", "o", "pe", "pentru", "prin", "sa",
-        "se", "si", "sunt", "un", "una", "și", "în", "și",
-        "ei", "ea", "el", "noi", "voi", "lor", "acest",
+        "se", "si", "sunt", "un", "una", "și", "în", "ei", "ea", "el", "noi", "voi", "lor", "acest",
         "aceasta", "care", "ce", "cum", "când", "unde",
     },
 

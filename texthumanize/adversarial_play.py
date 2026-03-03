@@ -590,7 +590,7 @@ class AdversarialPlay:
         first_half = " ".join(words[:best_pos]).rstrip(",;:")
         second_half = " ".join(words[best_pos:])
 
-        if first_half and not first_half[-1] in ".!?":
+        if first_half and first_half[-1] not in ".!?":
             first_half += "."
 
         if second_half:

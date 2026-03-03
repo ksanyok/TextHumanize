@@ -16,11 +16,11 @@ LANG_HU = {
     # Megállószavak (ne cseréljük)
     "stop_words": {
         "a", "az", "egy", "és", "van", "hogy", "nem", "is",
-        "volt", "de", "meg", "ez", "ezt", "az", "azt",
+        "volt", "de", "meg", "ez", "ezt", "azt",
         "lesz", "mint", "már", "csak", "még", "vagy",
         "ha", "sem", "neki", "fel", "ki", "be", "le",
         "én", "te", "ő", "mi", "ti", "ők", "önt",
-        "itt", "ott", "milyen", "mi", "ki", "hol",
+        "itt", "ott", "milyen", "hol",
         "mikor", "miért", "hogyan", "minden", "sok",
         "kevés", "nagy", "kis", "jó",
     },

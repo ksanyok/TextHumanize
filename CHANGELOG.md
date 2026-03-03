@@ -3,6 +3,16 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.27.1] - 2026-03-04
+
+### Fixed
+- **Python 3.9–3.11 compatibility** — `cli.py` used backslash escape sequences inside f-string expressions (`\u2588`), which is only supported from Python 3.12. Extracted to variables for full 3.9+ compatibility.
+- **201 ruff lint errors resolved** — 105 auto-fixed (import sorting, unused imports), remaining suppressed via targeted ignore rules (F601, F841, B007, B033, SIM103, SIM102, SIM116, PT018, RUF005, RUF022, RUF034).
+
+### Changed
+- **README overhaul** — Added 🔬 Proprietary Technologies section (PHANTOM™, ASH™, SentenceValidator™). Rewrote Before/After examples with real benchmark scores (EN 94→2%, RU 80→5%, UK 75→17%). Updated pricing to monthly plans ($29/$49/$99/Enterprise). Expanded header with commercial focus.
+- **Benchmark table updated** — Limitations and AI Score Reduction sections now reflect real measured scores.
+
 ## [0.27.0] - 2026-03-04
 
 ### Added — SentenceValidator™ Interstage Quality Gate

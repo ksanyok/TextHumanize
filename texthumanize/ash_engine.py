@@ -300,7 +300,7 @@ class ASHEngine:
         # ASH post-processing (steps 4-6) fine-tunes after pipeline.
         if use_pipeline:
             try:
-                from texthumanize.pipeline import Pipeline, HumanizeOptions
+                from texthumanize.pipeline import HumanizeOptions, Pipeline
                 opts = HumanizeOptions(
                     lang=self.lang,
                     profile=self.pipeline_profile,

@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 # ── Rich availability ─────────────────────────────────────────
 _HAS_RICH = False
 try:
+    from rich import box
     from rich.console import Console
     from rich.panel import Panel
     from rich.progress import (
@@ -46,7 +47,6 @@ try:
     from rich.table import Table
     from rich.text import Text
     from rich.theme import Theme
-    from rich import box
 
     _HAS_RICH = True
 except ImportError:
@@ -99,7 +99,7 @@ def _print_banner() -> None:
     else:
         print(f"\n{'=' * 50}", file=sys.stderr)
         print(f"  TextHumanize  v{__version__}", file=sys.stderr)
-        print(f"  Algorithmic Text Humanization", file=sys.stderr)
+        print("  Algorithmic Text Humanization", file=sys.stderr)
         print(f"{'=' * 50}\n", file=sys.stderr)
 
 
@@ -207,7 +207,9 @@ def _display_detection_rich(result: dict, verbose: bool = False) -> None:
             fval = float(val)
             c = "green" if fval < 0.35 else ("yellow" if fval < 0.65 else "red")
             blen = int(fval * 20)
-            bar_m = f"[{c}]{'\u2588' * blen}{'\u2591' * (20 - blen)}[/{c}]"
+            filled = '\u2588' * blen
+            empty = '\u2591' * (20 - blen)
+            bar_m = f"[{c}]{filled}{empty}[/{c}]"
             t.add_row(metric, f"{fval:.2f}", bar_m)
         _con.print(t)
 
@@ -365,7 +367,9 @@ def _display_tone_rich(result: dict) -> None:
             sc = float(score)
             c = "bright_cyan" if sc > 0.3 else "white"
             blen = int(sc * 20)
-            bar_t = f"[{c}]{'\u2588' * blen}{'\u2591' * (20 - blen)}[/{c}]"
+            filled = '\u2588' * blen
+            empty = '\u2591' * (20 - blen)
+            bar_t = f"[{c}]{filled}{empty}[/{c}]"
             t.add_row(tone, f"{sc:.2f}", bar_t)
     _con.print(t)
     _con.print()
@@ -1024,7 +1028,7 @@ Examples:
     args, remaining = parser.parse_known_args()
 
     # ── Disable Rich if --no-color ──
-    global _HAS_RICH, _con  # noqa: PLW0603
+    global _HAS_RICH, _con
     if args.no_color:
         _HAS_RICH = False
         _con = None

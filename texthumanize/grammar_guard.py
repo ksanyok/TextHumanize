@@ -14,13 +14,11 @@ dictionary-based stages.
 
 from __future__ import annotations
 
+import logging
 import math
 import os
 import re
-import logging
-from collections import Counter
 from dataclasses import dataclass, field
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -292,7 +290,6 @@ def _ensure_weights() -> None:
         return
 
     # Try loading trained weights
-    import importlib.resources
     weights_loaded = False
 
     try:
@@ -302,7 +299,7 @@ def _ensure_weights() -> None:
         weights_path = os.path.join(weights_dir, 'grammar_guard_weights.json')
         if os.path.exists(weights_path):
             import json
-            with open(weights_path, 'r') as f:
+            with open(weights_path) as f:
                 data = json.load(f)
             _W1 = data['W1']
             _B1 = data['B1']

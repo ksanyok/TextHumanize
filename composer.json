@@ -1,6 +1,6 @@
 {
     "name": "ksanyok/text-humanize",
-    "version": "0.27.0",
+    "version": "0.27.1",
     "description": "Zero-dependency PHP library for algorithmic text humanization — transforms machine-generated text into natural prose",
     "type": "library",
     "keywords": [
