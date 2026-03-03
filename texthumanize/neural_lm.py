@@ -40,6 +40,14 @@ from texthumanize.neural_engine import (
 _mul = operator.mul
 logger = logging.getLogger(__name__)
 
+# Try numpy for acceleration
+try:
+    import numpy as _np
+    _HAS_NP = True
+except ImportError:
+    _HAS_NP = False
+    _np = None  # type: ignore[assignment]
+
 # Character vocabulary
 _CHARS = (
     " abcdefghijklmnopqrstuvwxyz"
@@ -91,6 +99,11 @@ class _OutputProjection:
 
     def __call__(self, h: Vec) -> Vec:
         """Compute logits = W @ h + b (optimized)."""
+        if _HAS_NP:
+            w = _np.asarray(self.W, dtype=_np.float32)
+            b = _np.asarray(self.b, dtype=_np.float32)
+            hv = _np.asarray(h, dtype=_np.float32)
+            return (w @ hv + b).tolist()
         _m = _mul
         W, b = self.W, self.b
         return [sum(map(_m, W[i], h)) + b[i] for i in range(len(b))]

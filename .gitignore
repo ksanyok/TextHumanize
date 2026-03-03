@@ -49,3 +49,16 @@ node_modules/
 *.bak
 site/
 coverage.xml
+
+# Auto-generated large synonym files (use _data/synonyms.json.gz instead)
+texthumanize/_massive_synonyms.py
+texthumanize/_wikt_synonyms.py
+texthumanize/_wikt_synonyms.json
+scripts/_dumps/
+
+# Caches
+.mypy_cache/
+.ruff_cache/
+
+# Training data (large, generated)
+data/

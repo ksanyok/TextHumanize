@@ -498,6 +498,17 @@ class EntropyInjector:
         # (not adjacent to punctuation, which creates "(, which ..." garbage)
         lo = max(1, len(words) // 3)
         hi = max(lo, len(words) // 2)
+
+        # German/Dutch/etc. articles — never split an article from its noun
+        _articles = {
+            "der", "die", "das", "dem", "den", "des",
+            "ein", "eine", "einem", "einen", "einer",
+            "het", "de", "een",  # Dutch
+            "le", "la", "les", "un", "une", "des",  # French
+            "el", "la", "los", "las", "un", "una",  # Spanish
+            "il", "lo", "la", "i", "gli", "le", "un", "una",  # Italian
+        }
+
         candidates = []
         for idx in range(lo, hi + 1):
             prev_w = words[idx - 1] if idx > 0 else ""
@@ -506,6 +517,9 @@ class EntropyInjector:
             if prev_w and prev_w[-1] in ",.;:!?":
                 continue
             if next_w and next_w[0] in ",.;:!?('\"":
+                continue
+            # Skip if previous word is an article (don't split article + noun)
+            if prev_w.lower().rstrip(",.;:") in _articles:
                 continue
             candidates.append(idx)
         if not candidates:

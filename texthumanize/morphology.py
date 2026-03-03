@@ -556,6 +556,38 @@ class MorphologyEngine:
         # never double-append suffixes like -ing+ing or -es+s.
         syn = self._lemmatize_en(synonym_lemma)
 
+        # Guard: if lemmatized synonym is an irregular verb,
+        # use irregular form table instead of regular suffix rules
+        # (avoids "be" + "s" → "bes" instead of "is")
+        if syn in _EN_IRREGULAR_FORMS:
+            syn_forms = _EN_IRREGULAR_FORMS[syn]
+            if orig_lower.endswith("ing"):
+                for f in syn_forms:
+                    if f.endswith("ing"):
+                        return f
+            elif orig_lower.endswith(("s", "es")) and not orig_lower.endswith("ss"):
+                # 3rd person singular present — find -s form, skip past "was"
+                _skip_for_3sg = {"am", "are", "was"}
+                for f in syn_forms:
+                    if f.endswith("s") and f not in _skip_for_3sg:
+                        return f
+            elif orig_lower.endswith("ed"):
+                # Past tense — skip present and participle forms
+                _skip_present = {"am", "is", "are"}
+                for f in syn_forms:
+                    if (f not in _skip_present
+                            and not f.endswith("s")
+                            and not f.endswith("ing")
+                            and not f.endswith(("en", "ne"))
+                            and f != syn):
+                        return f
+                # Fallback: try past participle
+                for f in syn_forms:
+                    if f.endswith(("en", "ne", "t")) and not f.endswith("ing"):
+                        return f
+            # Base form or unrecognized inflection → return lemma
+            return syn
+
         # Guard: multi-word replacements (e.g., "lots of") — don't inflect
         if " " in synonym_lemma:
             return synonym_lemma
@@ -628,10 +660,52 @@ class MorphologyEngine:
                 return syn + "es"
             return syn + "s"
         if orig_lower.endswith("er"):
+            # Guard: only add -er for actual comparatives, not words
+            # that happen to end in -er (moreover, whatever, however, etc.)
+            _NOT_COMPARATIVE = {
+                "moreover", "however", "whatever", "whenever", "wherever",
+                "whoever", "whichever", "furthermore", "together",
+                "another", "other", "rather", "never", "ever", "after",
+                "under", "over", "inner", "outer", "upper", "lower",
+                "super", "better", "utter", "proper", "either",
+                "neither", "whether", "former", "latter", "master",
+                "matter", "manner", "member", "number", "order",
+                "power", "water", "paper", "later", "enter", "cover",
+                "offer", "consider", "remember", "discover", "deliver",
+                "answer", "silver", "winter", "summer", "dinner",
+                "father", "mother", "sister", "brother", "daughter",
+                "teacher", "leader", "reader", "writer", "player",
+                "worker", "finger", "corner", "center", "gender",
+            }
+            if orig_lower in _NOT_COMPARATIVE:
+                return synonym_lemma
+            # Don't add -er to conjunctions, prepositions, etc.
+            if len(syn) <= 3:
+                return synonym_lemma
             return syn + "er"
         if orig_lower.endswith("est"):
+            # Same guard for superlatives
+            if len(syn) <= 3:
+                return synonym_lemma
             return syn + "est"
         if orig_lower.endswith("ly"):
+            # Guard: don't add -ly to words that are already adverbs
+            # or invariable adverbial forms
+            _INVARIABLE_ADVERBS = {
+                "much", "very", "quite", "rather", "too", "so",
+                "perhaps", "maybe", "always", "never", "often",
+                "sometimes", "already", "just", "also", "still",
+                "almost", "enough", "ever", "far", "here", "how",
+                "indeed", "instead", "less", "more", "near", "not",
+                "now", "once", "only", "out", "over", "soon",
+                "then", "there", "thus", "well", "yet",
+                "a lot", "by a good margin",
+            }
+            if synonym_lemma.lower() in _INVARIABLE_ADVERBS:
+                return synonym_lemma
+            # If synonym already ends in -ly, return as-is
+            if synonym_lemma.endswith("ly"):
+                return synonym_lemma
             if syn.endswith("y"):
                 return syn[:-1] + "ily"
             return syn + "ly"
@@ -688,21 +762,92 @@ class MorphologyEngine:
         return list(set(forms))
 
     def _match_form_de(self, original: str, synonym_lemma: str) -> str:
-        """Подобрать форму синонима под оригинал (DE)."""
+        """Подобрать форму синонима под оригинал (DE).
+
+        Uses both capitalization AND suffix-based noun detection because
+        callers often pass ``original.lower()`` which destroys the case hint.
+        """
         orig_lower = original.lower()
+        syn_lower = synonym_lemma.lower()
 
-        for ending in sorted(_DE_ADJ_ENDINGS.keys(), key=len, reverse=True):
-            if orig_lower.endswith(ending):
-                return synonym_lemma + ending
+        _de_noun_suffixes = (
+            "ung", "heit", "keit", "schaft", "tion",
+            "nis", "tum", "ment", "ität",
+        )
+        # Detect noun: by capitalization OR by noun suffix
+        orig_is_noun = (
+            (original[0].isupper() if original else False)
+            or any(orig_lower.endswith(s) for s in _de_noun_suffixes)
+        )
+        syn_is_verb = (
+            syn_lower.endswith(("en", "ern", "eln"))
+            and not any(syn_lower.endswith(s) for s in _de_noun_suffixes)
+        )
 
+        # ── Nouns ──
+        if orig_is_noun:
+            if syn_is_verb:
+                # Verb synonym for a noun original → try to derive noun form.
+                # e.g., "beachten" → "Beachtung" (stem + "ung")
+                # Find which noun suffix the original has and apply it.
+                for suffix in sorted(_de_noun_suffixes, key=len, reverse=True):
+                    if orig_lower.endswith(suffix):
+                        # Try to derive: verb stem + noun suffix
+                        if syn_lower.endswith("en"):
+                            verb_stem = syn_lower[:-2]
+                        elif syn_lower.endswith(("ern", "eln")):
+                            verb_stem = syn_lower[:-3]
+                        else:
+                            verb_stem = syn_lower
+                        derived = verb_stem + suffix
+                        # Capitalize (German nouns)
+                        return derived[0].upper() + derived[1:]
+                # No matching suffix found — reject the verb synonym
+                return original
+
+            # Noun → noun: preserve form
+            return synonym_lemma
+
+        # ── Adjectives (lowercase, not verb infinitive) ──
+        _noun_like = ("ung", "heit", "keit", "schaft", "tion", "nis", "tum")
+        if not syn_lower.endswith(_noun_like):
+            for ending in sorted(_DE_ADJ_ENDINGS.keys(), key=len, reverse=True):
+                if orig_lower.endswith(ending) and not orig_is_noun:
+                    return synonym_lemma + ending
+
+        # ── Verbs ──
         for ending in sorted(_DE_VERB_ENDINGS.keys(), key=len, reverse=True):
-            if orig_lower.endswith(ending) and synonym_lemma.endswith("en"):
+            if orig_lower.endswith(ending) and syn_lower.endswith("en"):
                 stem = synonym_lemma[:-2]
                 return stem + ending
 
         return synonym_lemma
 
     # ─── Славянская группа (RU/UK) ────────────────────────────
+
+    # Noun declension tables (case order: nom, gen, dat, acc, inst, prep)
+    _RU_NOUN_DECL: dict[str, list[str]] = {
+        "ция": ["ция", "ции", "ции", "цию", "цией", "ции"],
+        "ия":  ["ия",  "ии",  "ии",  "ию",  "ией",  "ии"],
+        "ие":  ["ие",  "ия",  "ию",  "ие",  "ием",  "ии"],
+        "ние": ["ние", "ния", "нию", "ние", "нием", "нии"],
+        "ость": ["ость", "ости", "ости", "ость", "остью", "ости"],
+        "ка":  ["ка",  "ки",  "ке",  "ку",  "кой",  "ке"],
+        "а":   ["а",   "ы",   "е",   "у",   "ой",   "е"],
+        "я":   ["я",   "и",   "е",   "ю",   "ей",   "е"],
+    }
+    _UK_NOUN_DECL: dict[str, list[str]] = {
+        "ція": ["ція", "ції", "ції", "цію", "цією", "ції"],
+        "ія":  ["ія",  "ії",  "ії",  "ію",  "ією",  "ії"],
+        # -ення/-ання nouns (проведення, використання, здійснення…)
+        # must come before the shorter "-ня" class to avoid mis-stemming.
+        "ння": ["ння", "ння", "нню", "ння", "нням", "нні"],
+        "ня":  ["ня",  "ння", "нню", "ня",  "нням", "нні"],
+        "ість": ["ість", "ості", "ості", "ість", "істю", "ості"],
+        "ка":  ["ка",  "ки",  "ці",  "ку",  "кою",  "ці"],
+        "а":   ["а",   "и",   "і",   "у",   "ою",   "і"],
+        "я":   ["я",   "і",   "і",   "ю",   "ею",   "і"],
+    }
 
     def _match_form_slavic(self, original: str, synonym_lemma: str) -> str:
         """Подобрать форму синонима под оригинал (RU/UK)."""
@@ -734,7 +879,66 @@ class MorphologyEngine:
                     return stem + ending
                 break
 
+        # Существительные: определяем падеж оригинала и склоняем синоним
+        result = self._transfer_noun_case(orig_lower, synonym_lemma)
+        if result:
+            return result
+
         return synonym_lemma
+
+    def _transfer_noun_case(self, orig_lower: str, synonym_lemma: str) -> str | None:
+        """Transfer the grammatical case from original noun to synonym.
+
+        Uses declension tables to identify case of original and apply
+        the same case ending to the synonym stem.
+        """
+        decl = self._RU_NOUN_DECL if self.lang == "ru" else self._UK_NOUN_DECL
+        syn_lower = synonym_lemma.lower()
+
+        # Step 1: Find original's declension class and case index.
+        # Prefer longer ending matches for accuracy.
+        orig_class: str | None = None
+        orig_case_idx: int | None = None
+        best_len = 0
+
+        for cls in sorted(decl.keys(), key=len, reverse=True):
+            forms = decl[cls]
+            for case_idx, ending in enumerate(forms):
+                if (orig_lower.endswith(ending)
+                        and len(ending) > best_len
+                        and len(orig_lower) > len(ending) + 2):
+                    orig_class = cls
+                    orig_case_idx = case_idx
+                    best_len = len(ending)
+            if orig_class is not None:
+                break  # longest-match-first: stop after first class matches
+
+        if orig_class is None or orig_case_idx is None:
+            return None
+
+        # Step 2: Find synonym's declension class (by its nominative ending)
+        syn_class: str | None = None
+        for cls in sorted(decl.keys(), key=len, reverse=True):
+            nom = decl[cls][0]  # nominative form ending
+            if syn_lower.endswith(nom) and len(syn_lower) > len(nom) + 2:
+                syn_class = cls
+                break
+
+        if syn_class is None:
+            return None
+
+        # Step 3: Extract synonym stem and apply target case ending
+        syn_nom = decl[syn_class][0]
+        syn_stem = synonym_lemma[:-len(syn_nom)]
+        target_ending = decl[syn_class][orig_case_idx]
+
+        result = syn_stem + target_ending
+
+        # Preserve original capitalization
+        if synonym_lemma[0].isupper():
+            result = result[0].upper() + result[1:]
+
+        return result
 
     # ─── Определение части речи ───────────────────────────────
 

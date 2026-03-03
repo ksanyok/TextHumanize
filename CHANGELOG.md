@@ -3,6 +3,69 @@
 All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.27.0] - 2026-03-04
+
+### Added — SentenceValidator™ Interstage Quality Gate
+- **NEW: `texthumanize/sentence_validator.py` (350 lines)** — sentence-level artifact detection that validates text quality between pipeline stages. Catches and removes artifacts that individual stages may produce.
+- **10 artifact checks per sentence:** duplicate words (`the the`), broken contractions (`do n't`), orphaned punctuation, double conjunctions (`and and`, `и и`), dangling conjunctions at sentence boundaries, unterminated parentheses, triple+ repeated characters, fragment chains (`... . ... .`), conjunction chains (`and but or`), empty/whitespace-only sentences.
+- **7 interstage validation points:** after syntax rewriting, naturalization, paraphrase engine, sentence restructuring, entropy injection, grammar guard, and coherence repair.
+- **Final sanitization in `run()`:** post-loop cleanup removes double conjunctions, dangling conjunctions, and conjunction chain residue that may survive all pipeline stages.
+- **Language-aware:** recognizes conjunctions in EN (`and, but, or`), RU (`и, но, или, а`), UK (`і, але, або, та, а`), DE (`und, aber, oder`), FR (`et, mais, ou`), ES (`y, pero, o`).
+
+### Fixed — 8 Artifact Categories Eliminated
+- **EN "bes" artifact** — `morphology.py` irregular verb table caused "describes" → "bes". Fixed with proper irregular verb handling (describe→described, prescribe→prescribed, subscribe→subscribed).
+- **Fragment chain artifacts** — `_strip_fragment_chains()` in pipeline.py now operates paragraph-aware, preserving intentional paragraph breaks while removing `... . ... .` residue.
+- **Merge quality artifacts** — `_merge_short_sentences()` now validates merged result quality before accepting, preventing broken concatenations.
+- **RU truncation artifacts** — naturalizer.py RU AI-word replacements that produced truncated forms fixed.
+- **UK triple-н artifacts** — morphology.py UK "-ння" declension class added to prevent triple consonant generation.
+- **DE "die Beachten" artifact** — morphology.py now uses suffix-based noun detection for German, preventing incorrect capitalization of verbs.
+- **FR "the" leak** — naturalizer.py French processing no longer falls through to English word replacements.
+- **Paragraph collapse** — entropy_injector.py article-noun split guard prevents paragraph structure destruction.
+
+### Improved — Quality Hardening
+- **Grammar Guard safety gates** — added overlap threshold (≥ 0.55) and positional threshold (≥ 0.35) to prevent grammar corrections that damage already-correct text.
+- **Per-language naturalizer starters** — `_COMMON_STARTS` expanded to 15 languages (was EN-only), preventing English sentence starters from leaking into non-English text.
+- **Per-language paraphrase connectors** — `_CONNECTORS` in paraphrase_engine.py expanded to 11 languages with language-appropriate hedging and transitions.
+- **Syntax rewriter regex hardening** — all conjunction patterns now use `\b` word boundaries to prevent partial-word matches.
+- **Morphology improvements** — UK "-ння" declension class, DE suffix-based noun detection, EN irregular verb expansion.
+
+### Stats
+- **2,073 tests** all passing (was 2,045 in v0.26.0)
+- **122 Python modules**, **235,000+ lines** of code
+- **25 languages** supported (Tier 1: EN/RU/UK/DE, Tier 2: FR/ES/IT/PL/PT/NL/SV/CS/RO/HU/DA, Tier 3: AR/ZH/JA/KO/TR/HI/VI/TH/ID/HE)
+- **38+ pipeline stages** including ASH pre/post processing and SentenceValidator checkpoints
+
+## [0.26.0] - 2026-03-03
+
+### Added — PHANTOM™ Neural Humanization Engine
+- **NEW: `texthumanize/phantom.py` (2223 lines)** — gradient-guided adversarial text humanization that achieves **100% bypass rate** (15/15 texts) across EN, RU, and UK on the built-in neural detector.
+- **ORACLE**: Numerical gradient computation through the detector MLP via central differences (~70 forward passes, ~1.4ms). Produces per-feature contribution analysis and ranked gap reports.
+- **SURGEON**: 32 feature-targeted surgical operations guided by Oracle gradients. Rank-based magnitude scheduling focuses effort on highest-impact features first.
+- **FORGE**: Iterative optimization loop with combined score tracking, stall detection, adaptive budget escalation, text expansion limits, and post-iteration cleanup.
+- **AI replacement dictionaries**: ~170 EN, ~143 RU, ~83 UK curated context-safe replacements (formal→informal, long→short).
+- **`conjunction_rate` op**: Inject/remove language-appropriate conjunctions (и/but/і) to match human writing patterns.
+- **`avg_paragraph_length` op**: Merge/split paragraphs to hit human paragraph length norms.
+- **Sentence merging**: Language-aware merging uses correct conjunctions (", и " for RU, ", і " for UK) instead of English "and".
+- **Public API**: `PhantomEngine`, `phantom_optimize()`, `get_phantom()`, `ForgeResult` — all exported from `texthumanize.__init__`.
+- **Integration**: `humanize(phantom=True)` and `humanize_until_human()` with PHANTOM final refinement.
+- **Expansion limits**: Tiered by text length (4.0× for <20 words, 3.0× for <40, 2.5× for <60, 1.7× for longer) allowing short texts enough room for humanization.
+
+### Fixed
+- **Cache key missing `phantom` param** — `result_cache` in core.py didn't include the `phantom` flag in cache keys, causing `humanize(phantom=True)` to return cached non-phantom results.
+- **Sentence variance single-sentence bug** — `_op_sentence_variance` with direction="increase" now properly handles single-sentence texts by splitting long sentences before injecting short ones.
+- **Question injection threshold** — Lowered from 3+ sentences to 2+ for short-text compatibility.
+- **Comma injection rate** — Increased base rate for texts with < 5 sentences to ensure short texts get adequate comma/filler insertion.
+
+### Performance — PHANTOM™ Benchmark Results
+| Language | Bypass Rate | Avg Score | Range |
+|----------|-----------|-----------|-------|
+| EN       | 5/5 (100%) | 0.255 | 0.215–0.285 |
+| RU       | 5/5 (100%) | 0.227 | 0.185–0.268 |
+| UK       | 5/5 (100%) | 0.256 | 0.239–0.276 |
+| **Total** | **15/15 (100%)** | **0.246** | **0.185–0.285** |
+
+Processing time: 0.7–1.4s per text. Zero external dependencies. All 2045 tests pass.
+
 ## [0.25.0] - 2026-03-02
 
 ### Fixed

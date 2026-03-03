@@ -4,11 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texthumanize"
-version = "0.25.0"
-description = "Algorithmic text humanization with AI detection, tone analysis, paraphrasing, and spinning — 20-stage pipeline, 14 languages, zero dependencies"
+version = "0.27.0"
+description = "Algorithmic text humanization with AI detection, tone analysis, paraphrasing, and spinning — 38-stage pipeline, 25 languages, SentenceValidator™, PHANTOM™"
 readme = "README.md"
 license = {text = "Dual License — Free for personal use, commercial license required for business"}
 requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.21",
+]
 authors = [
     {name = "TextHumanize Contributors"}
 ]
@@ -68,13 +71,25 @@ docs = [
 #   pip install texthumanize[full]        — everything
 # NOTE: The core library is zero-dependency. These extras pull in
 # optional dependencies for extended functionality.
-detect = []       # Detection — no extra deps (pure Python)
-humanize = []     # Humanization — no extra deps (pure Python)
+detect = []
+humanize = []
 api = [
     "flask>=2.0",
 ]
 full = [
     "flask>=2.0",
+    "streamlit>=1.30",
+    "rich>=13.0",
+]
+web = [
+    "streamlit>=1.30",
+]
+cli = [
+    "rich>=13.0",
+]
+gpu = [
+    "torch>=2.0",
+    "onnxruntime>=1.14",
 ]
 
 [project.scripts]
@@ -93,7 +108,7 @@ Demo = "https://humanizekit.tester-buyreadysite.website/"
 include = ["texthumanize*"]
 
 [tool.setuptools.package-data]
-texthumanize = ["data/*.json", "weights/*.zb85"]
+texthumanize = ["data/*.json", "weights/*.zb85", "_data/*.json.gz"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

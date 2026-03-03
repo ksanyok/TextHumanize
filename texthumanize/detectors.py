@@ -322,7 +322,7 @@ class AIDetector:
         words = text.split()
         lang_pack = get_lang_pack(effective_lang)
 
-        if len(sentences) < 3:
+        if len(sentences) < 2:
             result.verdict = "unknown"
             result.confidence = 0.1
             result.explanations.append("Too few sentences for reliable detection")

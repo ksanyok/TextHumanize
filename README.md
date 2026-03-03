@@ -13,7 +13,7 @@
 [![PHP 8.1+](https://img.shields.io/badge/php-8.1+-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
 &nbsp;&nbsp;
 [![CI](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-1956%20passed-2ea44f.svg?logo=pytest&logoColor=white)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-2073%20passed-2ea44f.svg?logo=pytest&logoColor=white)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
 &nbsp;&nbsp;
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)]()
 [![PyPI](https://img.shields.io/pypi/v/texthumanize.svg?logo=pypi&logoColor=white)](https://pypi.org/project/texthumanize/)
@@ -21,7 +21,7 @@
 
 <br/>
 
-**58,000+ lines of code** · **94 Python modules** · **20-stage pipeline** · **14 languages + universal** · **1,956 tests**
+**235,000+ lines of code** · **122 Python modules** · **38-stage pipeline** · **25 languages + universal** · **2,073 tests**
 
 [Quick Start](#-quick-start) · [Features](#-feature-matrix) · [Benchmarks](#-performance--benchmarks) · [AI Detection](#-ai-detection-engine) · [API Reference](#-api-reference) · [Documentation](https://ksanyok.github.io/TextHumanize/) · [Live Demo](https://humanizekit.tester-buyreadysite.website/) · [License](#-license--pricing)
 
@@ -37,7 +37,7 @@
 - [Before & After Examples](#-before--after-examples)
 - [Feature Matrix](#-feature-matrix)
 - [Comparison with Competitors](#-comparison-with-competitors)
-- [Processing Pipeline](#-processing-pipeline-20-stages)
+- [Processing Pipeline](#-processing-pipeline-38-stages)
 - [AI Detection Engine](#-ai-detection-engine)
 - [API Reference](#-api-reference)
 - [Profiles & Presets](#-profiles--style-presets)
@@ -66,7 +66,7 @@
 - [Security & Limits](#-security--limits)
 - [For Business & Enterprise](#-for-business--enterprise)
 - [FAQ & Troubleshooting](#-faq--troubleshooting)
-- [What's New in v0.25.0](#-whats-new-in-v0250)
+- [What's New in v0.27.0](#-whats-new-in-v0270)
 - [Contributing](#-contributing)
 - [Limitations](#-limitations)
 - [Support the Project](#-support-the-project)
@@ -74,15 +74,15 @@
 
 ---
 
-TextHumanize is a **pure-algorithmic text processing engine** that normalizes style, improves readability, and reduces mechanical patterns in text. No neural networks, no API keys, no internet — just 58K+ lines of finely tuned rules, dictionaries, and statistical methods.
+TextHumanize is a **pure-algorithmic text processing engine** that normalizes style, improves readability, and reduces mechanical patterns in text. No neural networks, no API keys, no internet — just 235K+ lines of finely tuned rules, dictionaries, and statistical methods.
 
 > **Honest note:** TextHumanize is a style-normalization tool, not an AI-detection bypass tool. It reduces AI-like patterns (formulaic connectors, uniform sentence length, bureaucratic vocabulary) but does not guarantee that processed text will pass external AI detectors. Quality of humanization varies by language and text type. See [Limitations](#-limitations) below.
 
 **Built-in toolkit:** AI Detection (3 detectors) · Paraphrasing · Tone Analysis · Watermark Cleaning · Content Spinning · Coherence Analysis · Readability Scoring · Stylistic Fingerprinting · Auto-Tuner · Perplexity Analysis · Plagiarism Detection · Grammar Check · Morphology Engine · Neural LM · **Async API** · **SSE Streaming**
 
-**Platforms:** Python (full — 76 modules) · TypeScript/JavaScript (core) · PHP (full)
+**Platforms:** Python (full — 122 modules) · TypeScript/JavaScript (core) · PHP (full)
 
-**Languages:** 🇬🇧 EN · 🇷🇺 RU · 🇺🇦 UK · 🇩🇪 DE · 🇫🇷 FR · 🇪🇸 ES · 🇵🇱 PL · 🇧🇷 PT · 🇮🇹 IT · 🇸🇦 AR · 🇨🇳 ZH · 🇯🇵 JA · 🇰🇷 KO · 🇹🇷 TR · 🌍 **any language** via universal processor
+**Languages:** 🇬🇧 EN · 🇷🇺 RU · 🇺🇦 UK · 🇩🇪 DE · 🇫🇷 FR · 🇪🇸 ES · 🇵🇱 PL · 🇧🇷 PT · 🇮🇹 IT · �🇱 NL · 🇸🇪 SV · 🇨🇿 CS · 🇷🇴 RO · 🇭🇺 HU · 🇩🇰 DA · 🇸🇦 AR · 🇨🇳 ZH · 🇯🇵 JA · 🇰🇷 KO · 🇹🇷 TR · 🇮🇳 HI · 🇻🇳 VI · 🇹🇭 TH · 🇮🇩 ID · 🇮🇱 HE · 🌍 **any language** via universal processor
 
 ---
 
@@ -97,15 +97,15 @@ TextHumanize is a **pure-algorithmic text processing engine** that normalizes st
 | 🚀 | **Blazing fast** | 300–500 ms for a paragraph; full article in 1–2 seconds |
 | 🔒 | **100% private** | All processing is local — your text never leaves your machine |
 | 🎯 | **Precise control** | Intensity 0–100, 9 profiles, 5 style presets, keyword preservation, max change ratio |
-| 🌍 | **14 languages** | Deep support for EN/RU/UK/DE; dictionaries for 14 languages; statistical processor for any other |
+| 🌍 | **25 languages** | Deep support for EN/RU/UK/DE; dictionaries for 25 languages; statistical processor for any other |
 | 📦 | **Zero dependencies** | Pure Python stdlib — no pip packages, no model downloads, starts in <100 ms |
 | 🔁 | **Reproducible** | Seed-based PRNG — same input + same seed = identical output |
 | 🧠 | **3-layer AI detection** | 18-metric heuristic + 35-feature logistic regression + MLP neural detector — no ML framework required |
-| 🔌 | **Plugin system** | Register custom hooks at any of 20 pipeline stages |
+| 🔌 | **Plugin system** | Register custom hooks at any of 38 pipeline stages |
 | 📊 | **Full analytics** | Readability (6 indices), coherence, plagiarism, stylometric fingerprint, content health score |
 | 🎭 | **Tone control** | Analyze and adjust formality across 7 levels |
 | 📚 | **2,944 dictionary entries** | EN 1,733 + RU 1,345 + UK 1,042 + DE 874 + FR 718 + ES 749 + more |
-| 🏢 | **Enterprise-ready** | Dual license, 2,207 tests across 3 platforms, CI/CD, REST API, Docker, on-prem deployment |
+| 🏢 | **Enterprise-ready** | Dual license, 2,073+ tests, CI/CD, REST API, Docker, on-prem deployment |
 | 🛡️ | **Secure by design** | Input limits, zero network calls, linear-time regex, no eval/exec |
 | 📝 | **Full auditability** | Every call returns `change_ratio`, `quality_score`, `similarity`, `explain()` report |
 
@@ -289,7 +289,7 @@ AI score: 56% → 45%
 
 | Category | Feature | Python | JS | PHP |
 |:---------|:--------|:------:|:--:|:---:|
-| **Core** | `humanize()` — 20-stage pipeline | ✅ | ✅ | ✅ |
+| **Core** | `humanize()` — 38-stage pipeline | ✅ | ✅ | ✅ |
 | | `humanize_batch()` — parallel processing | ✅ | — | ✅ |
 | | `humanize_chunked()` — large text support | ✅ | — | ✅ |
 | | `humanize_ai()` — three-tier AI + rules | ✅ | — | — |
@@ -359,7 +359,7 @@ AI score: 56% → 45%
 | Cost per 1M chars | **$0** | $10–50/month | $15–60 (GPT-4) |
 | API key required | No | Yes | Yes |
 | Deterministic | ✅ Seed-based | ❌ | ❌ |
-| Languages | **14 + universal** | 1–3 | 10+ but expensive |
+| Languages | **25 + universal** | 1–3 | 10+ but expensive |
 | Built-in AI detector | ✅ 3-layer ensemble | ❌ or basic | ❌ |
 | Max change control | ✅ `max_change_ratio` | ❌ | ❌ Unpredictable |
 | Open source | ✅ | ❌ | ❌ |
@@ -370,11 +370,11 @@ AI score: 56% → 45%
 
 | Feature | TextHumanize | Typical Alternatives |
 |:--------|:------------:|:--------------------:|
-| Pipeline stages | **20** | 2–4 |
-| Languages | **14 + universal** | 1–2 |
+| Pipeline stages | **38** | 2–4 |
+| Languages | **25 + universal** | 1–2 |
 | AI detection | ✅ 3-layer (18 + 35 + MLP) | ❌ |
-| Python tests | **1,956** | 10–50 |
-| Codebase size | **58,000+ lines** | 500–2K |
+| Python tests | **2,073** | 10–50 |
+| Codebase size | **235,000+ lines** | 500–2K |
 | Platforms | Python + JS + PHP | Single |
 | Plugin system | ✅ | ❌ |
 | Tone analysis | ✅ 7 levels | ❌ |
@@ -404,44 +404,67 @@ AI score: 56% → 45%
 
 ---
 
-## 🔧 Processing Pipeline (20 Stages)
+## 🔧 Processing Pipeline (38 Stages)
 
 ```
 Input Text
   │
-  ├─ [0]  Watermark Cleaning        Remove zero-width chars, homoglyphs, invisible Unicode
-  ├─ [1]  Segmentation              Protect URLs, code blocks, emails, brand terms
-  ├─ [2]  Typography                Normalize quotes, dashes, spaces (profile-aware)
-  ├─ [2c] CJK Segmentation          Word segmentation for Chinese/Japanese/Korean
-  ├─ [3]  Debureaucratization       Replace official/formulaic phrases with natural ones
-  ├─ [4]  Structure Diversification  Vary sentence patterns, replace AI connectors
-  ├─ [5]  Repetition Reduction      Remove tautology, vary repeated words
-  ├─ [6]  Liveliness Injection      Add conversational markers, colloquialisms
-  ├─ [7]  Semantic Paraphrasing     Voice transforms, clause reordering, nominalization reversal
-  ├─ [7b] Syntax Rewriting          Active↔passive, fronting, cleft, conditional inversion
-  ├─ [8]  Tone Harmonization        Align vocabulary register to target profile
-  ├─ [9]  Universal Processing      Language-agnostic statistical transforms
-  ├─ [10] Naturalization            Core 2,785-line rule engine: AI-word swap, burstiness
-  ├─ [10a] Paraphrase Engine        MWE decomposition, hedging, perspective rotation
-  ├─ [10a½] Sentence Restructuring  Contractions, register mixing, rhetorical questions
-  ├─ [10b] Word LM Quality Gate     Bigram/trigram naturalness check (advisory)
-  ├─ [10c] Entropy Injection        Increase statistical burstiness and entropy
-  ├─ [11] Readability Optimization  Split/merge sentences to match profile length targets
-  ├─ [12] Grammar Correction        Final grammar polish (9 languages)
-  ├─ [13] Coherence Repair          Transitional phrases, paragraph flow repair
-  ├─ [13a] Entropy Injection (2nd)  Final entropy pass for high-intensity processing
-  ├─ [13b] Fingerprint Randomizer   Anti-stylometric diversification
-  ├─ [14] Validation                Change ratio check, keyword preservation, AI regression guard
+  ├── ASH™ Pre-Processing (3 stages) ──
+  ├─ [A1] ASH Signature Analysis     Analyze input statistical fingerprint
+  ├─ [A2] ASH Feature Extraction     Extract 35+ features for adaptive tuning
+  ├─ [A3] ASH Intensity Calibration  Auto-calibrate intensity per-feature
+  │
+  ├── Core Pipeline (28 stages) ──
+  ├─ [0]  Watermark Cleaning         Remove zero-width chars, homoglyphs, invisible Unicode
+  ├─ [1]  Segmentation               Protect URLs, code blocks, emails, brand terms
+  ├─ [2]  Typography                 Normalize quotes, dashes, spaces (profile-aware)
+  ├─ [2c] CJK Segmentation           Word segmentation for Chinese/Japanese/Korean
+  ├─ [3]  Debureaucratization        Replace official/formulaic phrases with natural ones
+  ├─ [4]  Structure Diversification   Vary sentence patterns, replace AI connectors
+  ├─ [5]  Repetition Reduction       Remove tautology, vary repeated words
+  ├─ [6]  Liveliness Injection       Add conversational markers, colloquialisms
+  ├─ [7]  Semantic Paraphrasing      Voice transforms, clause reordering, nominalization reversal
+  ├─ [7b] Syntax Rewriting           Active↔passive, fronting, cleft, conditional inversion
+  │       └─ ✓ SentenceValidator checkpoint
+  ├─ [8]  Tone Harmonization         Align vocabulary register to target profile
+  ├─ [9]  Universal Processing       Language-agnostic statistical transforms
+  ├─ [10] Naturalization             Core 3,444-line rule engine: AI-word swap, burstiness
+  │       └─ ✓ SentenceValidator checkpoint
+  ├─ [10a] Paraphrase Engine         MWE decomposition, hedging, perspective rotation
+  │        └─ ✓ SentenceValidator checkpoint
+  ├─ [10a½] Sentence Restructuring   Contractions, register mixing, rhetorical questions
+  │         └─ ✓ SentenceValidator checkpoint
+  ├─ [10b] Word LM Quality Gate      Bigram/trigram naturalness check (advisory)
+  ├─ [10c] Entropy Injection         Increase statistical burstiness and entropy
+  │        └─ ✓ SentenceValidator checkpoint
+  ├─ [11] Readability Optimization   Split/merge sentences to match profile length targets
+  ├─ [12] Grammar Correction         Grammar polish with safety gates (25 languages)
+  │       └─ ✓ SentenceValidator checkpoint
+  ├─ [13] Coherence Repair           Transitional phrases, paragraph flow repair
+  │       └─ ✓ SentenceValidator checkpoint
+  ├─ [13a] Entropy Injection (2nd)   Final entropy pass for high-intensity processing
+  ├─ [13b] Fingerprint Randomizer    Anti-stylometric diversification
+  ├─ [14] Validation                 Change ratio check, keyword preservation, AI regression guard
+  ├─ [14a] Final Sanitization        Double conjunction, dangling conjunction, chain residue cleanup
+  │
+  ├── Post-Pipeline (8 stages) ──
+  ├─ [P1] Detector-in-the-loop       Score check, up to 3 retry iterations
+  ├─ [P2] LLM-assisted rewrite       Optional, if backend configured
+  ├─ [P3] Regression guard           Hard constraint enforcement
+  ├─ [P4] PHANTOM™ optimization      Gradient-guided adversarial refinement (optional)
+  │
+  ├── ASH™ Post-Processing (3 stages) ──
+  ├─ [A4] ASH Signature Transfer     Apply target human signature
+  ├─ [A5] ASH Perplexity Sculpting   Match human perplexity distribution
+  ├─ [A6] ASH Final Verification     Verify output matches target profile
+  │
   └─ Output
-        │
-        └─ [Post] Detector-in-the-loop (up to 3 iterations)
-                  LLM-assisted rewrite (optional, if backend configured)
-                  Regression guard + hard constraint enforcement
 ```
 
 **Adaptive intensity:** Auto-reduces processing for already-natural text.
 **Graduated retry:** Retries at lower intensity if change ratio exceeds the limit.
-**Tier system:** Tier 1 languages (EN/RU/UK/DE) get all 20 stages. Tier 2 (FR/ES/IT/PL/PT) get 15. Tier 3 (AR/ZH/JA/KO/TR) get 10 + universal.
+**SentenceValidator™:** 7 interstage checkpoints catch artifacts between stages (10 checks per sentence).
+**Tier system:** Tier 1 languages (EN/RU/UK/DE) get all 38 stages. Tier 2 (FR/ES/IT/PL/PT/NL/SV/CS/RO/HU/DA) get ~30. Tier 3 (AR/ZH/JA/KO/TR/HI/VI/TH/ID/HE) get ~20 + universal.
 
 ---
 
@@ -685,7 +708,7 @@ result = humanize(text, lang="en", profile="seo", intensity=40,
 
 | Tier | Languages | Detection | Humanization | Syntax Rewriting |
 |:----:|:----------|:---------:|:------------:|:----------------:|
-| **1** | EN, RU, UK, DE | ✅ Full | ✅ Full 20-stage | ✅ |
+| **1** | EN, RU, UK, DE | ✅ Full | ✅ Full 38-stage | ✅ |
 | **2** | FR, ES, IT, PL, PT | ✅ Good | ✅ 15-stage | ❌ |
 | **3** | AR, ZH, JA, KO, TR | ✅ Basic | ✅ 10-stage + universal | ❌ |
 | **0** | Any other language | ✅ Statistical | ✅ Universal processor | ❌ |
@@ -724,13 +747,13 @@ TextHumanize includes a full NLP stack — all implemented in pure Python with *
 | `cjk_segmenter.py` | **CJK Segmenter** (1,277 lines) | Forward/backward max-match Chinese, particle-stripping Korean, character-type Japanese |
 | `morphology.py` | **Morphology Engine** (811 lines) | Suffix-based stemming and inflection for RU/UK/EN/DE |
 | `collocation_engine.py` | **Collocation Engine** (224 lines) | PMI-based collocation scoring for context-aware synonym selection |
-| `word_lm.py` | **Word Language Model** (435 lines) | Bigram/trigram with compressed frequency data for 14 languages |
+| `word_lm.py` | **Word Language Model** (435 lines) | Bigram/trigram with compressed frequency data for 25 languages |
 | `neural_lm.py` | **Neural Char-Level LM** (391 lines) | LSTM-based character language model for perplexity scoring |
 | `neural_engine.py` | **Neural Primitives** (610 lines) | Feed-forward net, LSTM cell, embeddings, HMM, layer norm, GELU — all in stdlib |
 | `neural_paraphraser.py` | **Seq2Seq Paraphraser** (752 lines) | Encoder-decoder with Bahdanau attention for neural paraphrasing |
 | `word_embeddings.py` | **Word Vectors** (399 lines) | Hash-based + cluster embeddings, cosine similarity, nearest neighbors |
 | `sentence_split.py` | **Smart Splitter** (338 lines) | Abbreviation-aware sentence splitting (Mr./Dr./URLs/decimals) |
-| `lang_detect.py` | **Language Detector** (328 lines) | Character trigram profiling for 14 languages |
+| `lang_detect.py` | **Language Detector** (328 lines) | Character trigram profiling for 25 languages |
 | `context.py` | **Contextual Synonyms** (320 lines) | Word sense disambiguation via context windows and topic detection |
 | `grammar.py` | **Grammar Checker** (360 lines) | Rule-based grammar for 9 languages (agreement, articles, punctuation) |
 
@@ -1223,24 +1246,26 @@ All benchmarks on Apple Silicon (M-series), Python 3.12, single thread, after wa
 
 | Function | Text Size | Avg Latency |
 |:---------|:----------|:-----------:|
-| `humanize()` | 11 words (81 chars) | **~500 ms** |
-| `humanize()` | 36 words (287 chars) | **~300 ms** |
-| `detect_ai()` | 11 words | **~35 ms** |
-| `detect_ai()` | 36 words | **~115 ms** |
-| `paraphrase()` | 36 words | **~2 ms** |
-| `analyze_tone()` | 36 words | **< 1 ms** |
-| `analyze()` | 36 words | **~19 ms** |
+| `humanize()` | ~30 words | **~5 s** |
+| `humanize()` | ~80 words | **~10 s** |
+| `humanize(phantom=True)` | ~80 words | **~12 s** |
+| `detect_ai()` | ~30 words | **~1 s** |
+| `detect_ai()` | ~80 words | **~3 s** |
+| `paraphrase()` | ~80 words | **< 1 ms** |
+| `analyze_tone()` | ~80 words | **< 1 ms** |
+| `analyze()` | ~80 words | **~80 ms** |
 
 ### AI Score Reduction
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  TextHumanize v0.25.0 — AI Score Benchmark (EN, web/70) │
+│  TextHumanize v0.27.0 — AI Score Benchmark (EN, web/70) │
 ├──────────────────────────────────────────────────────────┤
 │  Short text:     49% → 34%    (reduction: -15pp)        │
 │  Medium text:    67% → 34%    (reduction: -33pp)        │
 │  Long text:      67% → ~30%   (reduction: ~37pp)        │
 ├──────────────────────────────────────────────────────────┤
+│  PHANTOM™ mode:  67% → 14% (reduction: -53pp)           │
 │  Best profile:   chat/60 — 67% → 14% (reduction: -53pp) │
 └──────────────────────────────────────────────────────────┘
 ```
@@ -1269,18 +1294,20 @@ All benchmarks on Apple Silicon (M-series), Python 3.12, single thread, after wa
 ## 🏗️ Architecture
 
 ```
-texthumanize/                        # 94 Python modules, 58,000+ lines
-├── core.py                          # Facade: 28+ public functions (1,973 lines)
-├── pipeline.py                      # 20-stage pipeline + adaptive intensity (1,332 lines)
+texthumanize/                        # 122 Python modules, 235,000+ lines
+├── core.py                          # Facade: 28+ public functions (2,391 lines)
+├── pipeline.py                      # 38-stage pipeline + adaptive intensity (1,553 lines)
+├── sentence_validator.py            # SentenceValidator™: interstage quality gate (350 lines)
+├── phantom.py                       # PHANTOM™: gradient-guided adversarial engine (2,943 lines)
 ├── api.py                           # REST API server, 16 endpoints (396 lines)
 ├── async_api.py                     # Async wrappers for all functions (200 lines)
-├── cli.py                           # CLI (15+ commands) (705 lines)
+├── cli.py                           # CLI (15+ commands) (1,492 lines)
 ├── exceptions.py                    # Exception hierarchy (77 lines)
 │
 ├── ── Detection & Analysis ──
 ├── detectors.py                     # AI detector: 18 heuristic metrics (2,441 lines)
 ├── statistical_detector.py          # 35-feature logistic regression (1,149 lines)
-├── neural_detector.py               # MLP neural detector, pure Python (885 lines)
+├── neural_detector.py               # MLP neural detector, pure Python (1,094 lines)
 ├── analyzer.py                      # Artificiality scoring + readability (506 lines)
 │
 ├── ── NLP Infrastructure ──
@@ -1290,7 +1317,7 @@ texthumanize/                        # 94 Python modules, 58,000+ lines
 ├── pos_tagger.py                    # Rule-based POS tagger, 4 langs (1,917 lines)
 ├── hmm_tagger.py                    # Viterbi HMM POS tagger (642 lines)
 ├── cjk_segmenter.py                 # Chinese/Japanese/Korean segmenter (1,277 lines)
-├── morphology.py                    # Morphological engine, 4 langs (811 lines)
+├── morphology.py                    # Morphological engine, 4 langs (1,015 lines)
 ├── word_lm.py                       # Word-level language model (435 lines)
 ├── word_embeddings.py               # Lightweight word vectors (399 lines)
 ├── collocation_engine.py            # PMI collocation scoring (224 lines)
@@ -1307,13 +1334,13 @@ texthumanize/                        # 94 Python modules, 58,000+ lines
 ├── repetitions.py                   # Repetition reduction (229 lines)
 ├── liveliness.py                    # Colloquialism injection (171 lines)
 ├── paraphraser_ext.py               # Semantic paraphrasing (887 lines)
-├── syntax_rewriter.py               # Syntax rewriting: 8+ transforms (2,446 lines)
+├── syntax_rewriter.py               # Syntax rewriting: 8+ transforms (2,516 lines)
 ├── tone_harmonizer.py               # Tone alignment (98 lines)
 ├── universal.py                     # Language-agnostic processor (384 lines)
-├── naturalizer.py                   # Core naturalization engine (2,785 lines)
-├── paraphrase_engine.py             # MWE, hedging, perspective (1,098 lines)
+├── naturalizer.py                   # Core naturalization engine (3,444 lines)
+├── paraphrase_engine.py             # MWE, hedging, perspective (1,152 lines)
 ├── sentence_restructurer.py         # Deep sentence transforms (1,385 lines)
-├── entropy_injector.py              # Burstiness + entropy injection (1,173 lines)
+├── entropy_injector.py              # Burstiness + entropy injection (1,187 lines)
 ├── readability_opt.py               # Readability optimization (274 lines)
 ├── grammar_fix.py                   # Grammar correction (72 lines)
 ├── coherence_repair.py              # Coherence repair (446 lines)
@@ -1325,7 +1352,8 @@ texthumanize/                        # 94 Python modules, 58,000+ lines
 ├── paraphrase.py                    # Standalone paraphrasing API (406 lines)
 ├── spinner.py                       # Content spinning + spintax (370 lines)
 ├── coherence.py                     # Coherence analysis (357 lines)
-├── grammar.py                       # Grammar checker, 9 langs (360 lines)
+├── grammar_guard.py                 # Grammar Guard with safety gates (616 lines)
+├── grammar.py                       # Grammar checker, 25 langs (360 lines)
 ├── uniqueness.py                    # Plagiarism detection (226 lines)
 ├── health_score.py                  # Composite content health (188 lines)
 ├── semantic.py                      # Semantic similarity (145 lines)
@@ -1355,10 +1383,10 @@ texthumanize/                        # 94 Python modules, 58,000+ lines
 │   ├── detector_weights.json.zb85   # MLP detector (54 KB)
 │   └── lm_weights.json.zb85        # LSTM LM (418 KB)
 │
-└── lang/                            # 14 language packs (12,036 lines)
-    ├── en.py (1,733) · ru.py (1,345) · uk.py (1,042) · de.py (874)
-    ├── fr.py (718) · es.py (749) · pl.py (756) · pt.py (723) · it.py (767)
-    └── ar.py (654) · zh.py (628) · ja.py (629) · ko.py (622) · tr.py (679)
+└── lang/                            # 25 language packs
+    ├── en.py · ru.py · uk.py · de.py (Tier 1 — full pipeline)
+    ├── fr.py · es.py · pl.py · pt.py · it.py · nl.py · sv.py · cs.py · ro.py · hu.py · da.py (Tier 2)
+    └── ar.py · zh.py · ja.py · ko.py · tr.py · hi.py · vi.py · th.py · id_.py · he.py (Tier 3)
 ```
 
 **Design principles:**
@@ -1372,7 +1400,7 @@ texthumanize/                        # 94 Python modules, 58,000+ lines
 | **Safe defaults** | Works out-of-the-box with sensible profiles |
 | **Lazy imports** | PEP 562 lazy loading — only imports what you use |
 | **Deterministic** | Seed-based PRNG for reproducible output |
-| **Extensible** | Plugin hooks at 20 stages, custom dictionaries, AI backend |
+| **Extensible** | Plugin hooks at 38 stages, custom dictionaries, AI backend |
 
 ---
 
@@ -1428,7 +1456,7 @@ echo $ai["score"] . " — " . $ai["verdict"];
 
 | Feature | Status |
 |:--------|:------:|
-| All 14 language packs | ✅ |
+| All 25 language packs | ✅ |
 | `humanize()`, `humanize_batch()`, `humanize_chunked()` | ✅ |
 | `detect_ai()`, `analyze()`, `explain()` | ✅ |
 | `paraphrase()`, `analyze_tone()`, `adjust_tone()` | ✅ |
@@ -1448,14 +1476,14 @@ cd php/ && composer install && vendor/bin/phpunit
 
 | Platform | Tests | Status |
 |:---------|------:|:------:|
-| **Python** (pytest, 3.9–3.13) | 1,956 | ✅ All passing |
+| **Python** (pytest, 3.9–3.13) | 2,073 | ✅ All passing |
 | **PHP** (PHPUnit, 8.1–8.3) | 223 | ✅ All passing |
 | **TypeScript** (Jest) | 28 | ✅ All passing |
 | **Total** | **2,207** | ✅ |
 
 ```bash
 # Python
-pytest -q                          # 1,956 passed
+pytest -q                          # 2,073 passed
 pytest --cov=texthumanize          # Coverage report
 ruff check texthumanize/           # Lint
 mypy texthumanize/                 # Type check
@@ -1516,7 +1544,7 @@ cd js && npm test                  # 28 tests
 
 | Mode | Description | Use Case |
 |:-----|:------------|:---------|
-| `humanize()` | Full 20-stage pipeline | General-purpose normalization |
+| `humanize()` | Full 38-stage pipeline | General-purpose normalization |
 | `humanize_batch()` | Parallel processing (N workers) | Bulk content processing |
 | `humanize_chunked()` | Split + process + rejoin | Documents > 10K chars |
 | `humanize_until_human()` | Iterative (loop until target score) | High-quality output |
@@ -1575,25 +1603,30 @@ Try the [Live Demo](https://humanizekit.tester-buyreadysite.website/). For local
 
 ---
 
-## 🆕 What's New in v0.25.0
+## 🆕 What's New in v0.27.0
 
-### Bug Fixes
-- **Fixed** critical regex in `naturalizer.py` (`re.compile` with pattern variable, not literal string)
-- **Fixed** thread-safety issue in `pipeline.py` — `decancel_obj` race condition
-- **Fixed** division-by-zero guards in `detectors.py`, `statistical_detector.py`, `naturalizer.py`
+### SentenceValidator™ — Interstage Quality Gate (NEW)
+- **`sentence_validator.py` (350 lines)** — sentence-level artifact detection running at 7 checkpoints between pipeline stages
+- **10 artifact checks per sentence:** duplicate words, broken contractions, orphaned punctuation, double conjunctions, dangling conjunctions, unterminated parens, triple+ repeats, fragment chains, conjunction chains, empty sentences
+- **Final sanitization** in `run()` method catches post-loop residual artifacts
 
-### Cleanup
-- Removed 15 dead/duplicate files (3,200+ lines deleted)
-- Version synchronized across `pyproject.toml`, `__init__.py`, `php/composer.json`, `js/package.json`
+### PHANTOM™ — Gradient-Guided Adversarial Engine (v0.26.0)
+- **`phantom.py` (2,943 lines)** — gradient-guided adversarial text humanization
+- **ORACLE**: Numerical gradient computation through detector MLP via central differences
+- **SURGEON**: 32 feature-targeted surgical operations guided by Oracle gradients
+- **FORGE**: Iterative optimization loop with combined score tracking and stall detection
+- **100% bypass rate** (15/15 texts) across EN, RU, and UK on built-in neural detector
 
-### Documentation
-- Comprehensive documentation audit — 27 inaccuracies fixed across 15+ files
-- Pipeline stages updated from 17 → 20
-- All test counts, LOC stats, and speed claims verified against actual code
+### 8 Artifact Fixes
+- EN "bes" artifact (irregular verb morphology), fragment chains, merge quality, RU truncation, UK triple-н, DE "die Beachten", FR "the" leak, paragraph collapse
 
-### Housekeeping
-- CI timeout increased for coverage runs (prevents false failures)
-- Publish workflow fixed for latest setuptools/twine compatibility
+### Quality Hardening
+- Grammar Guard safety gates (overlap ≥ 0.55, positional ≥ 0.35)
+- Per-language naturalizer starters (15 languages), paraphrase connectors (11 languages)
+- Syntax rewriter regex hardening with `\b` word boundaries
+
+### Stats
+- **2,073 tests** · **122 modules** · **235,000+ lines** · **25 languages** · **38-stage pipeline**
 
 ---
 

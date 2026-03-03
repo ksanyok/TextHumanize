@@ -242,19 +242,20 @@ class TestNewLanguages:
     """Тесты новых языков: ar, zh, ja, ko, tr."""
 
     def test_all_14_languages_registered(self):
-        """Все 14 языков зарегистрированы."""
+        """Все 25 языков зарегистрированы."""
         expected = {"en", "ru", "uk", "de", "fr", "es", "pl", "pt", "it",
-                    "ar", "zh", "ja", "ko", "tr"}
+                    "ar", "zh", "ja", "ko", "tr",
+                    "nl", "sv", "cs", "ro", "hi", "vi", "th", "id", "he", "hu", "da"}
         assert set(LANGUAGES.keys()) == expected
 
     def test_all_14_have_deep_support(self):
-        """All 14 languages have at least lang pack support; tier 1 have deep."""
+        """All 25 languages have at least lang pack support; tier 1 have deep."""
         from texthumanize.lang import get_language_tier
         for lang in ("en", "ru", "uk", "de"):
             assert has_deep_support(lang), f"{lang} should be tier 1 (deep)"
-        for lang in ("fr", "es", "pl", "pt", "it"):
+        for lang in ("fr", "es", "pl", "pt", "it", "nl", "sv", "cs", "ro", "hu", "da"):
             assert get_language_tier(lang) == 2, f"{lang} should be tier 2"
-        for lang in ("ar", "zh", "ja", "ko", "tr"):
+        for lang in ("ar", "zh", "ja", "ko", "tr", "hi", "vi", "th", "id", "he"):
             assert get_language_tier(lang) == 3, f"{lang} should be tier 3"
 
     # ── Arabic ────────────────────────────────────────────────

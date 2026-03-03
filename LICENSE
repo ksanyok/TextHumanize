@@ -88,3 +88,51 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+═══════════════════════════════════════════════════════════════
+ PROPRIETARY TECHNOLOGY — ASH™ (Adaptive Statistical Humanization)
+═══════════════════════════════════════════════════════════════
+
+The following technologies, methods, and algorithms are the original
+intellectual property of Oleksandr K. (ksanyok), developed specifically
+for the TextHumanize project. The names, concepts, and implementations
+are proprietary and may not be used, copied, or adapted to create
+competing products or services without explicit written permission.
+
+  1. ASH™ (Adaptive Statistical Humanization)
+     Unified technology combining five proprietary methods into a
+     coherent humanization pipeline.
+
+  2. Perplexity Sculpting™
+     Method of reshaping the perplexity curve of AI-generated text
+     to match human writing patterns by introducing controlled
+     "surprise" tokens at statistically smooth regions.
+
+  3. Statistical Signature Transfer™ (SST™)
+     Method of computing a multi-dimensional statistical fingerprint
+     of text and systematically shifting it toward the human-text zone
+     using targeted, metric-guided transformations.
+
+  4. Watermark Forensics™
+     Method of detecting and neutralizing statistical watermarks
+     (such as Kirchenbauer-style green/red token bias) embedded
+     by large language models, using multi-scheme hash analysis
+     and targeted synonym replacement.
+
+  5. Cognitive Load Modeling™
+     Method of simulating human cognitive constraints — attention drift,
+     working memory limits, fatigue signatures — to introduce natural
+     quality variation throughout a document.
+
+  6. Adversarial Ensemble Self-Play™
+     Method of iterative, detector-guided humanization using an ensemble
+     of architecturally diverse detection systems that generate per-sentence
+     problem maps, with targeted fixes applied only to flagged sentences.
+
+These method names (marked with ™) and their underlying algorithms are
+the proprietary creations of the author. Use of these names or reimplementation
+of these specific methods in competing products requires a separate license
+agreement. The ™ designations indicate trademark claims by the author.
+
+Contact: ksanyok@me.com

@@ -903,6 +903,23 @@ class SyntaxRewriter:
             # More than 2 content words lost → bad rewrite
             if len(lost) > 2:
                 continue
+            # German: reject if article is immediately followed by verb infinitive
+            # (e.g., "die Beachten" instead of "die Beachtung")
+            if self._lang == "de":
+                _de_articles = {"der", "die", "das", "dem", "den", "des",
+                                "ein", "eine", "einem", "einen", "einer"}
+                v_words = v.split()
+                de_bad = False
+                for j in range(len(v_words) - 1):
+                    if (v_words[j].lower() in _de_articles
+                            and v_words[j + 1].lower().endswith("en")
+                            and v_words[j + 1][0].isupper()
+                            and len(v_words[j + 1]) > 4):
+                        # Likely article + verb infinitive → bad
+                        de_bad = True
+                        break
+                if de_bad:
+                    continue
             good.append(v)
 
         if not good:
@@ -1022,13 +1039,16 @@ class SyntaxRewriter:
         # Pattern: "X, Y, and Z" or "X, Y and Z"
         # Also: "X, Y, or Z"
         # Items must be single words or short phrases
+        # NOTE: conjunction alternatives include single-char "и"/"і";
+        # \b guards prevent \w+ backtracking from splitting words
+        # (e.g. "реализации" → "реализаци" + "и").
         m = re.search(
             r'(?:^|[\s,;:])'
             r'(\w+(?:\s+\w+){0,3}?)'
-            r',\s+'
+            r'(?:,\s+|\s+)'
             r'(\w+(?:\s+\w+){0,3}?)'
-            r',?\s*'
-            r'(and|or|und|и|та|і|oder)\s+'
+            r'(?:,\s*|\s+)'
+            r'\b(and|or|und|и|та|і|oder)\b\s+'
             r'(\w+(?:\s+\w+){0,3}?)\s*$',
             body,
             re.IGNORECASE,
@@ -2107,10 +2127,21 @@ class SyntaxRewriter:
         return None
 
     def _nom_ru(self, sentence: str) -> Optional[str]:
-        """RU: 'осуществление контроля' → 'контролировать'."""
+        """RU: 'осуществление контроля' → 'контролировать'.
+
+        Skips conversion when the nominalization is the sentence subject
+        followed by a finite verb, because replacing a noun-subject with
+        an infinitive breaks verb agreement.
+        """
         body, punct = _strip_trailing_punct(sentence.strip())
         if not punct:
             punct = "."
+
+        # Common 3rd-person singular verb endings in Russian
+        _ru_finite_endings = (
+            "ет", "ёт", "ит", "ат", "ят", "ют", "ут",
+            "ал", "ил", "ел", "ял", "ала", "ило", "ело",
+        )
 
         # Pattern: <nominalization> + genitive object
         for nom, verb in _RU_NOMINALIZATION.items():
@@ -2122,8 +2153,22 @@ class SyntaxRewriter:
             if m:
                 obj = body[m.end():].strip()
                 prefix = body[:m.start()].strip()
-                new_phrase = verb
                 gen_word = m.group(1)
+
+                # Guard: if the nominalization is sentence-initial (no/short
+                # prefix) AND the remainder contains a finite verb agreeing
+                # with it as subject, skip the conversion.
+                remainder = f"{gen_word} {obj}" if obj else gen_word
+                remaining_words = remainder.split()
+                has_finite_verb = any(
+                    w.lower().endswith(_ru_finite_endings)
+                    for w in remaining_words
+                    if len(w) > 3
+                )
+                if has_finite_verb:
+                    continue  # skip: nominalization is subject of finite verb
+
+                new_phrase = verb
                 if obj:
                     new_phrase = f"{verb} {gen_word} {obj}"
                 else:
@@ -2137,10 +2182,21 @@ class SyntaxRewriter:
         return None
 
     def _nom_uk(self, sentence: str) -> Optional[str]:
-        """UK: 'здійснення контролю' → 'контролювати'."""
+        """UK: 'здійснення контролю' → 'контролювати'.
+
+        Skips conversion when the nominalization is the sentence subject
+        followed by a finite verb (e.g., 'створення ... дає'), because
+        replacing a noun-subject with an infinitive breaks agreement.
+        """
         body, punct = _strip_trailing_punct(sentence.strip())
         if not punct:
             punct = "."
+
+        # Common 3rd-person singular verb endings in Ukrainian
+        _uk_finite_endings = (
+            "є", "ає", "ує", "ить", "ять", "іть", "ить",
+            "ав", "ив", "ув", "ила", "ало", "або",
+        )
 
         for nom, verb in _UK_NOMINALIZATION.items():
             pat = re.compile(
@@ -2152,6 +2208,20 @@ class SyntaxRewriter:
                 obj = body[m.end():].strip()
                 prefix = body[:m.start()].strip()
                 gen_word = m.group(1)
+
+                # Guard: if the nominalization is sentence-initial (no prefix
+                # or short prefix) AND the rest contains a finite verb agreeing
+                # with it as subject, skip the conversion.
+                remainder = f"{gen_word} {obj}" if obj else gen_word
+                remaining_words = remainder.split()
+                has_finite_verb = any(
+                    w.lower().endswith(_uk_finite_endings)
+                    for w in remaining_words
+                    if len(w) > 3
+                )
+                if has_finite_verb:
+                    continue  # skip: nominalization is subject of finite verb
+
                 if obj:
                     new_phrase = f"{verb} {gen_word} {obj}"
                 else:

@@ -135,7 +135,8 @@ class TestSpinnerR3(unittest.TestCase):
         # Также патчим morph.find_synonym_form чтобы вернул то же слово
         sp.morph = MagicMock()
         sp.morph.find_synonym_form.return_value = "important"
-        spintax = sp._generate_spintax("important task")
+        # Use a word unlikely to have synonyms in fallback DB
+        spintax = sp._generate_spintax("important xyzqwk")
         # Слово "important" не должно быть в spintax формате {}
         self.assertNotIn("{", spintax)
 
@@ -753,18 +754,19 @@ class TestMorphologyR3(unittest.TestCase):
         self.assertIn("ing", result)
 
     def test_match_form_en_ed(self):
-        """L545: -ed matching."""
+        """L545: -ed matching (irregular verbs use correct past form)."""
         from texthumanize.morphology import MorphologyEngine
         m = MorphologyEngine("en")
+        # "run" is irregular → past tense is "ran", not "runned"
         result = m._match_form_en("walked", "run")
-        self.assertIn("ed", result)
+        self.assertEqual(result, "ran")
 
     def test_match_form_en_ed_with_e(self):
-        """Synonym ending in 'e' + -ed → +d."""
+        """Irregular verb: 'make' past → 'made', not 'maked'."""
         from texthumanize.morphology import MorphologyEngine
         m = MorphologyEngine("en")
         result = m._match_form_en("walked", "make")
-        self.assertEqual(result, "maked")
+        self.assertEqual(result, "made")
 
 
 # ═══════════════════════════════════════════════════════════════

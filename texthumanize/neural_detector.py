@@ -139,6 +139,24 @@ _CONJUNCTIONS_UK: set[str] = {
     "хай", "нехай", "також", "теж",
 }
 
+_CONJUNCTIONS_DE: set[str] = {
+    "und", "aber", "oder", "denn", "sondern", "doch", "jedoch", "weil",
+    "obwohl", "während", "wenn", "falls", "damit", "bevor", "nachdem",
+    "seitdem", "sobald", "solange", "weder", "noch", "sowohl", "als",
+}
+
+_CONJUNCTIONS_FR: set[str] = {
+    "et", "mais", "ou", "donc", "car", "ni", "or", "puis",
+    "quand", "lorsque", "puisque", "parce", "bien", "quoique",
+    "tandis", "pendant", "avant", "après", "depuis", "comme",
+}
+
+_CONJUNCTIONS_ES: set[str] = {
+    "y", "e", "pero", "sino", "o", "u", "ni", "que", "porque",
+    "aunque", "cuando", "mientras", "como", "pues", "ya",
+    "desde", "hasta", "según", "antes", "después",
+}
+
 _TRANSITIONS_EN: set[str] = {
     "however", "therefore", "furthermore", "moreover", "additionally",
     "consequently", "nevertheless", "nonetheless", "meanwhile",
@@ -166,9 +184,88 @@ _TRANSITIONS_UK: set[str] = {
     "по-третє", "нарешті", "отож", "втім", "зрештою",
 }
 
+_TRANSITIONS_DE: set[str] = {
+    "jedoch", "deshalb", "außerdem", "darüber", "hinaus",
+    "folglich", "dennoch", "nichtsdestotrotz", "inzwischen",
+    "dementsprechend", "umgekehrt", "insbesondere", "grundsätzlich",
+    "letztendlich", "tatsächlich", "zweifellos", "offensichtlich",
+    "zusammenfassend", "abschließend", "schließlich", "zunächst",
+    "erstens", "zweitens", "drittens", "allerdings",
+}
+
+_TRANSITIONS_FR: set[str] = {
+    "cependant", "toutefois", "néanmoins", "pourtant", "ainsi",
+    "donc", "par", "ailleurs", "conséquent", "davantage",
+    "effectivement", "certainement", "évidemment", "fondamentalement",
+    "essentiellement", "notamment", "particulièrement", "finalement",
+    "premièrement", "deuxièmement", "troisièmement", "enfin",
+    "autrement", "spécifiquement", "incontestablement",
+}
+
+_TRANSITIONS_ES: set[str] = {
+    "sin", "embargo", "therefore", "además", "asimismo",
+    "consecuentemente", "consiguientemente", "específicamente",
+    "particularmente", "notablemente", "fundamentalmente",
+    "esencialmente", "ciertamente", "indudablemente", "evidentemente",
+    "primero", "segundo", "tercero", "finalmente", "concretamente",
+    "igualmente", "respectivamente", "efectivamente",
+}
+
 _VOWELS_EN = set("aeiouyAEIOUY")
 _VOWELS_RU = set("аеёиоуыэюяАЕЁИОУЫЭЮЯ")
 _VOWELS_UK = set("аеіїоуєюяАЕІЇОУЄЮЯ")
+_VOWELS_DE = set("aeiouyäöüAEIOUYÄÖÜ")
+_VOWELS_FR = set("aeiouyàâéèêëîïôùûüÿæœAEIOUYÀÂÉÈÊËÎÏÔÙÛÜŸÆŒ")
+_VOWELS_ES = set("aeiouyáéíóúüAEIOUYÁÉÍÓÚÜ")
+
+_AI_PATTERNS_DE: list[str] = [
+    "darüber hinaus", "es ist wichtig zu beachten", "zusammenfassend lässt sich sagen",
+    "in diesem zusammenhang", "von entscheidender bedeutung", "es sei darauf hingewiesen",
+    "im rahmen dieser", "auf der grundlage", "unter berücksichtigung",
+    "die implementierung von", "ein beispielloses maß", "im wesentlichen",
+    "es ist erwähnenswert", "grundsätzlich gilt", "von großer bedeutung",
+    "im kontext von", "hinsichtlich der", "in anbetracht der tatsache",
+    "des weiteren", "nichtsdestotrotz", "dementsprechend",
+]
+
+_AI_WORDS_DE: set[str] = {
+    "revolutioniert", "transformiert", "implementierung", "grundlegend",
+    "beispiellos", "umfassend", "maßgeblich", "weitreichend",
+    "entscheidend", "bemerkenswert", "signifikant", "paradigmenwechsel",
+    "optimierung", "zunehmend", "fortschrittlich", "ganzheitlich",
+}
+
+_AI_PATTERNS_FR: list[str] = [
+    "il est important de noter", "en outre", "par conséquent",
+    "dans ce contexte", "il convient de souligner", "force est de constater",
+    "la mise en œuvre", "dans le cadre de", "en tenant compte de",
+    "il est essentiel de", "de manière significative", "en fin de compte",
+    "il est à noter", "en ce qui concerne", "dans une large mesure",
+    "à cet égard", "sans précédent", "de surcroît", "en définitive",
+]
+
+_AI_WORDS_FR: set[str] = {
+    "révolutionné", "transformé", "implémentation", "fondamentalement",
+    "considérablement", "significativement", "remarquablement",
+    "incontestablement", "indéniablement", "substantiellement",
+    "paradigme", "optimisation", "progressivement", "holistique",
+}
+
+_AI_PATTERNS_ES: list[str] = [
+    "es importante señalar", "cabe destacar", "en este contexto",
+    "por consiguiente", "la implementación de", "niveles sin precedentes",
+    "de manera significativa", "en última instancia", "en lo que respecta a",
+    "resulta fundamental", "en el marco de", "teniendo en cuenta",
+    "es necesario subrayar", "sin lugar a dudas", "en términos generales",
+    "a este respecto", "con el fin de", "en virtud de",
+]
+
+_AI_WORDS_ES: set[str] = {
+    "revolucionado", "transformado", "implementación", "fundamentalmente",
+    "considerablemente", "significativamente", "notablemente",
+    "indudablemente", "paradigma", "optimización", "progresivamente",
+    "holístico", "precedentes", "automatización", "sostenibilidad",
+}
 
 _AI_PATTERNS_UK: list[str] = [
     "крім того", "більше того", "необхідно зазначити", "слід підкреслити",
@@ -280,9 +377,54 @@ _FEATURE_STD_UK: list[float] = [
     0.18, 0.03, 0.012, 1.2,
 ]
 
+# German: longer words, similar sentence length to EN
+_FEATURE_MEAN_DE: list[float] = [
+    0.58, 0.50, 5.8, 5.5, 15.0, 30.0, 0.2, 68.0, 0.96, 6.2,
+    0.04, 0.015, 0.96, 4.6, 6.2, 7.2, -0.22, 0.58, 0.28, 0.45, 0.04,
+    0.018, 0.0004, 0.004, 0.002, 0.001, 0.012, 1.1, 1.8, 2.2, 0.55,
+    0.68, 0.07, 0.015, 1.8,
+]
+
+_FEATURE_STD_DE: list[float] = [
+    0.14, 0.16, 0.9, 1.6, 5.5, 24.0, 0.8, 48.0, 0.03, 2.4,
+    0.04, 0.02, 0.04, 0.30, 1.2, 1.7, 0.18, 0.17, 0.2, 0.25, 0.08,
+    0.012, 0.0008, 0.005, 0.003, 0.002, 0.018, 0.9, 1.4, 0.28, 0.25,
+    0.18, 0.04, 0.015, 1.3,
+]
+
+# French: moderate word length, rich punctuation
+_FEATURE_MEAN_FR: list[float] = [
+    0.60, 0.51, 5.0, 4.5, 16.0, 32.0, 0.25, 70.0, 0.96, 6.5,
+    0.04, 0.015, 0.96, 4.7, 6.4, 7.3, -0.20, 0.60, 0.30, 0.48, 0.04,
+    0.020, 0.0005, 0.005, 0.003, 0.002, 0.014, 1.0, 1.9, 2.0, 0.50,
+    0.70, 0.065, 0.013, 1.9,
+]
+
+_FEATURE_STD_FR: list[float] = [
+    0.14, 0.16, 0.8, 1.4, 5.5, 24.0, 0.8, 46.0, 0.03, 2.3,
+    0.04, 0.02, 0.04, 0.28, 1.3, 1.7, 0.18, 0.18, 0.2, 0.25, 0.08,
+    0.012, 0.0008, 0.005, 0.003, 0.002, 0.018, 0.8, 1.5, 0.25, 0.25,
+    0.18, 0.035, 0.013, 1.3,
+]
+
+# Spanish: similar to French, shorter words
+_FEATURE_MEAN_ES: list[float] = [
+    0.59, 0.50, 5.2, 4.6, 17.0, 35.0, 0.22, 72.0, 0.96, 6.4,
+    0.045, 0.016, 0.96, 4.6, 6.3, 7.2, -0.18, 0.59, 0.30, 0.47, 0.04,
+    0.019, 0.0004, 0.005, 0.004, 0.003, 0.013, 1.05, 1.9, 2.1, 0.52,
+    0.69, 0.065, 0.014, 1.85,
+]
+
+_FEATURE_STD_ES: list[float] = [
+    0.14, 0.16, 0.8, 1.5, 6.0, 26.0, 0.8, 47.0, 0.03, 2.3,
+    0.04, 0.02, 0.04, 0.28, 1.3, 1.7, 0.18, 0.17, 0.2, 0.25, 0.08,
+    0.012, 0.0008, 0.005, 0.004, 0.003, 0.018, 0.85, 1.5, 0.26, 0.25,
+    0.18, 0.035, 0.014, 1.3,
+]
+
 # Sentence boundary regex
 _SENT_RE = re.compile(r'(?<=[.!?])\s+(?=[A-ZА-ЯЁ"\'"(])')
-_WORD_RE = re.compile(r'[a-zA-Zа-яА-ЯёЁіїєґІЇЄҐüöäßÜÖÄ]+')
+_WORD_RE = re.compile(r'[a-zA-Zа-яА-ЯёЁіїєґІЇЄҐüöäßÜÖÄàâéèêëîïôùûçÀÂÉÈÊËÎÏÔÙÛÇáéíóúñÁÉÍÓÚÑ]+')
 _BULLET_RE = re.compile(r'^\s*[-*•▸▹►]|\d+[.)]\s', re.MULTILINE)
 
 
@@ -452,15 +594,26 @@ def extract_features(text: str, lang: str = "en") -> Vec:
     if lang == "ru":
         for phrase in _AI_PATTERNS_RU:
             ai_count += lower_text.count(phrase)
-        # Also match individual AI-characteristic words
         ai_count += sum(1 for t in tokens if t in _AI_WORDS_RU)
     elif lang == "uk":
         for phrase in _AI_PATTERNS_UK:
             ai_count += lower_text.count(phrase)
         ai_count += sum(1 for t in tokens if t in _AI_WORDS_UK)
+    elif lang == "de":
+        for phrase in _AI_PATTERNS_DE:
+            ai_count += lower_text.count(phrase)
+        ai_count += sum(1 for t in tokens if t in _AI_WORDS_DE)
+    elif lang == "fr":
+        for phrase in _AI_PATTERNS_FR:
+            ai_count += lower_text.count(phrase)
+        ai_count += sum(1 for t in tokens if t in _AI_WORDS_FR)
+    elif lang == "es":
+        for phrase in _AI_PATTERNS_ES:
+            ai_count += lower_text.count(phrase)
+        ai_count += sum(1 for t in tokens if t in _AI_WORDS_ES)
 
     # Also load language-specific markers from ai_markers module
-    if lang not in ("en", "ru", "uk"):
+    if lang not in ("en", "ru", "uk", "de", "fr", "es"):
         lang_markers = load_ai_markers(lang)
         if lang_markers:
             lang_words: set[str] = set()
@@ -497,11 +650,11 @@ def extract_features(text: str, lang: str = "en") -> Vec:
         zipf_res = 0.0
 
     # 30, 31. Readability
-    vowels = _VOWELS_EN if lang == "en" else (
-        _VOWELS_UK if lang == "uk" else (
-            _VOWELS_RU if lang == "ru" else _VOWELS_EN
-        )
-    )
+    _VOWELS_MAP = {
+        "en": _VOWELS_EN, "ru": _VOWELS_RU, "uk": _VOWELS_UK,
+        "de": _VOWELS_DE, "fr": _VOWELS_FR, "es": _VOWELS_ES,
+    }
+    vowels = _VOWELS_MAP.get(lang, _VOWELS_EN)
     syllables = [_count_syllables(t, vowels) for t in tokens]
     avg_syl = _safe_mean([float(s) for s in syllables])
     asl = n_tokens / max(n_sentences, 1)
@@ -517,20 +670,20 @@ def extract_features(text: str, lang: str = "en") -> Vec:
     starter_div = len(set(first_words)) / max(len(first_words), 1)
 
     # 33. Conjunction rate (language-aware)
-    _conj_set = (
-        _CONJUNCTIONS_RU if lang == "ru" else
-        _CONJUNCTIONS_UK if lang == "uk" else
-        _CONJUNCTIONS_EN
-    )
+    _CONJ_MAP = {
+        "en": _CONJUNCTIONS_EN, "ru": _CONJUNCTIONS_RU, "uk": _CONJUNCTIONS_UK,
+        "de": _CONJUNCTIONS_DE, "fr": _CONJUNCTIONS_FR, "es": _CONJUNCTIONS_ES,
+    }
+    _conj_set = _CONJ_MAP.get(lang, _CONJUNCTIONS_EN)
     conj_count = sum(1 for t in tokens if t in _conj_set)
     conj_rate = conj_count / max(n_tokens, 1)
 
     # 34. Transition word rate (language-aware)
-    _trans_set = (
-        _TRANSITIONS_RU if lang == "ru" else
-        _TRANSITIONS_UK if lang == "uk" else
-        _TRANSITIONS_EN
-    )
+    _TRANS_MAP = {
+        "en": _TRANSITIONS_EN, "ru": _TRANSITIONS_RU, "uk": _TRANSITIONS_UK,
+        "de": _TRANSITIONS_DE, "fr": _TRANSITIONS_FR, "es": _TRANSITIONS_ES,
+    }
+    _trans_set = _TRANS_MAP.get(lang, _TRANSITIONS_EN)
     trans_count = sum(1 for t in tokens if t in _trans_set)
     trans_rate = trans_count / max(n_tokens, 1)
 
@@ -561,15 +714,17 @@ def extract_features(text: str, lang: str = "en") -> Vec:
 def normalize_features(raw: Vec, lang: str = "en") -> Vec:
     """Normalize features: z-score then clip to [-3, 3].
 
-    Uses per-language normalization for RU/UK to account for
+    Uses per-language normalization to account for
     different char_entropy baselines and word length distributions.
     """
-    if lang == "ru":
-        means, stds = _FEATURE_MEAN_RU, _FEATURE_STD_RU
-    elif lang == "uk":
-        means, stds = _FEATURE_MEAN_UK, _FEATURE_STD_UK
-    else:
-        means, stds = _FEATURE_MEAN, _FEATURE_STD
+    _NORM_MAP = {
+        "ru": (_FEATURE_MEAN_RU, _FEATURE_STD_RU),
+        "uk": (_FEATURE_MEAN_UK, _FEATURE_STD_UK),
+        "de": (_FEATURE_MEAN_DE, _FEATURE_STD_DE),
+        "fr": (_FEATURE_MEAN_FR, _FEATURE_STD_FR),
+        "es": (_FEATURE_MEAN_ES, _FEATURE_STD_ES),
+    }
+    means, stds = _NORM_MAP.get(lang, (_FEATURE_MEAN, _FEATURE_STD))
 
     out = []
     for _i, (val, mu, sig) in enumerate(zip(raw, means, stds)):
@@ -761,10 +916,18 @@ class NeuralAIDetector:
     Uses a 3-layer MLP (35→64→32→1) with 35 statistical features to
     distinguish AI-generated text from human-written text.
 
-    Architecture:
+    When trained transformer weights are available, automatically upgrades
+    to the transformer-based detector (~1.5M params) for higher accuracy.
+
+    Architecture (legacy MLP):
         - Layer 1 (35→64, ReLU): Feature expansion with cross-interactions
         - Layer 2 (64→32, ReLU): Non-linear combination
         - Layer 3 (32→1, linear): Score output
+
+    Architecture (transformer v2):
+        - CharTokenizer(256) → Embedding → 3×TransformerBlock → AttentionPool
+        - Concat with 35 handcrafted features
+        - MLP classifier → sigmoid
 
     The model is pre-trained and requires NO external dependencies or API calls.
     """
@@ -772,6 +935,22 @@ class NeuralAIDetector:
     def __init__(self) -> None:
         self._net = _get_network()
         self._trained = _DETECTOR_TRAINED
+        self._transformer = None
+        self._has_transformer = False
+
+        # Try to load transformer v2 weights
+        try:
+            from texthumanize.transformer_detector import get_transformer_detector
+            tdet = get_transformer_detector()
+            if tdet.loaded:
+                self._transformer = tdet
+                self._has_transformer = True
+                logger.info(
+                    "NeuralAIDetector: transformer v2 loaded (%d params)",
+                    tdet.param_count,
+                )
+        except Exception as e:
+            logger.debug("Transformer v2 not available: %s", e)
 
     def extract_features(self, text: str, lang: str = "en") -> dict[str, float]:
         """Extract and return named features (for debugging/explainability)."""
@@ -786,12 +965,25 @@ class NeuralAIDetector:
                 - score: float [0, 1] — probability of being AI-generated
                 - verdict: str — 'human', 'mixed', or 'ai'
                 - confidence: str — 'low', 'medium', or 'high'
-                - model: str — 'neural_mlp_v1'
+                - model: str — 'neural_mlp_v1' or 'transformer_v2'
                 - features: dict — top contributing features
         """
         raw_features = extract_features(text, lang)
         normed = normalize_features(raw_features, lang=lang)
 
+        # Use transformer v2 if available
+        if self._has_transformer and self._transformer is not None:
+            try:
+                import numpy as _np
+                features_np = _np.array(normed, dtype=_np.float32)
+                result = self._transformer.detect(text, features_np, lang)
+                # Add feature impacts for explainability
+                result["top_features"] = self._compute_feature_impacts(normed)
+                return result
+            except Exception as e:
+                logger.debug("Transformer detection failed, falling back to MLP: %s", e)
+
+        # Legacy MLP detection
         # Forward pass through MLP
         if self._trained:
             # Trained weights: positive logit = AI, sigmoid gives P(AI) directly
@@ -878,8 +1070,25 @@ class NeuralAIDetector:
 
     @property
     def architecture(self) -> str:
+        if self._has_transformer:
+            cfg = self._transformer.config  # type: ignore[union-attr]
+            return f"Transformer({cfg.d_model}d/{cfg.n_layers}L/{cfg.n_heads}H)+MLP"
         return "MLP(35→64→32→1)"
 
     @property
     def param_count(self) -> int:
+        if self._has_transformer:
+            return self._transformer.param_count  # type: ignore[union-attr]
         return self._net.param_count
+
+    def _compute_feature_impacts(self, normed: list[float]) -> dict[str, float]:
+        """Compute feature impact scores for explainability."""
+        feature_impacts = {}
+        for i, (name, nval) in enumerate(zip(_FEATURE_NAMES, normed)):
+            impact = nval * abs(nval) * 0.5
+            feature_impacts[name] = round(impact, 4)
+        return dict(sorted(
+            feature_impacts.items(),
+            key=lambda x: abs(x[1]),
+            reverse=True,
+        )[:10])

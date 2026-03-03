@@ -10,6 +10,7 @@ from typing import Callable, Protocol
 
 from texthumanize.analyzer import TextAnalyzer
 from texthumanize.cjk_segmenter import CJKSegmenter, is_cjk_text
+from texthumanize.content_classifier import ContentProfile, ContentType, classify as classify_content
 from texthumanize.coherence_repair import CoherenceRepairer
 from texthumanize.decancel import Debureaucratizer
 from texthumanize.fingerprint_randomizer import FingerprintRandomizer
@@ -29,6 +30,7 @@ from texthumanize.tone_harmonizer import ToneHarmonizer
 from texthumanize.universal import UniversalProcessor
 from texthumanize.utils import AnalysisReport, HumanizeOptions, HumanizeResult
 from texthumanize.validator import QualityValidator
+from texthumanize.sentence_validator import SentenceValidator
 from texthumanize.watermark import WatermarkDetector
 from texthumanize.word_lm import WordLanguageModel
 
@@ -236,7 +238,7 @@ class Pipeline:
             max_change = _user_max
         else:
             _i = self.options.intensity / 100.0
-            max_change = min(0.68, 0.30 + _i * 0.40)
+            max_change = min(0.80, 0.30 + _i * 0.50)
         deadline = time.monotonic() + self.PIPELINE_TIMEOUT
 
         def _check_deadline() -> None:
@@ -270,12 +272,23 @@ class Pipeline:
         _detect_cache: dict[str, dict] = {}
 
         def _cached_detect(txt: str, *, lang: str) -> dict:  # type: ignore[type-arg]
-            """Detect AI with per-run memoization."""
+            """Detect AI with per-run memoization.
+
+            Uses fast MLP-only detection for the in-the-loop passes
+            (~3-5x faster than full detection). Full detection is used
+            only for the very first call to get accurate baseline.
+            """
             cached = _detect_cache.get(txt)
             if cached is not None:
                 return cached
-            from texthumanize.core import detect_ai as _full_detect
-            result_d: dict = _full_detect(txt, lang=lang)  # type: ignore[assignment]
+            if len(_detect_cache) == 0:
+                # First call: full detection for accurate baseline
+                from texthumanize.core import detect_ai as _full_detect
+                result_d: dict = _full_detect(txt, lang=lang)  # type: ignore[assignment]
+            else:
+                # Subsequent calls (in-the-loop): fast MLP-only
+                from texthumanize.core import detect_ai_fast as _fast_detect
+                result_d = _fast_detect(txt, lang=lang)
             _detect_cache[txt] = result_d
             return result_d
 
@@ -283,8 +296,8 @@ class Pipeline:
         # After humanization, check if the AI detector still flags
         # the result. If so, run another pass with escalated intensity
         # on the already-processed text to push it further from AI.
-        target_ai = self.options.constraints.get("target_ai_score", 0.40)
-        max_loops = self.options.constraints.get("max_detection_loops", 3)
+        target_ai = self.options.constraints.get("target_ai_score", 0.20)
+        max_loops = self.options.constraints.get("max_detection_loops", 5)
         ai_before = result.metrics_before.get("artificiality_score", 0)
 
         # Also check the full combined detection score on the original text.
@@ -330,8 +343,8 @@ class Pipeline:
                 # Targeted escalation: analyze which detector features
                 # are still flagging AI, and escalate accordingly.
                 # Gentler escalation to avoid over-processing cliff.
-                escalation = 1.15 + 0.20 * loop_i  # 1.15×, 1.35×, 1.55×
-                esc_intensity = min(85, int(self.options.intensity * escalation))
+                escalation = 1.20 + 0.25 * loop_i  # 1.20×, 1.45×, 1.70×, 1.95×, 2.20×
+                esc_intensity = min(95, int(self.options.intensity * escalation))
 
                 # Use detection details to target weak features
                 loop_profile = self.options.profile
@@ -341,7 +354,7 @@ class Pipeline:
                 # If neural score is high, focus on structural transforms
                 # by using a higher-intensity profile
                 if neural_score > 0.6:
-                    esc_intensity = min(esc_intensity + 8, 92)
+                    esc_intensity = min(esc_intensity + 10, 98)
 
                 loop_opts = HumanizeOptions(
                     lang=self.options.lang,
@@ -350,7 +363,7 @@ class Pipeline:
                     preserve=dict(self.options.preserve),
                     constraints={
                         **self.options.constraints,
-                        "max_change_ratio": 0.45,  # Per-loop limit (raised)
+                        "max_change_ratio": 0.55,  # Per-loop limit (raised)
                     },
                     seed=(self.options.seed or 42) + loop_i + 1,
                 )
@@ -477,6 +490,43 @@ class Pipeline:
                 if fb.change_ratio <= _user_max + 0.05:
                     result = fb
                     break
+
+        # ── Final sentence-level sanitization ─────────────────
+        # After all pipeline passes (graduated retry, detection loops,
+        # regression guard), clean up any remaining artifacts that
+        # were introduced by late passes or cross-pass interactions.
+        import re as _re_final
+        _final_text = result.text
+        #  Double conjunctions: "and and", "и и"
+        _final_text = _re_final.sub(
+            r'\b(and|but|or|yet|so|и|і|а|але|но|und|oder|aber'
+            r'|et|ou|mais|y|o|pero)\s+\1\b',
+            r'\1', _final_text, flags=_re_final.IGNORECASE,
+        )
+        #  Dangling conjunction before punctuation: "and." "and,"
+        _final_text = _re_final.sub(
+            r',?\s*\b(and|but|or|и|і|а|але|но)\b\s*([.!?;])',
+            r'\2', _final_text, flags=_re_final.IGNORECASE,
+        )
+        #  Conjunction chain residue: ", and, but,"
+        _final_text = _re_final.sub(
+            r'(?:,\s*\b(?:and|but|or|however|moreover|also)\b\s*){2,}',
+            ', ', _final_text, flags=_re_final.IGNORECASE,
+        )
+        if _final_text != result.text:
+            result = HumanizeResult(
+                original=result.original,
+                text=_final_text,
+                lang=result.lang,
+                profile=result.profile,
+                intensity=result.intensity,
+                changes=[*result.changes, {
+                    "type": "final_sanitization",
+                    "description": "Финальная очистка артефактов",
+                }],
+                metrics_before=result.metrics_before,
+                metrics_after=result.metrics_after,
+            )
 
         return result
 
@@ -711,6 +761,81 @@ class Pipeline:
                 "description": f"Этап «{stage_name}» пропущен из-за ошибки: {exc}",
             }]
 
+    @staticmethod
+    def _strip_fragment_chains(text: str, lang: str) -> str:
+        """Remove over-dense short-fragment chains injected by multiple stages.
+
+        Handles two types of artifacts:
+        1. Consecutive short fragments: "Here's the thing. But why? Actually."
+        2. In-sentence garbled chains: ", and, but, however, and..."
+
+        Preserves paragraph boundaries (\\n\\n).
+        """
+        import re as _re
+
+        # Process each paragraph independently to preserve boundaries.
+        paragraphs = text.split('\n\n')
+        cleaned_paras: list[str] = []
+
+        for para in paragraphs:
+            if not para.strip():
+                cleaned_paras.append(para)
+                continue
+
+            # Pass 0: Clean garbled conjunction/connector chains within sentences.
+            para = _re.sub(
+                r'(?:,\s*(?:and|but|or|yet|so|however|granted|moreover|furthermore|also|thus|hence)'
+                r'(?:\s*,\s*|\s+)){2,}',
+                ', ', para, flags=_re.IGNORECASE,
+            )
+            # Russian/Ukrainian connector stacking
+            para = _re.sub(
+                r'(?:,?\s*(?:и|а|но|однако|также|ещё|ще|причём|причому|крім того|кроме того)'
+                r'(?:\s*,\s*|\s+)){2,}',
+                ', ', para, flags=_re.IGNORECASE,
+            )
+            # Double conjunctions: "и и", "and and"
+            para = _re.sub(r'\b(и|і|and|und|et|y|e)\s+\1\b', r'\1', para, flags=_re.IGNORECASE)
+
+            # Pass 1: Split into sentences and remove consecutive short fragments.
+            parts = _re.split(r'(?<=[.!?])\s+(?=[A-ZА-ЯІЇЄҐ])', para)
+            if len(parts) < 4:
+                cleaned_paras.append(para)
+                continue
+
+            def _is_fragment(s: str) -> bool:
+                words = s.split()
+                return len(words) <= 5 and bool(s.strip())
+
+            # Strip consecutive fragments (keep first in each run)
+            cleaned: list[str] = []
+            prev_was_fragment = False
+            for s in parts:
+                if _is_fragment(s):
+                    if prev_was_fragment:
+                        continue  # skip consecutive fragment
+                    prev_was_fragment = True
+                else:
+                    prev_was_fragment = False
+                cleaned.append(s)
+
+            # Enforce max 1 fragment per 5-sentence window
+            window = 5
+            result: list[str] = []
+            frag_count_in_window = 0
+            for i, s in enumerate(cleaned):
+                if _is_fragment(s):
+                    frag_count_in_window += 1
+                    if frag_count_in_window > 1:
+                        continue  # skip excess fragment in this window
+                if i > 0 and i % window == 0:
+                    frag_count_in_window = 0
+                result.append(s)
+
+            cleaned_paras.append(' '.join(result))
+
+        return '\n\n'.join(cleaned_paras)
+
     def _run_pipeline(
         self, text: str, lang: str, *, intensity_factor: float = 1.0,
     ) -> HumanizeResult:
@@ -726,9 +851,27 @@ class Pipeline:
         stage_timings: dict[str, float] = {}
         checkpoints: list[tuple[str, str]] = []  # (stage_name, text_after_stage)
 
+        # ── Sentence-level integrity validator ────────────────
+        # Catches broken sentences BETWEEN stages (not just at the end).
+        # After each major transformation, compares output sentences
+        # against their pre-stage versions and reverts broken ones.
+        _sv = SentenceValidator(lang=lang)
+
         # Анализ до обработки
         analyzer = TextAnalyzer(lang=lang)
         metrics_before = analyzer.analyze(text)
+
+        # ── Stage 0: Content type classification ──────────────
+        _t0 = time.perf_counter()
+        content_profile = classify_content(text, lang=lang)
+        stage_timings["content_classify"] = time.perf_counter() - _t0
+        all_changes.append({
+            "type": "content_classification",
+            "description": (
+                f"Тип контента: {content_profile.content_type.value} "
+                f"(уверенность {content_profile.confidence:.0%})"
+            ),
+        })
 
         # ── Адаптивная интенсивность ──────────────────────────
         # Автоматически корректируем intensity на основе artificiality_score:
@@ -742,20 +885,19 @@ class Pipeline:
         # Применяем graduated retry factor
         base_intensity = max(5, int(base_intensity * intensity_factor))
 
-        # Cap base intensity at 80 to prevent over-processing.
-        # The old cap of 85 caused intensity cliff at 70-84 effective.
-        # The higher user values (81-100) manifest through the
-        # detector-in-the-loop running extra passes instead.
-        base_intensity = min(base_intensity, 80)
+        # Cap base intensity at 92 to allow strong single-pass processing.
+        # The detector-in-the-loop provides additional passes if needed.
+        base_intensity = min(base_intensity, 92)
+
+        # Content-type intensity cap — protects sensitive content
+        base_intensity = min(base_intensity, content_profile.max_intensity_cap)
 
         if ai_score >= 70:
-            # Сильно «искусственный» текст — aggressive boost, but capped
-            # Cap at 82 prevents the 84+ over-processing cliff while
-            # keeping the old ×1.20 multiplier that works well at int≤65
-            adjusted = min(82, int(base_intensity * 1.20))
+            # Сильно «искусственный» текст — aggressive boost
+            adjusted = min(95, int(base_intensity * 1.30))
         elif ai_score >= 50:
             # Средне «искусственный» — moderate boost
-            adjusted = min(80, int(base_intensity * 1.15))
+            adjusted = min(90, int(base_intensity * 1.20))
         elif ai_score <= 5:
             # Полностью «живой» текст — применяем только типографику
             return self._typography_only(
@@ -892,7 +1034,12 @@ class Pipeline:
             stage_timings["cjk_segmentation"] = time.perf_counter() - _t0
 
         # Этапы 3-6: словарная обработка (Tier 1 + Tier 2 languages)
-        if get_language_tier(lang) <= 2 and get_language_tier(lang) > 0:
+        # Skip if content is pure code — nothing to debureau/rephrase
+        _skip_word_stages = (
+            content_profile.content_type == ContentType.CODE
+        )
+        if (get_language_tier(lang) <= 2 and get_language_tier(lang) > 0
+                and not _skip_word_stages):
             # 3. Деканцеляризация
             text = self._run_plugins("debureaucratization", text, lang, is_before=True)
             def _run_debureau() -> tuple[str, list]:
@@ -961,7 +1108,9 @@ class Pipeline:
             text = self._run_plugins("liveliness", text, lang, is_before=False)
 
         # 7. Семантическое перефразирование (Tier 1 + Tier 2)
-        if get_language_tier(lang) <= 2 and get_language_tier(lang) > 0:
+        #    Skipped if content type disallows paraphrasing (e.g. pure code)
+        if (get_language_tier(lang) <= 2 and get_language_tier(lang) > 0
+                and content_profile.allow_paraphrase):
             text = self._run_plugins("paraphrasing", text, lang, is_before=True)
             def _run_paraphrasing() -> tuple[str, list]:
                 p = SemanticParaphraser(
@@ -985,9 +1134,9 @@ class Pipeline:
             text = self._run_plugins("paraphrasing", text, lang, is_before=False)
 
         # 7b. Syntax rewriting (sentence-level structural transforms)
-        # Only for Tier 1 languages (en, ru, uk, de) — SyntaxRewriter
-        # has proper grammar rules only for these languages
-        if get_language_tier(lang) == 1:
+        # Only for Tier 1 languages — SyntaxRewriter has proper grammar
+        # rules only for these. Skipped for code/academic/technical content.
+        if get_language_tier(lang) <= 2 and get_language_tier(lang) > 0 and content_profile.allow_syntax_rewrite:
             text = self._run_plugins("syntax_rewriting", text, lang, is_before=True)
             def _run_syntax_rewrite() -> tuple[str, list]:
                 import re as _re_sr
@@ -1009,7 +1158,7 @@ class Pipeline:
                     sents = _re_sr.split(r'(?<=[.!?])\s+', para)
                     rewritten = []
                     for s in sents:
-                        if _sr_rng.random() < prob * 0.3:
+                        if _sr_rng.random() < prob * 0.55:
                             r = sr.rewrite_random(s)
                             if r != s:
                                 changed = True
@@ -1026,6 +1175,9 @@ class Pipeline:
             )
             all_changes.extend(_ch)
             checkpoints.append(("syntax_rewriting", text))
+            # Sentence-level validation: revert broken sentences
+            _sv_before = checkpoints[-2][1] if len(checkpoints) >= 2 else original
+            text = _sv.validate(_sv_before, text, stage_name="syntax_rewriting")
             text = self._run_plugins("syntax_rewriting", text, lang, is_before=False)
 
         # 8. Гармонизация тона (для ВСЕХ языков)
@@ -1076,6 +1228,9 @@ class Pipeline:
         )
         all_changes.extend(_ch)
         checkpoints.append(("naturalization", text))
+        # Sentence-level validation: revert broken sentences
+        _sv_before = checkpoints[-2][1] if len(checkpoints) >= 2 else original
+        text = _sv.validate(_sv_before, text, stage_name="naturalization")
         text = self._run_plugins("naturalization", text, lang, is_before=False)
 
         # 10a. Paraphrase engine — structural rewrites (MWE simplification,
@@ -1096,6 +1251,9 @@ class Pipeline:
         )
         all_changes.extend(_ch)
         checkpoints.append(("paraphrase_engine", text))
+        # Sentence-level validation: revert broken sentences
+        _sv_before = checkpoints[-2][1] if len(checkpoints) >= 2 else original
+        text = _sv.validate(_sv_before, text, stage_name="paraphrase_engine")
         text = self._run_plugins("paraphrase_engine", text, lang, is_before=False)
 
         # 10a½. Sentence restructuring — deep structural transforms
@@ -1117,6 +1275,9 @@ class Pipeline:
         )
         all_changes.extend(_ch)
         checkpoints.append(("sentence_restructuring", text))
+        # Sentence-level validation: revert broken sentences
+        _sv_before = checkpoints[-2][1] if len(checkpoints) >= 2 else original
+        text = _sv.validate(_sv_before, text, stage_name="sentence_restructuring")
         text = self._run_plugins("sentence_restructuring", text, lang, is_before=False)
 
         # 10b. Word LM quality gate — advisory perplexity monitoring.
@@ -1157,7 +1318,18 @@ class Pipeline:
         )
         all_changes.extend(_ch)
         checkpoints.append(("entropy_injection", text))
+        # Sentence-level validation: revert broken sentences
+        _sv_before = checkpoints[-2][1] if len(checkpoints) >= 2 else original
+        text = _sv.validate(_sv_before, text, stage_name="entropy_injection")
         text = self._run_plugins("entropy_injection", text, lang, is_before=False)
+
+        # 10d. Post-injection fragment deduplication
+        # Multiple injection stages (burstiness, rhetorical questions,
+        # discourse surprise) fire independently, so adjacent short
+        # fragments can stack into garbled chains like
+        # "Here's the deal: but why? Granted, and, but..."
+        # Strip excess: keep at most 1 fragment per 5-sentence window.
+        text = self._strip_fragment_chains(text, lang)
 
         # 11. Оптимизация читаемости (для ВСЕХ языков)
         text = self._run_plugins("readability", text, lang, is_before=True)
@@ -1191,6 +1363,25 @@ class Pipeline:
         checkpoints.append(("grammar", text))
         text = self._run_plugins("grammar", text, lang, is_before=False)
 
+        # 12½. Grammar Guard — neural artifact detector + synonym rollback.
+        # Catches bad collocations/agreements introduced by upstream stages.
+        text = self._run_plugins("grammar_guard", text, lang, is_before=True)
+        def _run_grammar_guard() -> tuple[str, list]:
+            from texthumanize.grammar_guard import GrammarGuard
+            gg = GrammarGuard(lang=lang)
+            t = gg.process(text, original)
+            return t, gg.result.changes
+        text, _ch = self._safe_stage(
+            "grammar_guard", text, lang,
+            _run_grammar_guard, stage_timings,
+        )
+        all_changes.extend(_ch)
+        checkpoints.append(("grammar_guard", text))
+        # Sentence-level validation after grammar guard
+        _sv_before = checkpoints[-2][1] if len(checkpoints) >= 2 else original
+        text = _sv.validate(_sv_before, text, stage_name="grammar_guard")
+        text = self._run_plugins("grammar_guard", text, lang, is_before=False)
+
         # 13. Коррекция когерентности (для ВСЕХ языков)
         text = self._run_plugins("coherence", text, lang, is_before=True)
         def _run_coherence() -> tuple[str, list]:
@@ -1205,13 +1396,16 @@ class Pipeline:
         text, _ch = self._safe_stage("coherence", text, lang, _run_coherence, stage_timings)
         all_changes.extend(_ch)
         checkpoints.append(("coherence", text))
+        # Sentence-level validation after coherence
+        _sv_before = checkpoints[-2][1] if len(checkpoints) >= 2 else original
+        text = _sv.validate(_sv_before, text, stage_name="coherence")
         text = self._run_plugins("coherence", text, lang, is_before=False)
 
         # 13a. Final entropy/burstiness re-injection
         # Stages 11-13 (readability, grammar, coherence) can re-uniformize
         # sentence lengths and undo entropy work. This final pass ensures
         # burstiness and statistical diversity are maintained.
-        if effective_options.intensity >= 30:
+        if effective_options.intensity >= 20:
             def _run_entropy_final() -> tuple[str, list]:
                 from texthumanize.entropy_injector import EntropyInjector
                 ei = EntropyInjector(
@@ -1227,6 +1421,32 @@ class Pipeline:
                 _run_entropy_final, stage_timings,
             )
             all_changes.extend(_ch)
+
+        # 13a¼. Final sentence-level cleanup
+        # Late stages (readability, grammar, coherence, entropy_final) can
+        # re-introduce artifacts that _strip_fragment_chains already cleaned.
+        # Apply targeted fixes:
+        import re as _re_late
+        #  (a) Double conjunctions: "and and", "и и", "but but"
+        text = _re_late.sub(
+            r'\b(and|but|or|yet|so|и|і|а|але|но|und|oder|aber|et|ou|mais|y|o|pero)\s+\1\b',
+            r'\1', text, flags=_re_late.IGNORECASE,
+        )
+        #  (b) Garbled conjunction chains left over: ", and, but, however, and"
+        text = _re_late.sub(
+            r'(?:,\s*(?:and|but|or|however|moreover|also|and)\s*){2,}',
+            ', ', text, flags=_re_late.IGNORECASE,
+        )
+
+        # 13a½. Sentence-level validation summary
+        if _sv.total_reverts > 0:
+            all_changes.append({
+                "type": "sentence_validation",
+                "description": (
+                    f"Валидация предложений: откачено {_sv.total_reverts} "
+                    f"сломанных предложений"
+                ),
+            })
 
         # 13b. Anti-fingerprint diversification
         _fp_rand = FingerprintRandomizer(
@@ -1251,7 +1471,7 @@ class Pipeline:
             max_change_v = _user_max_v
         else:
             _iv = effective_options.intensity / 100.0
-            max_change_v = min(0.55, 0.25 + _iv * 0.30)
+            max_change_v = min(0.70, 0.25 + _iv * 0.40)
         validator = QualityValidator(
             lang=lang,
             max_change_ratio=max_change_v,
@@ -1314,6 +1534,8 @@ class Pipeline:
                 "typography_score": metrics_before.typography_score,
                 "predictability_score": metrics_before.predictability_score,
                 "vocabulary_richness": metrics_before.vocabulary_richness,
+                "content_type": content_profile.content_type.value,
+                "content_confidence": round(content_profile.confidence, 3),
                 **style_meta,
             },
             metrics_after={

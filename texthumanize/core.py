@@ -114,6 +114,9 @@ def humanize(
     auto_evade: bool = False,
     target_ai_score: float = 0.30,
     max_evade_attempts: int = 4,
+    phantom: bool = False,
+    phantom_budget: float = 1.0,
+    phantom_target: float = 0.30,
     backend: str = "local",
     openai_api_key: str | None = None,
     openai_model: str = "gpt-4o-mini",
@@ -269,7 +272,8 @@ def humanize(
     # ── Cache lookup ────────────────────────────────────────────
     if seed is not None:
         cached = result_cache.get(
-            text, lang=detected_lang, profile=profile, intensity=intensity, seed=seed,
+            text, lang=detected_lang, profile=profile, intensity=intensity,
+            seed=seed, phantom=phantom,
         )
         if cached is not None:
             return cast(HumanizeResult, cached)
@@ -285,11 +289,87 @@ def humanize(
 
     result = pipeline.run(text, detected_lang)
 
+    # ── PHANTOM™ post-processing ─────────────────────────────
+    # Gradient-guided neural optimization: fine-tunes the humanized text
+    # to minimize detection score by targeting specific neural features.
+    # Only runs if the base result still has a high detection score.
+    if phantom:
+        try:
+            current_det = detect_ai(result.text, lang=detected_lang)
+            current_combined = current_det.get("combined_score", current_det.get("score", 0.5))
+            if current_combined > phantom_target:
+                from texthumanize.phantom import get_phantom
+                engine = get_phantom()
+                phantom_result = engine.optimize(
+                    result.text, lang=detected_lang,
+                    target_score=phantom_target,
+                    budget=phantom_budget,
+                    max_iterations=15,
+                    seed=seed,
+                )
+                if phantom_result.final_score < current_combined:
+                    result = HumanizeResult(
+                        original=result.original,
+                        text=phantom_result.optimized_text,
+                        lang=result.lang,
+                        profile=result.profile,
+                        intensity=result.intensity,
+                        changes=result.changes + [
+                            {"type": "phantom", "description": f"PHANTOM™: {phantom_result.original_score:.3f}→{phantom_result.final_score:.3f}"}
+                        ],
+                        metrics_before=result.metrics_before,
+                        metrics_after=result.metrics_after,
+                    )
+        except Exception as e:
+            logger.warning("PHANTOM™ post-processing failed: %s", e)
+
+    # ── Grammar post-processing for Slavic languages ──────────
+    # Applied regardless of whether PHANTOM ran,
+    # fixes agreement/government issues from dictionary replacements.
+    # Uses paragraph-safe grammar fixes (not full _cleanup_text which
+    # may collapse paragraph structure).
+    if detected_lang in ("ru", "uk"):
+        try:
+            from texthumanize.phantom import (
+                _fix_grammar_slavic,
+                _fix_sentence_caps,
+            )
+            lines = result.text.split("\n")
+            fixed_lines = []
+            in_code_block = False
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith("```"):
+                    in_code_block = not in_code_block
+                    fixed_lines.append(line)
+                    continue
+                if in_code_block:
+                    fixed_lines.append(line)
+                    continue
+                if stripped:
+                    line = _fix_grammar_slavic(line, detected_lang)
+                    line = _fix_sentence_caps(line)
+                fixed_lines.append(line)
+            fixed_text = "\n".join(fixed_lines)
+            if fixed_text != result.text:
+                result = HumanizeResult(
+                    original=result.original,
+                    text=fixed_text,
+                    lang=result.lang,
+                    profile=result.profile,
+                    intensity=result.intensity,
+                    changes=result.changes,
+                    metrics_before=result.metrics_before,
+                    metrics_after=result.metrics_after,
+                )
+        except Exception:
+            pass  # Grammar cleanup is best-effort
+
     # ── Cache result (only deterministic calls with seed) ─────
     if seed is not None:
         result_cache.put(
             text, result, lang=detected_lang, profile=profile,
-            intensity=intensity, seed=seed,
+            intensity=intensity, seed=seed, phantom=phantom,
         )
 
     return result
@@ -721,6 +801,43 @@ def humanize_until_human(
         # Should not happen, but fallback
         best_result = humanize(text, lang=lang, profile=profile, intensity=intensity)
 
+    # ── PHANTOM™ final refinement ─────────────────────────────
+    # If the naturalizer pipeline didn't reach target, apply PHANTOM™
+    # gradient-guided optimization as a last-mile refinement.
+    if best_score > target_score:
+        try:
+            from texthumanize.phantom import get_phantom
+            engine = get_phantom()
+            phantom_result = engine.optimize(
+                best_result.text, lang=lang,
+                target_score=target_score,
+                budget=1.0,
+                max_iterations=15,
+                seed=seed,
+            )
+            if phantom_result.final_score < best_score:
+                best_result = HumanizeResult(
+                    original=best_result.original,
+                    text=phantom_result.optimized_text,
+                    lang=best_result.lang,
+                    profile=best_result.profile,
+                    intensity=best_result.intensity,
+                    changes=best_result.changes + [
+                        {"type": "phantom", "description": f"PHANTOM™: {phantom_result.original_score:.3f}→{phantom_result.final_score:.3f}"}
+                    ],
+                    metrics_before=best_result.metrics_before,
+                    metrics_after=best_result.metrics_after,
+                )
+                best_score = phantom_result.final_score
+                if verbose:
+                    logger.info(
+                        "PHANTOM™ refinement: %.3f → %.3f (%s)",
+                        phantom_result.original_score, phantom_result.final_score,
+                        "HUMAN" if phantom_result.bypassed else "mixed",
+                    )
+        except Exception as e:
+            logger.warning("PHANTOM™ refinement failed: %s", e)
+
     return best_result
 
 
@@ -1105,17 +1222,28 @@ def detect_ai(text: str, lang: str = "auto") -> DetectionReport:
         pass
 
     # Ensemble: weighted merge of 3 signals
-    # Neural trained MLP is most accurate, stat LR is strong for EN/RU,
-    # heuristic provides baseline robustness
+    # Neural trained MLP is most accurate for EN/RU (trained on those).
+    # For other languages, heuristic+stat get higher weight since the
+    # neural model may not generalise well.
     heuristic_score = result.ai_probability
     stat_score = stat_prob if stat_prob is not None else heuristic_score
     neural_score = neural_prob if neural_prob is not None else heuristic_score
 
-    combined_score = (
-        heuristic_score * 0.05
-        + stat_score * 0.15
-        + neural_score * 0.80
-    )
+    _neural_trained_langs = {"en", "ru"}
+    if lang in _neural_trained_langs:
+        # High confidence in neural model for trained languages
+        combined_score = (
+            heuristic_score * 0.05
+            + stat_score * 0.15
+            + neural_score * 0.80
+        )
+    else:
+        # For other languages: boost heuristic + stat weight
+        combined_score = (
+            heuristic_score * 0.35
+            + stat_score * 0.30
+            + neural_score * 0.35
+        )
 
     return {
         "score": combined_score,
@@ -1155,6 +1283,43 @@ def detect_ai(text: str, lang: str = "auto") -> DetectionReport:
         "explanations": result.explanations,
         "domain": result.detected_domain,
         "lang": lang,
+    }
+
+
+def detect_ai_fast(text: str, lang: str = "auto") -> dict:
+    """Fast AI detection using only the neural MLP.
+
+    ~3-5x faster than full detect_ai() — skips heuristic analysis,
+    statistical detector, and character-level LSTM. Uses only the
+    trained MLP (which accounts for 80% of the combined score).
+    Suitable for in-the-loop detection where speed matters more than
+    detailed metrics.
+
+    Returns:
+        dict with ``combined_score``, ``verdict``, ``confidence``.
+    """
+    if not text or not text.strip():
+        return {"combined_score": 0.0, "verdict": "human", "confidence": 0.0}
+
+    if lang == "auto":
+        lang = detect_language(text)
+
+    try:
+        nd_mod = _get_neural_detector()
+        nd = nd_mod.NeuralAIDetector()
+        neural_result = nd.detect(text, lang=lang)
+        score = neural_result.get("score", 0.5)
+    except Exception:
+        score = 0.5
+
+    return {
+        "combined_score": score,
+        "verdict": (
+            "ai" if score > 0.55 else
+            "mixed" if score > 0.34 else
+            "human"
+        ),
+        "confidence": min(abs(score - 0.5) * 2.0, 1.0),
     }
 
 
@@ -1970,4 +2135,257 @@ def anonymize_style(
         "similarity_after": result.similarity_after,
         "changes": result.changes,
     }
+
+
+# ══════════════════════════════════════════════════════════════════
+#  ASH™ — Adaptive Statistical Humanization
+#  Proprietary technology by Oleksandr K. / TextHumanize
+# ══════════════════════════════════════════════════════════════════
+
+def ash_humanize(
+    text: str,
+    lang: str = "auto",
+    *,
+    preset: str = "balanced",
+    intensity: float | None = None,
+    seed: int | None = None,
+    use_pipeline: bool = True,
+    pipeline_intensity: int = 60,
+    pipeline_profile: str = "web",
+) -> Any:
+    """Гуманизировать текст через полный ASH™ конвейер.
+
+    ASH™ (Adaptive Statistical Humanization) — проприетарная
+    технология, объединяющая 5 методов + ядро пайплайна:
+
+    1. Watermark Forensics™ — нейтрализация водяных знаков LLM
+    2. Perplexity Sculpting™ — ремоделирование кривой перплексии
+    3. Statistical Signature Transfer™ — перенос статистического отпечатка
+    3½. **Base Pipeline** — 20-stage core humanization (typography,
+        debureaucratization, paraphrasing, naturalization, etc.)
+    4. Sentence Restructuring™ — структурная трансформация предложений
+    5. Cognitive Load Modeling™ — моделирование когнитивных паттернов
+    6. Adversarial Ensemble Self-Play™ — итеративная доводка
+
+    Args:
+        text: Текст для обработки.
+        lang: Код языка ('auto', 'en', 'ru', 'uk').
+        preset: Пресет: 'stealth', 'balanced', 'light', 'forensic', 'academic'.
+        intensity: Интенсивность (0.0–1.0), перекрывает пресет.
+        seed: Зерно RNG.
+        use_pipeline: Использовать ядро пайплайна (рекомендуется).
+        pipeline_intensity: Интенсивность ядра пайплайна (0-100).
+        pipeline_profile: Профиль ядра пайплайна.
+
+    Returns:
+        ASHResult с полями: text, original_text, lang,
+        watermark, perplexity, signature, cognitive, adversarial,
+        elapsed_ms, steps_applied, methods_used.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    mod = _lazy_import("texthumanize.ash_engine")
+    return mod.ASHEngine(
+        lang=lang, seed=seed,
+        pipeline_intensity=pipeline_intensity,
+        pipeline_profile=pipeline_profile,
+    ).humanize(
+        text, preset=preset, intensity=intensity,
+        use_pipeline=use_pipeline,
+    )
+
+
+def ash_analyze(text: str, lang: str = "auto") -> dict:
+    """Комплексный ASH™ анализ текста.
+
+    Возвращает: watermark verdict, perplexity curve,
+    signature distance, cognitive uniformity, problem map.
+
+    Args:
+        text: Текст для анализа.
+        lang: Код языка.
+
+    Returns:
+        dict со всеми диагностиками ASH™.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    mod = _lazy_import("texthumanize.ash_engine")
+    return mod.ASHEngine(lang=lang).analyze(text)
+
+
+def sculpt_perplexity(
+    text: str,
+    lang: str = "auto",
+    intensity: float = 0.5,
+    seed: int | None = None,
+) -> Any:
+    """Perplexity Sculpting™ — ремоделирование кривой перплексии.
+
+    Делает кривую перплексии похожей на человеческую: вводит
+    контролируемые «сюрпризы» в слишком гладкие участки.
+
+    Args:
+        text: Текст для обработки.
+        lang: Код языка.
+        intensity: 0.0–1.0.
+        seed: Зерно RNG.
+
+    Returns:
+        SculptResult.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    mod = _lazy_import("texthumanize.perplexity_sculptor")
+    return mod.PerplexitySculptor(lang=lang, seed=seed).sculpt(text, intensity)
+
+
+def transfer_signature(
+    text: str,
+    lang: str = "auto",
+    intensity: float = 0.5,
+    seed: int | None = None,
+) -> Any:
+    """Statistical Signature Transfer™ — перенос статистического отпечатка.
+
+    Сдвигает 30-мерный статистический отпечаток текста
+    в зону человеческих текстов.
+
+    Args:
+        text: Текст для обработки.
+        lang: Код языка.
+        intensity: 0.0–1.0.
+        seed: Зерно RNG.
+
+    Returns:
+        TransferResult.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    mod = _lazy_import("texthumanize.signature_transfer")
+    return mod.SignatureTransfer(lang=lang, seed=seed).transfer(text, intensity)
+
+
+def detect_statistical_watermark(text: str, lang: str = "auto") -> Any:
+    """Watermark Forensics™ — обнаружение статистических водяных знаков LLM.
+
+    Обнаруживает Kirchenbauer-style green/red token bias
+    по 8 хэш-схемам.
+
+    Args:
+        text: Текст для проверки.
+        lang: Код языка.
+
+    Returns:
+        ForensicResult с verdict, z_score, green_ratio.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    mod = _lazy_import("texthumanize.watermark_forensics")
+    return mod.WatermarkForensics(lang=lang).detect(text)
+
+
+def neutralise_watermark(
+    text: str,
+    lang: str = "auto",
+    intensity: float = 0.5,
+    seed: int | None = None,
+) -> Any:
+    """Watermark Forensics™ — нейтрализация водяных знаков LLM.
+
+    Заменяет «зелёные» токены на синонимы из «красной» зоны,
+    разрушая статистический паттерн watermark.
+
+    Args:
+        text: Текст для обработки.
+        lang: Код языка.
+        intensity: 0.0–1.0.
+        seed: Зерно RNG.
+
+    Returns:
+        ForensicResult.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    mod = _lazy_import("texthumanize.watermark_forensics")
+    return mod.WatermarkForensics(lang=lang, seed=seed).neutralise(text, intensity)
+
+
+def model_cognition(
+    text: str,
+    lang: str = "auto",
+    intensity: float = 0.5,
+    seed: int | None = None,
+) -> Any:
+    """Cognitive Load Modeling™ — моделирование когнитивных паттернов.
+
+    Вносит человеческие «дефекты»: хеджи, самокоррекции,
+    усталостное упрощение к концу текста.
+
+    Args:
+        text: Текст для обработки.
+        lang: Код языка.
+        intensity: 0.0–1.0.
+        seed: Зерно RNG.
+
+    Returns:
+        CognitiveResult.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    mod = _lazy_import("texthumanize.cognitive_model")
+    return mod.CognitiveModeler(lang=lang, seed=seed).model(text, intensity)
+
+
+def adversarial_humanize(
+    text: str,
+    lang: str = "auto",
+    intensity: float = 0.5,
+    max_rounds: int = 4,
+    target_score: float = 0.35,
+    seed: int | None = None,
+) -> Any:
+    """Adversarial Ensemble Self-Play™ — итеративная гуманизация.
+
+    Три детектора строят «карту проблем» по предложениям;
+    точечные правки применяются только к помеченным предложениям;
+    цикл повторяется до достижения target_score или max_rounds.
+
+    Args:
+        text: Текст для обработки.
+        lang: Код языка.
+        intensity: Базовая интенсивность (0.0–1.0).
+        max_rounds: Максимум раундов.
+        target_score: Целевой AI-score.
+        seed: Зерно RNG.
+
+    Returns:
+        PlayResult.
+    """
+    if lang == "auto":
+        lang = detect_language(text)
+
+    mod = _lazy_import("texthumanize.adversarial_play")
+    return mod.AdversarialPlay(lang=lang, seed=seed).play(
+        text, intensity=intensity,
+        max_rounds=max_rounds, target_score=target_score,
+    )
+
+
+def list_ash_presets() -> dict:
+    """Список доступных ASH™ пресетов.
+
+    Returns:
+        dict с конфигурацией каждого пресета:
+        stealth, balanced, light, forensic, academic.
+    """
+    mod = _lazy_import("texthumanize.ash_engine")
+    return mod.list_ash_presets()
 

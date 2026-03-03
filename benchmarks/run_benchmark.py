@@ -21,6 +21,7 @@ from texthumanize import (  # noqa: E402
     humanize,
     paraphrase,
 )
+from texthumanize.core import result_cache  # noqa: E402
 
 
 # ─── Test texts ──────────────────────────────────────────────
@@ -62,12 +63,16 @@ def bench(name: str, fn, *args, warmup: int = 1, runs: int = 5, **kwargs):
     for _ in range(warmup):
         fn(*args, **kwargs)
 
+    # Clear cache so timing runs actually execute the full pipeline
+    result_cache.clear()
+
     gc.collect()
     tracemalloc.start()
     mem_before = tracemalloc.get_traced_memory()[0]
 
     times = []
     for _ in range(runs):
+        result_cache.clear()  # Ensure each run goes through full pipeline
         t0 = time.perf_counter()
         result = fn(*args, **kwargs)
         t1 = time.perf_counter()

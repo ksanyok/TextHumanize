@@ -1009,6 +1009,60 @@ class ParaphraseEngine:
                 f"{s1}; {s2_lower}",
                 f"{s1}, причому {s2_lower}",
             ]
+        elif self.lang == "de":
+            connectors = [
+                f"{s1}, und {s2_lower}",
+                f"{s1} — {s2_lower}",
+                f"{s1}; {s2_lower}",
+                f"{s1}, wobei {s2_lower}",
+            ]
+        elif self.lang == "fr":
+            connectors = [
+                f"{s1}, et {s2_lower}",
+                f"{s1} — {s2_lower}",
+                f"{s1}; {s2_lower}",
+                f"{s1}, car {s2_lower}",
+            ]
+        elif self.lang == "es":
+            connectors = [
+                f"{s1}, y {s2_lower}",
+                f"{s1} — {s2_lower}",
+                f"{s1}; {s2_lower}",
+                f"{s1}, ya que {s2_lower}",
+            ]
+        elif self.lang == "it":
+            connectors = [
+                f"{s1}, e {s2_lower}",
+                f"{s1} — {s2_lower}",
+                f"{s1}; {s2_lower}",
+                f"{s1}, poiché {s2_lower}",
+            ]
+        elif self.lang == "pl":
+            connectors = [
+                f"{s1}, i {s2_lower}",
+                f"{s1} — {s2_lower}",
+                f"{s1}; {s2_lower}",
+                f"{s1}, gdyż {s2_lower}",
+            ]
+        elif self.lang == "pt":
+            connectors = [
+                f"{s1}, e {s2_lower}",
+                f"{s1} — {s2_lower}",
+                f"{s1}; {s2_lower}",
+                f"{s1}, pois {s2_lower}",
+            ]
+        elif self.lang == "nl":
+            connectors = [
+                f"{s1}, en {s2_lower}",
+                f"{s1} — {s2_lower}",
+                f"{s1}; {s2_lower}",
+            ]
+        elif self.lang == "sv":
+            connectors = [
+                f"{s1}, och {s2_lower}",
+                f"{s1} — {s2_lower}",
+                f"{s1}; {s2_lower}",
+            ]
         else:
             connectors = [
                 f"{s1}, and {s2_lower}",

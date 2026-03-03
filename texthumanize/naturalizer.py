@@ -144,7 +144,7 @@ _AI_WORD_REPLACEMENTS = {
         "seamless": ["smooth", "easy", "simple"],
         "enhance": ["improve", "boost", "strengthen"],
         "optimize": ["improve", "fine-tune", "tweak"],
-        "significantly": ["a lot", "greatly", "by a good margin", "much"],
+        "significantly": ["greatly", "a lot", "by a good margin"],
         "substantially": ["a lot", "greatly", "very much"],
         "consequently": ["so", "as a result", "because of this"],
         "furthermore": ["also", "on top of that", "plus"],
@@ -1132,6 +1132,27 @@ class TextNaturalizer:
         self._phrase_patterns = _AI_PHRASE_PATTERNS.get(lang, {})
         self._boosters = _PERPLEXITY_BOOSTERS.get(lang, {})
 
+        # Enrich existing replacements with massive synonym DB
+        # NOTE: disabled — SynonymDB adds context-free thesaurus entries
+        # that produce garbage text (e.g. "particularly" → "alonely",
+        # "significantly" → "muchly"). The curated _AI_WORD_REPLACEMENTS
+        # already have 3-7 quality options per word and the collocation
+        # engine selects the best one from those.
+        # Original code kept for reference:
+        # try:
+        #     from texthumanize._synonym_db import SynonymDB
+        #     _sdb = SynonymDB()
+        #     for word, existing in list(self._replacements.items()):
+        #         extra = _sdb.get(word, lang)
+        #         if extra:
+        #             existing_set = set(existing)
+        #             for s in extra[:6]:
+        #                 if s not in existing_set and s != word:
+        #                     existing.append(s)
+        #                     existing_set.add(s)
+        # except Exception:
+        #     pass
+
         # Lang pack для sentence_starters и т.д.
         from texthumanize.lang import get_lang_pack
         self.pack = get_lang_pack(lang)
@@ -1213,6 +1234,24 @@ class TextNaturalizer:
         # Runs last so it can mop up any remaining very long words (>10 chars)
         # that survived earlier transforms.
         text = self._shorten_longest_words(text, prob)
+
+        # 5f. Neural-aware word length variance normalization.
+        # This is the most impactful step for the neural detector.
+        # After all other transforms, word_length_variance is still ~11
+        # (human ≈ 5, target mean=3.5). This iteratively replaces the
+        # longest remaining words with shorter alternatives until the
+        # variance drops below the target threshold.
+        if self.intensity >= 25:
+            text = self._normalize_word_length_variance(text, prob)
+
+        # 5g. Sentence length variance normalization.
+        # Neural feature f5 (sentence_length_variance) has mean=30.0,
+        # std=25.0. Both too-low (uniform AI) and too-high (extreme
+        # outliers from inserted fragments/questions) push toward AI.
+        # This splits overly long sentences and ensures variance is in
+        # the human range (~25-50).
+        if self.intensity >= 25:
+            text = self._normalize_sentence_lengths(text, prob)
 
         # 6. Контрактива — перенесена в sentence_restructurer.inject_contractions()
         # (75+ паттернов vs 15 здесь); не дублируем.
@@ -1540,14 +1579,31 @@ class TextNaturalizer:
                   and not re.search(r'\d+[.)]$', sent.rstrip())
                   and not re.search(r'\d+[.)]$', result[i + 1].rstrip())
                   and self.rng.random() < prob * 0.5):
-                # Объединяем через тире или запятую
+                # Quality gate: first sentence must have ≥3 content words
+                # (at least subject + verb) to avoid orphaned fragments
                 first = sent.rstrip().rstrip('.!?')
+                first_content = [w for w in first.split()
+                                 if len(w) > 2 and w.lower() not in {
+                                     "the", "a", "an", "and", "or", "but",
+                                     "is", "it", "in", "on", "at", "to",
+                                     "of", "for", "by", "as", "if", "so",
+                                     "this", "that", "these", "those",
+                                     "not", "all", "also", "too", "yet",
+                                     "and", "nor", "with", "from", "into",
+                                     "и", "а", "в", "на", "с", "по", "к",
+                                     "но", "не", "да", "же", "ну", "до",
+                                 }]
+                if len(first_content) < 2:
+                    continue
+                # Объединяем через тире или запятую
                 second = result[i + 1]
                 if second and second[0].isupper() and not has_placeholder(second):
                     second = second[0].lower() + second[1:]
-                connector = self.rng.choice([' — ', ', и ', ', '])
-                if self.lang == "en":
-                    connector = self.rng.choice([' — ', ', and ', ', '])
+                # Strip any leading/trailing stray punctuation before merge
+                first = first.rstrip(' ,;:')
+                if second:
+                    second = second.lstrip(' ,;:')
+                connector = self._get_merge_connector()
                 result[i] = first + connector + second
                 result[i + 1] = ''
                 modified = True
@@ -1578,26 +1634,72 @@ class TextNaturalizer:
             return ' '.join(s for s in result if s.strip())
         return text
 
+    def _get_merge_connector(self) -> str:
+        """Get a natural merge connector for the current language."""
+        _connectors = {
+            "ru": [' — ', ', и ', ', '],
+            "uk": [' — ', ', і ', ', '],
+            "en": [' — ', ', and ', ', '],
+            "de": [' — ', ', und ', ', '],
+            "fr": [' — ', ', et ', ', '],
+            "es": [' — ', ', y ', ', '],
+            "it": [' — ', ', e ', ', '],
+            "pl": [' — ', ', i ', ', '],
+            "pt": [' — ', ', e ', ', '],
+            "nl": [' — ', ', en ', ', '],
+            "sv": [' — ', ', och ', ', '],
+            "cs": [' — ', ', a ', ', '],
+            "ro": [' — ', ', și ', ', '],
+            "hu": [' — ', ', és ', ', '],
+            "da": [' — ', ', og ', ', '],
+        }
+        choices = _connectors.get(self.lang, [' — ', ', '])
+        return self.rng.choice(choices)
+
     def _get_burstiness_fragment(self) -> str:
         """Получить короткий дискурсивный фрагмент для cadence."""
-        if self.lang == "ru":
-            fragments = [
+        _fragments: dict[str, list[str]] = {
+            "ru": [
                 "Вот что важно.", "К слову.", "Однако.",
                 "И это не всё.", "Суть в другом.",
                 "Но.", "А впрочем.", "Проще говоря.",
-            ]
-        elif self.lang == "uk":
-            fragments = [
+            ],
+            "uk": [
                 "Ось що важливо.", "До речі.", "Однак.",
                 "І це не все.", "Суть в іншому.",
                 "Але.", "А втім.", "Простіше кажучи.",
-            ]
-        else:
-            fragments = [
+            ],
+            "en": [
                 "Here's the thing.", "Worth noting.", "That said.",
                 "Actually.", "In short.", "But wait.",
                 "Key point.", "Makes sense.",
-            ]
+            ],
+            "de": [
+                "Wichtig dabei.", "Nebenbei bemerkt.", "Allerdings.",
+                "Kurz gesagt.", "Aber Moment.", "Der Punkt ist.",
+            ],
+            "fr": [
+                "Point important.", "D'ailleurs.", "Cependant.",
+                "En bref.", "Mais attendez.", "À noter.",
+            ],
+            "es": [
+                "Punto clave.", "Por cierto.", "Sin embargo.",
+                "En resumen.", "Pero espera.", "Vale la pena notar.",
+            ],
+            "it": [
+                "Punto chiave.", "Tra l'altro.", "Tuttavia.",
+                "In breve.", "Ma aspetta.", "Da notare.",
+            ],
+            "pl": [
+                "To ważne.", "Nawiasem mówiąc.", "Jednak.",
+                "Krótko mówiąc.", "Ale chwila.", "Warto zauważyć.",
+            ],
+            "pt": [
+                "Ponto-chave.", "A propósito.", "No entanto.",
+                "Resumindo.", "Mas espere.", "Vale notar.",
+            ],
+        }
+        fragments = _fragments.get(self.lang, _fragments["en"])
         return self.rng.choice(fragments)
 
     def _smart_split(self, sentence: str) -> str | None:
@@ -2095,8 +2197,22 @@ class TextNaturalizer:
                        "И это не всё.", "Небольшое уточнение.", "Вот в чём дело."],
                 "uk": ["Важливий момент.", "Варто врахувати.", "Але не завжди.",
                        "І це не все.", "Невелике уточнення.", "Ось у чому справа."],
+                "de": ["Ein wichtiger Punkt.", "Bemerkenswert.", "Nicht immer.",
+                       "Aber nicht nur.", "Und dennoch.", "Ein kleines Detail."],
+                "fr": ["Un point clé.", "À noter.", "Pas toujours.",
+                       "Mais pas seulement.", "Et pourtant.", "Un petit détail."],
+                "es": ["Un punto clave.", "Cabe destacar.", "No siempre.",
+                       "Pero no solo eso.", "Y sin embargo.", "Un pequeño detalle."],
+                "it": ["Un punto chiave.", "Da notare.", "Non sempre.",
+                       "Ma non solo.", "Eppure.", "Un piccolo dettaglio."],
+                "pl": ["Istotna kwestia.", "Warto zauważyć.", "Nie zawsze.",
+                       "Ale nie tylko.", "A jednak.", "Mały szczegół."],
+                "pt": ["Um ponto-chave.", "Vale notar.", "Nem sempre.",
+                       "Mas não apenas.", "E ainda assim.", "Um pequeno detalhe."],
             }
-            frags = fragments.get(self.lang, fragments.get("en", []))
+            frags = fragments.get(self.lang)
+            if not frags:
+                frags = []  # Don't fall back to English for unsupported langs
             if frags:
                 # Вставляем между двумя длинными предложениями
                 for i in range(1, len(result) - 1):
@@ -2133,6 +2249,13 @@ class TextNaturalizer:
         """
         if prob < 0.30:
             return text
+
+        # Protected compound terms — never split these
+        _PROTECTED_COMPOUNDS = {
+            "artificial intelligence", "artificial neural",
+            "machine learning", "deep learning", "neural network",
+            "decision making", "natural language",
+        }
 
         _SIMPLIFICATIONS: dict[str, dict[str, list[str]]] = {
             "en": {
@@ -2284,6 +2407,11 @@ class TextNaturalizer:
             if not m:
                 continue
 
+            # Protect compound terms: don't replace parts of frozen phrases
+            ctx = text[max(0, m.start() - 30):m.end() + 30].lower()
+            if any(ct in ctx for ct in _PROTECTED_COMPOUNDS):
+                continue
+
             # Skip probabilistically only for marginal replacements;
             # always replace words that are LONG (10+ chars) since
             # those are the strongest AI signal.
@@ -2354,6 +2482,42 @@ class TextNaturalizer:
                 "Але чи все так просто?", "І що змінилося?",
                 "Чому це важливо?", "У чому підступ?",
                 "Важко повірити?", "Бачите закономірність?",
+            ],
+            "de": [
+                "Aber warum?", "Und das Ergebnis?",
+                "Klingt bekannt?", "Ergibt Sinn, oder?",
+                "Aber ist es wirklich so einfach?", "Was hat sich geändert?",
+                "Warum ist das wichtig?", "Wo ist der Haken?",
+            ],
+            "fr": [
+                "Mais pourquoi?", "Et le résultat?",
+                "Ça vous dit quelque chose?", "Logique, non?",
+                "Mais est-ce vraiment si simple?", "Qu'est-ce qui a changé?",
+                "Pourquoi est-ce important?", "Où est le piège?",
+            ],
+            "es": [
+                "¿Pero por qué?", "¿Y el resultado?",
+                "¿Suena familiar?", "¿Tiene sentido, verdad?",
+                "¿Pero es realmente tan simple?", "¿Qué cambió?",
+                "¿Por qué importa esto?", "¿Cuál es la trampa?",
+            ],
+            "it": [
+                "Ma perché?", "E il risultato?",
+                "Suona familiare?", "Ha senso, vero?",
+                "Ma è davvero così semplice?", "Cosa è cambiato?",
+                "Perché è importante?", "Dov'è l'inganno?",
+            ],
+            "pl": [
+                "Ale dlaczego?", "I jaki rezultat?",
+                "Brzmi znajomo?", "Ma sens, prawda?",
+                "Ale czy to naprawdę takie proste?", "Co się zmieniło?",
+                "Dlaczego to ważne?", "Gdzie jest haczyk?",
+            ],
+            "pt": [
+                "Mas por quê?", "E o resultado?",
+                "Soa familiar?", "Faz sentido, certo?",
+                "Mas é realmente tão simples?", "O que mudou?",
+                "Por que isso importa?", "Qual é a pegadinha?",
             ],
         }
         lang_questions = _QUESTIONS.get(self.lang, _QUESTIONS["en"])
@@ -2458,40 +2622,53 @@ class TextNaturalizer:
                 "en": ["The", "This", "It"],
                 "ru": ["Это", "Но", "И"],
                 "uk": ["Це", "Але", "І"],
+                "de": ["Das", "Dies", "Es"],
+                "fr": ["Le", "Ce", "Il"],
+                "es": ["El", "Esto", "Es"],
+                "it": ["Il", "Questo", "È"],
+                "pl": ["To", "Ten", "Jest"],
+                "pt": ["O", "Isto", "É"],
+                "nl": ["Het", "Dit", "Er"],
+                "sv": ["Det", "Den", "Man"],
+                "cs": ["To", "Toto", "Je"],
+                "ro": ["Acest", "El", "Este"],
+                "hu": ["Ez", "Az", "Van"],
+                "da": ["Det", "Den", "Man"],
             }
-            starts = _COMMON_STARTS.get(self.lang, _COMMON_STARTS["en"])
-            starter = self.rng.choice(starts)
+            starts = _COMMON_STARTS.get(self.lang)
+            if starts:
+                starter = self.rng.choice(starts)
 
-            # How many starters to repeat to reach ~0.7 diversity
-            # current: n_unique/n = diversity; target: (n_unique - K)/n = 0.7
-            # K = n * (diversity - 0.7)
-            n = len(all_sentences)
-            k_needed = max(1, int(n * (diversity - 0.68)))
+                # How many starters to repeat to reach ~0.7 diversity
+                # current: n_unique/n = diversity; target: (n_unique - K)/n = 0.7
+                # K = n * (diversity - 0.7)
+                n = len(all_sentences)
+                k_needed = max(1, int(n * (diversity - 0.68)))
 
-            replaced = 0
-            for idx in range(1, len(all_sentences) - 1):
-                if replaced >= k_needed:
-                    break
-                p_idx, s_idx, sent = all_sentences[idx]
-                words = sent.split()
-                if not words or len(words) < 3:
-                    continue
-                if skip_placeholder_sentence(sent):
-                    continue
-                # First replacement is guaranteed; rest probabilistic
-                if replaced > 0 and self.rng.random() > prob * 0.8:
-                    continue
+                replaced = 0
+                for idx in range(1, len(all_sentences) - 1):
+                    if replaced >= k_needed:
+                        break
+                    p_idx, s_idx, sent = all_sentences[idx]
+                    words = sent.split()
+                    if not words or len(words) < 3:
+                        continue
+                    if skip_placeholder_sentence(sent):
+                        continue
+                    # First replacement is guaranteed; rest probabilistic
+                    if replaced > 0 and self.rng.random() > prob * 0.8:
+                        continue
 
-                old_start = words[0]
-                words[0] = words[0][0].lower() + words[0][1:]
-                new_sent = f"{starter} {' '.join(words)}"
-                para_sentences[p_idx][s_idx] = new_sent
-                replaced += 1
-                modified = True
-                self.changes.append({
-                    "type": "naturalize_starter_diversity",
-                    "detail": f"reduce_diversity: prepend '{starter}' (was '{old_start}')",
-                })
+                    old_start = words[0]
+                    words[0] = words[0][0].lower() + words[0][1:]
+                    new_sent = f"{starter} {' '.join(words)}"
+                    para_sentences[p_idx][s_idx] = new_sent
+                    replaced += 1
+                    modified = True
+                    self.changes.append({
+                        "type": "naturalize_starter_diversity",
+                        "detail": f"reduce_diversity: prepend '{starter}' (was '{old_start}')",
+                    })
 
         # CASE 2: Too uniform (<0.55) — diversify repeated starters
         elif diversity < 0.55:
@@ -2507,35 +2684,49 @@ class TextNaturalizer:
                            "Впрочем,", "Знаете,", "Словом,", "Итак,"],
                     "uk": ["Ну,", "Ось,", "Так,", "Ні,", "Отже,",
                            "Втім,", "Знаєте,", "Словом,", "Загалом,"],
+                    "de": ["Nun,", "Also,", "Ja,", "Doch,", "Gut,",
+                           "Klar,", "Eben,", "Schon,", "Naja,"],
+                    "fr": ["Bon,", "Eh bien,", "Or,", "Soit,", "Bref,",
+                           "Certes,", "Donc,", "Ainsi,"],
+                    "es": ["Bueno,", "Pues,", "Bien,", "Claro,",
+                           "Vamos,", "Mira,", "Oye,", "Ya,"],
+                    "it": ["Bene,", "Dunque,", "Ora,", "Ecco,",
+                           "Certo,", "Insomma,", "Ebbene,"],
+                    "pl": ["No,", "Więc,", "Cóż,", "Otóż,",
+                           "Dobrze,", "Tak,", "Właściwie,"],
+                    "pt": ["Bem,", "Pois,", "Ora,", "Enfim,",
+                           "Claro,", "Aliás,", "Portanto,"],
                 }
-                openers = _OPENERS.get(self.lang, _OPENERS["en"])
-
-                for rep_word, rep_count in repeated:
-                    fixed = 0
-                    for idx in range(len(all_sentences)):
-                        if fixed >= rep_count - 1:
-                            break
-                        p_idx, s_idx, sent = all_sentences[idx]
-                        words = sent.split()
-                        if not words:
-                            continue
-                        if words[0].lower().rstrip('.,;:') != rep_word:
-                            continue
-                        if fixed == 0:
+                openers = _OPENERS.get(self.lang, [])
+                if not openers:
+                    pass  # skip diversification for unsupported langs
+                else:
+                    for rep_word, rep_count in repeated:
+                        fixed = 0
+                        for idx in range(len(all_sentences)):
+                            if fixed >= rep_count - 1:
+                                break
+                            p_idx, s_idx, sent = all_sentences[idx]
+                            words = sent.split()
+                            if not words:
+                                continue
+                            if words[0].lower().rstrip('.,;:') != rep_word:
+                                continue
+                            if fixed == 0:
+                                fixed += 1
+                                continue
+                            if self.rng.random() > prob * 0.7:
+                                fixed += 1
+                                continue
+                            opener = self.rng.choice(openers)
+                            lower_first = sent[0].lower() + sent[1:]
+                            para_sentences[p_idx][s_idx] = f"{opener} {lower_first}"
                             fixed += 1
-                            continue
-                        if self.rng.random() > prob * 0.7:
-                            fixed += 1
-                            continue
-                        opener = self.rng.choice(openers)
-                        lower_first = sent[0].lower() + sent[1:]
-                        para_sentences[p_idx][s_idx] = f"{opener} {lower_first}"
-                        fixed += 1
-                        modified = True
-                        self.changes.append({
-                            "type": "naturalize_starter_diversity",
-                            "detail": f"add_opener '{opener}' to '{rep_word}'",
-                        })
+                            modified = True
+                            self.changes.append({
+                                "type": "naturalize_starter_diversity",
+                                "detail": f"add_opener '{opener}' to '{rep_word}'",
+                            })
 
         if modified:
             # Reconstruct text preserving paragraph structure
@@ -2712,6 +2903,474 @@ class TextNaturalizer:
                 })
 
         return text
+
+    # ─── Neural-aware word length variance normalization ───────
+
+    _WORD_RE_ALPHA = re.compile(r"[a-zA-Zа-яА-ЯіїєґІЇЄҐёЁ'-]+")
+
+    # Extra long→short map for words NOT in the curated dict above.
+    # These are domain-specific words that the main dict misses.
+    _EXTRA_LONG_SHORT: dict[str, dict[str, str]] = {
+        "en": {
+            # 14+ chars
+            "characteristic": "trait",
+            "characteristics": "traits",
+            "administrative": "admin",
+            "implementation": "setup",
+            "personalization": "tuning",
+            "infrastructure": "setup",
+            "representation": "form",
+            "transformation": "shift",
+            "recommendation": "tip",
+            "recommendations": "tips",
+            "implementation": "setup",
+            "simultaneously": "at once",
+            "responsibility": "duty",
+            "systematically": "step by step",
+            "authentication": "login",
+            "configurations": "setups",
+            "classification": "sorting",
+            "communications": "messages",
+            "functionalities": "features",
+            # 13 chars
+            "interestingly": "oddly",
+            "documentation": "docs",
+            "surprisingly": "oddly",
+            "outperforming": "beating",
+            "understanding": "grasp",
+            "sophisticated": "clever",
+            "architectures": "designs",
+            "incorporating": "adding",
+            "communication": "talk",
+            "accessibility": "access",
+            "technological": "tech",
+            "methodologies": "methods",
+            "comprehensive": "full",
+            "effectiveness": "impact",
+            "functionality": "feature",
+            "possibilities": "options",
+            "collaboration": "teamwork",
+            "approximately": "about",
+            "independently": "on its own",
+            "predominantly": "mostly",
+            "significantly": "greatly",
+            "approximately": "about",
+            "determination": "resolve",
+            "consideration": "thought",
+            "establishment": "setup",
+            "revolutionary": "radical",
+            "extraordinary": "rare",
+            "consciousness": "awareness",
+            "corresponding": "matching",
+            "professionals": "experts",
+            # 12 chars
+            "implementing": "using",
+            "demonstrated": "showed",
+            "consistently": "always",
+            "acquaintance": "contact",
+            "particularly": "mainly",
+            "construction": "building",
+            "successfully": "with ease",
+            "introduction": "intro",
+            "distribution": "spread",
+            "experimental": "test",
+            "appreciation": "thanks",
+            "accomplished": "done",
+            "conventional": "usual",
+            "consequences": "effects",
+            "independence": "freedom",
+            "manipulation": "handling",
+            "organization": "group",
+            "optimization": "tuning",
+            "professional": "expert",
+            "subsequently": "later",
+            "considerable": "large",
+            "illustration": "example",
+            "specifically": "namely",
+            "surveillance": "watching",
+            "anticipation": "hope",
+            # 11 chars
+            "irrevocably": "for good",
+            "intelligence": "AI",
+            "unprecedented": "new",
+            "capabilities": "skills",
+            "integration": "merge",
+            "remarkable": "striking",
+            "performance": "results",
+            "development": "growth",
+            "application": "use",
+            "environment": "setting",
+            "information": "data",
+            "perspective": "view",
+            "alternative": "option",
+            "operational": "working",
+            "fundamental": "basic",
+            "acknowledge": "admit",
+            "accordingly": "so",
+            "comfortable": "cozy",
+            "requirement": "need",
+            "arrangement": "setup",
+            "combination": "mix",
+            "competition": "race",
+            "temperature": "temp",
+            "opportunity": "chance",
+            "traditional": "classic",
+            "demonstrate": "show",
+            "improvement": "boost",
+            "appropriate": "right",
+            "conjunction": "link",
+            "recognition": "notice",
+            "substantial": "large",
+            "educational": "learning",
+            "furthermore": "also",
+            "nonetheless": "still",
+            "comfortable": "cozy",
+            "programmers": "coders",
+            "explanation": "reason",
+            "complicated": "complex",
+            "responsible": "in charge",
+            "observation": "finding",
+            "imagination": "vision",
+            "significant": "major",
+            "maintenance": "upkeep",
+            "preliminary": "early",
+            # 10 chars
+            "processing": "running",
+            "healthcare": "health",
+            "diagnostic": "testing",
+            "artificial": "AI-based",
+            "algorithms": "methods",
+            "challenges": "issues",
+            "experience": "practice",
+            "especially": "mainly",
+            "additional": "extra",
+            "generation": "batch",
+            "evaluation": "review",
+            "apparently": "it seems",
+            "difficulty": "trouble",
+            "enterprise": "firm",
+            "foundation": "base",
+            "hypothesis": "guess",
+            "investment": "spend",
+            "management": "control",
+            "objectives": "goals",
+            "production": "output",
+            "protection": "safety",
+            "references": "sources",
+            "tournament": "contest",
+            "ultimately": "in the end",
+            # 9 chars
+            "workflows": "steps",
+            "treatment": "care",
+            "precisely": "exactly",
+            "improving": "lifting",
+            "different": "other",
+            "analyzing": "checking",
+            "hopefully": "with luck",
+            "community": "group",
+            "following": "next",
+            "important": "key",
+            "knowledge": "know-how",
+            "marketing": "promo",
+            "necessary": "needed",
+            "obviously": "clearly",
+            "practical": "hands-on",
+            "primarily": "mainly",
+            "questions": "queries",
+            "recommend": "suggest",
+            "resources": "assets",
+            "situation": "case",
+            "sometimes": "at times",
+            "structure": "form",
+            "technical": "tech",
+            "therefore": "so",
+            "beginning": "start",
+            "utilizing": "using",
+            "providing": "giving",
+            "currently": "now",
+            "extremely": "very",
+            "potential": "possible",
+            "typically": "usually",
+            # 8 chars
+            "communicate": "talk",
+            "immediately": "at once",
+            "potentially": "maybe",
+        },
+        "ru": {
+            "использование": "работа",
+            "предоставление": "выдача",
+            "функционирование": "работа",
+            "совершенствование": "рост",
+            "взаимодействие": "связь",
+            "осуществление": "запуск",
+            "формирование": "создание",
+            "свидетельствует": "говорит",
+            "характеризуется": "известен",
+            "представляется": "кажется",
+            "предварительно": "заранее",
+            "непосредственно": "прямо",
+            "исключительно": "лишь",
+            "одновременно": "сразу",
+            "систематически": "часто",
+            "соответственно": "значит",
+            "дополнительно": "ещё",
+            "приблизительно": "около",
+            "обстоятельства": "условия",
+            "обеспечение": "гарантия",
+            "воздействие": "влияние",
+            "существенно": "сильно",
+            "значительно": "много",
+            "впечатляющие": "яркие",
+            "автоматизировать": "упростить",
+        },
+        "uk": {
+            "використання": "робота",
+            "забезпечення": "гарантія",
+            "функціонування": "робота",
+            "характеризується": "відомий",
+            "безпосередньо": "прямо",
+            "систематично": "часто",
+            "виключно": "лише",
+            "послідовно": "по черзі",
+            "попередньо": "раніше",
+            "відповідно": "тому",
+            "одночасно": "разом",
+            "неодноразово": "часто",
+            "впроваджувати": "вводити",
+            "автоматизувати": "спростити",
+        },
+    }
+
+    def _normalize_word_length_variance(self, text: str, prob: float) -> str:
+        """Iteratively replace the longest words to reduce word_length_variance.
+
+        This is the most impactful step for the neural MLP detector.
+        Neural feature f3 (``word_length_variance``) has z-score mean=3.5,
+        std=1.2. AI text often has variance=11+ (z=+6.5, clipped to +3.0
+        = maximum AI signal). Human text has variance ≈ 5.0 (z=+1.25).
+
+        IMPORTANT: Only uses curated, hand-verified dictionaries.
+        SynonymDB is intentionally NOT used here because thesaurus-based
+        replacement without context checking produces garbage text
+        (e.g. "language" → "albanian", "generate" → "bear").
+        """
+        if prob < 0.25:
+            return text
+
+        TARGET_VARIANCE = 6.0
+        MAX_ITERATIONS = 20
+
+        extra_map = self._EXTRA_LONG_SHORT.get(self.lang, {})
+        curated_map = self._replacements  # _AI_WORD_REPLACEMENTS
+
+        # Words that should NEVER be replaced (domain terms, compound parts)
+        _PROTECTED = {
+            # NLP / AI terms
+            "language", "processing", "learning", "network", "networks",
+            "intelligence", "artificial", "machine", "neural", "natural",
+            "transformer", "transformers", "attention", "architecture",
+            "algorithm", "algorithms", "diagnostic", "diagnostics",
+            "healthcare", "treatment", "computing", "computer",
+            "software", "hardware", "database", "interface", "protocol",
+            # Common domain terms
+            "analytics", "scientific", "research", "university",
+            "professor", "department", "government", "international",
+            "generation", "automated", "industries", "accuracy",
+            "contextual", "analyzing", "analysis",
+            "implementation", "implement", "implementing",
+        }
+
+        skipped: set[str] = set()
+
+        for _iteration in range(MAX_ITERATIONS):
+            tokens = self._WORD_RE_ALPHA.findall(text)
+            if len(tokens) < 5:
+                break
+
+            wlens = [float(len(t)) for t in tokens]
+            mean_wl = sum(wlens) / len(wlens)
+            variance = sum((x - mean_wl) ** 2 for x in wlens) / len(wlens)
+
+            if variance <= TARGET_VARIANCE:
+                break
+
+            # Find the longest replaceable word
+            candidates = sorted(set(tokens), key=lambda t: len(t), reverse=True)
+
+            longest_word = None
+            replacement = None
+
+            for cand in candidates:
+                if len(cand) <= 6:
+                    break
+                lower = cand.lower()
+                if lower in _PROTECTED or lower in skipped:
+                    continue
+
+                # 1. Curated extra dict (highest trust)
+                if lower in extra_map:
+                    rep = extra_map[lower]
+                    if len(rep) < len(cand) - 1:
+                        longest_word = cand
+                        replacement = rep
+                        break
+
+                # 2. AI word replacements (pick shortest that's ≥3 chars shorter)
+                if lower in curated_map:
+                    alts = curated_map[lower]
+                    if alts:
+                        short = [
+                            a for a in alts
+                            if len(a) < len(cand) - 2
+                            and " " not in a  # single words only
+                        ]
+                        if short:
+                            longest_word = cand
+                            replacement = min(short, key=len)
+                            break
+
+                # No curated replacement found — skip this word
+                skipped.add(lower)
+
+            if longest_word is None or replacement is None:
+                break
+
+            # Case-preserving replacement
+            if longest_word[0].isupper() and replacement[0].islower():
+                replacement = replacement[0].upper() + replacement[1:]
+            if longest_word.isupper():
+                replacement = replacement.upper()
+
+            pattern = re.compile(r'\b' + re.escape(longest_word) + r'\b')
+            text, n = pattern.subn(replacement, text, count=1)
+            skipped.add(longest_word.lower())
+
+            if n > 0:
+                self.changes.append({
+                    "type": "naturalize_wlv",
+                    "original": longest_word,
+                    "replacement": replacement,
+                })
+
+        return text
+
+    # ─── Sentence length variance normalization ───────────────
+
+    def _normalize_sentence_lengths(self, text: str, prob: float) -> str:
+        """Split overly long sentences to normalize sentence_length_variance.
+
+        Neural feature f5 (sentence_length_variance) mean=30.0, std=25.0.
+        Human text typically has variance 25-50 (z ≈ 0 to +0.8).
+        AI text can have extremely low variance (uniform lengths, z<-1) or
+        extremely high variance (after humanizer insertion fragments create
+        2-word sentences next to 40+ word monsters, z>>+3.0).
+
+        Strategy:
+          - Split any sentence >28 words at a comma, conjunction, or dash
+          - This brings extreme outliers back to human range
+          - Target: mean_sentence_length ≈ 12-18 words
+        """
+        if prob < 0.25:
+            return text
+
+        from texthumanize.sentence_split import split_sentences
+
+        paragraphs = text.split('\n')
+        result_paras = []
+
+        for para in paragraphs:
+            if not para.strip():
+                result_paras.append(para)
+                continue
+
+            sentences = split_sentences(para.strip())
+            new_sents = []
+
+            for sent in sentences:
+                sent = sent.strip()
+                if not sent:
+                    continue
+
+                words = sent.split()
+                wc = len(words)
+
+                if wc > 28:
+                    # Try to split at a good point
+                    parts = self._split_long_sentence(sent, wc)
+                    new_sents.extend(parts)
+                elif wc > 22 and self.rng.random() < prob * 0.5:
+                    parts = self._split_long_sentence(sent, wc)
+                    new_sents.extend(parts)
+                else:
+                    new_sents.append(sent)
+
+            result_paras.append(' '.join(new_sents))
+
+        return '\n'.join(result_paras)
+
+    def _split_long_sentence(self, sent: str, wc: int) -> list[str]:
+        """Split a long sentence into two parts at a natural break point."""
+        # Split priorities: comma, em-dash, conjunction
+        words = sent.split()
+        target_split = wc // 2  # aim for middle
+
+        # Try comma split first
+        best_pos = -1
+        best_dist = wc
+
+        comma_split_chars = [', ', ' — ', ' – ', '; ']
+        for split_char in comma_split_chars:
+            idx = 0
+            while True:
+                pos = sent.find(split_char, idx)
+                if pos == -1:
+                    break
+                words_before = len(sent[:pos].split())
+                # Must have at least 5 words on each side
+                if words_before >= 5 and (wc - words_before) >= 5:
+                    dist = abs(words_before - target_split)
+                    if dist < best_dist:
+                        best_dist = dist
+                        best_pos = pos
+                        best_split_char = split_char
+                idx = pos + len(split_char)
+
+        if best_pos > 0:
+            first = sent[:best_pos].strip()
+            rest = sent[best_pos + len(best_split_char):].strip()
+
+            # End first part with period
+            if first and not first[-1] in '.!?':
+                first = first.rstrip(',;:') + '.'
+
+            # Capitalize rest
+            if rest and rest[0].islower():
+                rest = rest[0].upper() + rest[1:]
+
+            return [first, rest]
+
+        # Try conjunction split
+        _conj = {
+            "en": [" and ", " but ", " which ", " while ", " although ", " because "],
+            "ru": [" и ", " но ", " а ", " который ", " хотя ", " потому что "],
+            "uk": [" і ", " але ", " а ", " який ", " хоча ", " тому що "],
+        }
+        conjs = _conj.get(self.lang, _conj["en"])
+        for conj in conjs:
+            pos = sent.find(conj)
+            if pos > 0:
+                words_before = len(sent[:pos].split())
+                if words_before >= 5 and (wc - words_before) >= 5:
+                    first = sent[:pos].strip()
+                    rest = sent[pos + len(conj):].strip()
+                    if first and not first[-1] in '.!?':
+                        first = first.rstrip(',;:') + '.'
+                    if rest and rest[0].islower():
+                        rest = rest[0].upper() + rest[1:]
+                    return [first, rest]
+
+        # Can't split — return as-is
+        return [sent]
 
     def _apply_contractions(self, text: str, prob: float) -> str:
         """Применить сокращения для английского (don't, isn't, etc.)."""

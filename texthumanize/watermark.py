@@ -274,15 +274,23 @@ class WatermarkDetector:
         """Detect unusual spacing patterns that could encode information."""
         cleaned = report.cleaned_text
 
-        # Multiple consecutive spaces (could encode binary data)
-        multi_space = re.findall(r' {2,}', cleaned)
+        # Multiple consecutive spaces *within* line content
+        # (could encode binary data).
+        # We must preserve leading indentation (code blocks, lists).
+        multi_space = re.findall(r'(?<=\S) {2,}(?=\S)', cleaned)
         if len(multi_space) > 5:
             report.watermark_types.append("spacing_steganography")
             report.details.append(
                 f"Found {len(multi_space)} unusual multi-space sequences"
             )
-            # Normalize to single spaces
-            cleaned = re.sub(r' {2,}', ' ', cleaned)
+            # Normalize inner multiple spaces to single, preserve leading
+            lines = cleaned.split('\n')
+            normalised: list[str] = []
+            for line in lines:
+                stripped = line.lstrip(' ')
+                leading = line[:len(line) - len(stripped)]
+                normalised.append(leading + re.sub(r' {2,}', ' ', stripped))
+            cleaned = '\n'.join(normalised)
             report.cleaned_text = cleaned
 
         # Trailing spaces on lines (could encode bits)
