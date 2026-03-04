@@ -71,7 +71,7 @@
 - [Security & Limits](#-security--limits)
 - [For Business & Enterprise](#-for-business--enterprise)
 - [FAQ & Troubleshooting](#-faq--troubleshooting)
-- [What's New in v0.27.0](#-whats-new-in-v0270)
+- [What's New in v0.28.0](#-whats-new-in-v0270)
 - [Contributing](#-contributing)
 - [Limitations](#-limitations)
 - [Support the Project](#-support-the-project)
@@ -1334,7 +1334,7 @@ All benchmarks on Apple Silicon (M-series), Python 3.12, single thread, after wa
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  TextHumanize v0.27.0 — AI Score Benchmark              │
+│  TextHumanize v0.28.0 — AI Score Benchmark              │
 ├──────────────────────────────────────────────────────────┤
 │  EN (web/50):    94% → 27%    (reduction: -67pp)        │
 │  EN (web/60):    94% → 23%    (reduction: -71pp)        │
@@ -1680,27 +1680,23 @@ Try the [Live Demo](https://humanizekit.tester-buyreadysite.website/). For local
 
 ---
 
-## 🆕 What's New in v0.27.0
+## 🆕 What's New in v0.28.0
 
-### SentenceValidator™ — Interstage Quality Gate (NEW)
+### Web Platform — Auth, Payments & Freemium (NEW)
+- **User registration** with email/password + Google OAuth 2.0
+- **Multi-tier pricing** — Free / Starter $9 / Pro $19 / Business $49/month with monthly/annual toggle
+- **API key management** — create, revoke, and group keys per plan (1 / 5 / 20 keys)
+- **Monobank Acquiring** payment integration with webhook activation
+- **Admin panel** — user management, plan overrides, payment history, usage stats
+- **Freemium gates** — guests limited to 3 requests/day; text results blurred after 500 chars
+- **API authentication** — Bearer token support with session-based guest quota tracking
+- **Expanded API docs** — authentication guide, per-plan rate limits, PAYG billing docs, error codes (401/429)
+- **Competitor comparison table** added to Pricing page (vs Quillbot, Undetectable.ai, StealthGPT)
+
+### SentenceValidator™ — Interstage Quality Gate (v0.27.0)
 - **`sentence_validator.py` (350 lines)** — sentence-level artifact detection running at 7 checkpoints between pipeline stages
 - **10 artifact checks per sentence:** duplicate words, broken contractions, orphaned punctuation, double conjunctions, dangling conjunctions, unterminated parens, triple+ repeats, fragment chains, conjunction chains, empty sentences
 - **Final sanitization** in `run()` method catches post-loop residual artifacts
-
-### PHANTOM™ — Gradient-Guided Adversarial Engine (v0.26.0)
-- **`phantom.py` (2,943 lines)** — gradient-guided adversarial text humanization
-- **ORACLE**: Numerical gradient computation through detector MLP via central differences
-- **SURGEON**: 32 feature-targeted surgical operations guided by Oracle gradients
-- **FORGE**: Iterative optimization loop with combined score tracking and stall detection
-- **100% bypass rate** (15/15 texts) across EN, RU, and UK on built-in neural detector
-
-### 8 Artifact Fixes
-- EN "bes" artifact (irregular verb morphology), fragment chains, merge quality, RU truncation, UK triple-н, DE "die Beachten", FR "the" leak, paragraph collapse
-
-### Quality Hardening
-- Grammar Guard safety gates (overlap ≥ 0.55, positional ≥ 0.35)
-- Per-language naturalizer starters (15 languages), paraphrase connectors (11 languages)
-- Syntax rewriter regex hardening with `\b` word boundaries
 
 ### Stats
 - **2,073 tests** · **122 modules** · **235,000+ lines** · **25 languages** · **38-stage pipeline**
@@ -1768,12 +1764,12 @@ TextHumanize uses a **dual license model**:
 | Use Case | License | Cost |
 |:---------|:--------|:----:|
 | Personal / Academic / Open-source | Free License | **Free** |
-| Commercial — 1 dev, 1 project | Indie | **$29/month** |
-| Commercial — up to 5 devs | Startup | **$49/month** |
-| Commercial — up to 20 devs | Business | **$99/month** |
+| Commercial — 1 dev, 1 project | Indie | **$199/year** |
+| Commercial — up to 5 devs | Startup | **$499/year** |
+| Commercial — up to 20 devs | Business | **$1,499/year** |
 | Enterprise / On-prem / SLA / White-label | Enterprise | [Contact us](mailto:ksanyok@me.com) |
 
-All commercial licenses include full source code, all updates, priority email support, and access to PHANTOM™ + ASH™ proprietary technologies.
+All commercial licenses include full source code, all updates, priority email support, and access to PHANTOM™ + ASH™ proprietary technologies. **Annual billing — well below market alternatives** ($10–50/mo per cloud API at comparable scale).
 
 **[Full licensing details →](COMMERCIAL.md)** · See [LICENSE](LICENSE) for legal text · **Contact:** [ksanyok@me.com](mailto:ksanyok@me.com)
 
