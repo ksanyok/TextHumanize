@@ -264,7 +264,7 @@ class TestFrozenSnapshots:
         "is being actively pursued."
     )
 
-    EXPECTED_EN_HASH = "156938047c29953f36779f710557f0aa"
+    EXPECTED_EN_HASH = "e608fff6bf77baf37910f74cdde966c6"
 
     def _md5(self, text: str) -> str:
         return hashlib.md5(text.encode()).hexdigest()

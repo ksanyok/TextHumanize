@@ -887,8 +887,10 @@ class SyntaxRewriter:
         # Extract numbers from original for preservation check
         orig_numbers = set(re.findall(r'\d+', sentence))
         for v in variants:
-            # Reject if it starts with a preposition (fronted PP is usually bad)
-            if re.match(r'^(Of|By|For|With|From|At|In|On|To)\s+\w+,', v):
+            # Reject if it starts with a preposition (fronted PP is usually bad).
+            # The pattern uses \w.+, to catch multi-word PP phrases like
+            # "Of various processes, ..." not just single-word "Of X, ...".
+            if re.match(r'^(?:Of|By|For|With|From|At|In|On|To)\s+\w.+,', v):
                 continue
             # Reject if the result has "by ," or ", ," or double-space
             if re.search(r'by\s*,|,\s*,|  ', v):
@@ -1007,12 +1009,16 @@ class SyntaxRewriter:
 
         tags = self._tagger.tag(body)
 
-        # Strategy 1: Move trailing prepositional phrase
-        result = self._front_prep_phrase(
-            tokens, tags, punct,
-        )
-        if result:
-            return result
+        # Strategy 1: Move trailing prepositional phrase.
+        # Disabled for English: PP fronting creates "Of X, ..." sentence
+        # openings that downstream entropy injection splits at the comma,
+        # producing duplicate sentences and garbled output.
+        if self._lang != "en":
+            result = self._front_prep_phrase(
+                tokens, tags, punct,
+            )
+            if result:
+                return result
 
         # Strategy 2: Move single adverb
         result = self._front_single_adverb(
