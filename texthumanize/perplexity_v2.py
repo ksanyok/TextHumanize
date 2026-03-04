@@ -227,16 +227,15 @@ def perplexity_score(text: str, lang: str = "en") -> dict:
 
     # Per-sentence perplexity for visualization
     sentence_scores = []
-    if len(sentences) >= 2:
-        for s in sentences:
-            s_ce = cross_entropy(s, lang)
-            s_ppl = 2.0 ** s_ce if s_ce > 0 else 1.0
-            sentence_scores.append({
-                "text": s[:120],
-                "ce": round(s_ce, 3),
-                "ppl": round(s_ppl, 1),
-                "words": len(s.split()),
-            })
+    for s in sentences:
+        s_ce = cross_entropy(s, lang)
+        s_ppl = 2.0 ** s_ce if s_ce > 0 else 1.0
+        sentence_scores.append({
+            "text": s[:200],
+            "ce": round(s_ce, 3),
+            "ppl": round(s_ppl, 1),
+            "words": len(s.split()),
+        })
 
     return {
         "cross_entropy": round(ce, 4),
