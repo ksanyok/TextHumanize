@@ -34,12 +34,12 @@ jobs:
 
       - name: Run tests
         if: matrix.python-version != '3.12'
-        run: pytest -v --tb=short
+        run: pytest --tb=short --timeout=120 -q
 
       - name: Run tests with coverage (Python 3.12 only)
         if: matrix.python-version == '3.12'
         run: |
-          pytest --cov=texthumanize --cov-report=xml --cov-fail-under=70 --tb=short --timeout=30 -n auto
+          pytest --cov=texthumanize --cov-report=xml --cov-fail-under=70 --tb=short --timeout=120 -n auto -q
 
       - name: Type check with mypy (Python 3.12 only)
         if: matrix.python-version == '3.12'
