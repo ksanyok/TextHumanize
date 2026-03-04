@@ -45,6 +45,10 @@ php/composer.lock
 # Node
 node_modules/
 
+# Web demo/deploy (hosted separately, not part of library)
+web/deploy/
+web/demo/
+
 # Backups
 *.bak
 site/

@@ -157,25 +157,40 @@ def perplexity_score(text: str, lang: str = "en") -> dict:
     # High cross-entropy + high variance + high vocabulary = human
     naturalness = 0.0
 
-    # Cross-entropy contribution (human: 3.5-5.5, AI: 2-3.5)
-    if ce >= 4.5:
-        naturalness += 35
+    # Cross-entropy contribution — primary signal (0-45 points)
+    # human: 3.5-5.5+, AI: 2-3.5
+    if ce >= 8.0:
+        naturalness += 45      # Extremely high CE — clearly human/creative
+    elif ce >= 6.0:
+        naturalness += 42
+    elif ce >= 4.5:
+        naturalness += 38
     elif ce >= 3.5:
-        naturalness += 25
+        naturalness += 28
     elif ce >= 2.5:
         naturalness += 15
     else:
         naturalness += 5
 
     # Variance contribution (human text is more variable)
-    if cv >= 0.3:
-        naturalness += 30
-    elif cv >= 0.15:
-        naturalness += 20
-    elif cv >= 0.05:
-        naturalness += 10
+    # For short texts (< 5 sentences), give benefit of the doubt
+    if len(sentences) < 5:
+        # Not enough data for reliable variance — use neutral score
+        if cv >= 0.15:
+            naturalness += 20
+        elif cv >= 0.05:
+            naturalness += 15
+        else:
+            naturalness += 10
     else:
-        naturalness += 3
+        if cv >= 0.3:
+            naturalness += 25
+        elif cv >= 0.15:
+            naturalness += 18
+        elif cv >= 0.05:
+            naturalness += 10
+        else:
+            naturalness += 3
 
     # Vocabulary contribution
     if unique_ratio >= 0.7:
@@ -210,6 +225,19 @@ def perplexity_score(text: str, lang: str = "en") -> dict:
     else:
         verdict = "ai"
 
+    # Per-sentence perplexity for visualization
+    sentence_scores = []
+    if len(sentences) >= 2:
+        for s in sentences:
+            s_ce = cross_entropy(s, lang)
+            s_ppl = 2.0 ** s_ce if s_ce > 0 else 1.0
+            sentence_scores.append({
+                "text": s[:120],
+                "ce": round(s_ce, 3),
+                "ppl": round(s_ppl, 1),
+                "words": len(s.split()),
+            })
+
     return {
         "cross_entropy": round(ce, 4),
         "perplexity": round(ppl, 2),
@@ -217,4 +245,5 @@ def perplexity_score(text: str, lang: str = "en") -> dict:
         "burstiness_score": round(cv, 4),
         "naturalness": round(naturalness, 1),
         "verdict": verdict,
+        "sentence_scores": sentence_scores,
     }
