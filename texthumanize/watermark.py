@@ -75,24 +75,29 @@ _CYRILLIC_TO_LATIN = {
 _LATIN_TO_CYRILLIC = {v: k for k, v in _CYRILLIC_TO_LATIN.items()}
 
 # Специальные символы (выглядят как обычные, но из других кодовых блоков)
+# ONLY truly suspicious substitutions (script mixing, fullwidth, math symbols)
 _SPECIAL_HOMOGLYPHS = {
     # Fullwidth Latin
     '\uff41': 'a', '\uff42': 'b', '\uff43': 'c', '\uff44': 'd',
     '\uff45': 'e', '\uff46': 'f', '\uff47': 'g',
     # Mathematical symbols that look like letters
     '\u2202': 'd',  # Partial Differential → d
-    # NOTE: Cyrillic е (U+0435), а (U+0430), і (U+0456) are NOT homoglyphs —
-    # they are normal Cyrillic letters. Substitution is handled contextually
-    # via _CYRILLIC_TO_LATIN / _LATIN_TO_CYRILLIC in _detect_homoglyphs().
     '\u03b1': 'a',  # Greek alpha → a (rare outside math)
     '\u03bf': 'o',  # Greek omicron → o
     # Subscript/superscript numbers
     '\u00b2': '2', '\u00b3': '3', '\u00b9': '1',
     '\u2070': '0', '\u2071': 'i',
-    # Confusable punctuation
+}
+
+# Common typographic characters — normalize but do NOT flag as watermark evidence.
+# These appear in normal text from browsers, Word, PDF etc.
+_TYPOGRAPHY_NORMALIZE = {
+    # Curly/smart quotes (standard typography)
     '\u2018': "'", '\u2019': "'", '\u201c': '"', '\u201d': '"',
+    # Various dashes (common in published text)
     '\u2012': '-', '\u2013': '-', '\u2014': '-',
     '\u2212': '-',  # minus sign vs hyphen
+    # Non-breaking and typographic spaces (common in web/HTML copy-paste)
     '\u00a0': ' ',  # Non-breaking space
     '\u2003': ' ',  # Em space
     '\u2002': ' ',  # En space
@@ -198,6 +203,7 @@ class WatermarkDetector:
         is_cyrillic = self.lang in ("ru", "uk")
 
         homoglyphs: list[tuple[str, str, int]] = []
+        typography_normalized = 0
         chars = list(report.cleaned_text)
 
         for i, ch in enumerate(chars):
@@ -221,13 +227,24 @@ class WatermarkDetector:
                         homoglyphs.append((ch, expected, i))
                         chars[i] = expected
 
-            # Проверяем специальные гомоглифы
+            # Suspicious homoglyphs (fullwidth, math, etc.) → count as watermark
             if ch in _SPECIAL_HOMOGLYPHS:
                 expected = _SPECIAL_HOMOGLYPHS[ch]
                 if ch != expected:
                     homoglyphs.append((ch, expected, i))
                     chars[i] = expected
 
+            # Typography normalization (curly quotes, dashes, spaces) → clean only
+            if ch in _TYPOGRAPHY_NORMALIZE:
+                expected = _TYPOGRAPHY_NORMALIZE[ch]
+                if ch != expected:
+                    typography_normalized += 1
+                    chars[i] = expected
+
+        # Always normalize the text (typography + real homoglyphs)
+        report.cleaned_text = "".join(chars)
+
+        # Only flag as watermark if actual suspicious homoglyphs found
         if homoglyphs:
             report.watermark_types.append("homoglyph_substitution")
             report.homoglyphs_found = homoglyphs
@@ -235,7 +252,6 @@ class WatermarkDetector:
                 f"Found {len(homoglyphs)} homoglyph substitutions"
             )
             report.characters_removed += len(homoglyphs)
-            report.cleaned_text = "".join(chars)
 
     # ───────────────────────────────────────────────────────────
     #  INVISIBLE UNICODE
@@ -360,10 +376,10 @@ class WatermarkDetector:
             re.IGNORECASE,
         ), "iptc_metadata"),
         # Content Credentials / Content Authenticity Initiative strings
+        # NOTE: Only match multi-word metadata phrases, not common text
         (re.compile(
-            r'Content\s+Credentials?|Content\s+Authenticity'
-            r'|AI[\s-]?Generated|Machine[\s-]?Generated'
-            r'|Generative[\s-]?AI',
+            r'Content\s+Credentials?\b|Content\s+Authenticity\s+Initiative'
+            r'|Generative[\s-]AI\s+(?:Content|Disclosure)',
             re.IGNORECASE,
         ), "content_provenance"),
         # Embedded base64 provenance blobs (≥ 40 chars of base64)
