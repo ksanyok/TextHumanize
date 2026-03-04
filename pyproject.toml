@@ -119,6 +119,7 @@ python_functions = ["test_*"]
 timeout = 300
 
 [tool.coverage.run]
+parallel = true
 omit = [
     "texthumanize/training.py",
     "texthumanize/dashboard.py",
