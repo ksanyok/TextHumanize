@@ -276,7 +276,7 @@ class SemanticParaphraser
             if (preg_match('/^(.+?),?\s+and\s+(.+)$/iu', $bare, $m)) {
                 $part1 = trim($m[1]);
                 $part2 = trim($m[2]);
-                if (count(explode(' ', $part1)) >= 4 && count(explode(' ', $part2)) >= 4) {
+                if (count(explode(' ', $part1)) >= 8 && count(explode(' ', $part2)) >= 8) {
                     if (mb_strtoupper(mb_substr($part2, 0, 1)) === mb_substr($part2, 0, 1)) {
                         $part2 = mb_strtolower(mb_substr($part2, 0, 1)) . mb_substr($part2, 1);
                     }
@@ -294,7 +294,7 @@ class SemanticParaphraser
             if (count($parts) === 2) {
                 $p1 = trim($parts[0]);
                 $p2 = trim($parts[1]);
-                if (count(explode(' ', $p1)) >= 4 && count(explode(' ', $p2)) >= 4) {
+                if (count(explode(' ', $p1)) >= 8 && count(explode(' ', $p2)) >= 8) {
                     if (mb_strtoupper(mb_substr($p2, 0, 1)) === mb_substr($p2, 0, 1)) {
                         $p2 = mb_strtolower(mb_substr($p2, 0, 1)) . mb_substr($p2, 1);
                     }

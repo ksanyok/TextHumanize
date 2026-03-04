@@ -25,7 +25,7 @@ class TextNaturalizer
             'utilize' => ['use', 'apply', 'employ'],
             'utilizes' => ['uses', 'applies'],
             'utilized' => ['used', 'applied'],
-            'implement' => ['do', 'carry out', 'set up'],
+            'implement' => ['carry out', 'put in place', 'apply'],
             'facilitate' => ['help', 'enable', 'support'],
             'comprehensive' => ['full', 'complete', 'thorough', 'broad'],
             'significant' => ['big', 'major', 'notable', 'key'],
@@ -297,7 +297,7 @@ class TextNaturalizer
         $variance /= count($lengths);
         $cv = sqrt($variance) / $avg;
 
-        if ($cv >= 0.6) {
+        if ($cv >= 0.4) {
             return $text; // Already bursty enough
         }
 
@@ -439,7 +439,7 @@ class TextNaturalizer
         for ($i = 2; $i < count($sentences) && $inserts < $maxInserts; $i++) {
             // Discourse marker at start of sentence (safer than after word 1 —
             // avoids splitting multi-word constructions like "Поки що")
-            if (Profiles::coinFlip($prob * 0.3, $this->rng) && !empty($boosters['discourse_markers'])) {
+            if (Profiles::coinFlip($prob * 0.15, $this->rng) && !empty($boosters['discourse_markers'])) {
                 $marker = $this->rng->choice($boosters['discourse_markers']);
                 $capMarker = mb_strtoupper(mb_substr($marker, 0, 1)) . mb_substr($marker, 1);
                 $sent = $sentences[$i];
@@ -452,7 +452,7 @@ class TextNaturalizer
             }
 
             // Hedge at start
-            if (Profiles::coinFlip($prob * 0.25, $this->rng) && !empty($boosters['hedges'])) {
+            if (Profiles::coinFlip($prob * 0.12, $this->rng) && !empty($boosters['hedges'])) {
                 $hedge = $this->rng->choice($boosters['hedges']);
                 $sentences[$i] = ucfirst($hedge) . ', ' . mb_strtolower(mb_substr($sentences[$i], 0, 1)) . mb_substr($sentences[$i], 1);
                 $this->changes[] = ['type' => 'naturalize_perplexity', 'what' => 'hedge'];

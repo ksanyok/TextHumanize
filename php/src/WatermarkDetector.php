@@ -30,6 +30,8 @@ class WatermarkReport
     /** @var list<string> */
     public array $details = [];
 
+    public string $originalText = '';
+
     public string $cleanedText = '';
 
     public int $charactersRemoved = 0;
@@ -85,36 +87,47 @@ class WatermarkDetector
 
     /** Cyrillic → Latin (visually identical) */
     private const CYRILLIC_TO_LATIN = [
-        'а' => 'a', 'с' => 'c', 'е' => 'e', 'о' => 'o', 'р' => 'p',
+        'а' => 'a', 'с' => 'c', 'е' => 'e', 'і' => 'i', 'о' => 'o', 'р' => 'p',
         'х' => 'x', 'у' => 'y', 'А' => 'A', 'В' => 'B', 'С' => 'C',
-        'Е' => 'E', 'Н' => 'H', 'К' => 'K', 'М' => 'M', 'О' => 'O',
+        'Е' => 'E', 'І' => 'I', 'Н' => 'H', 'К' => 'K', 'М' => 'M', 'О' => 'O',
         'Р' => 'P', 'Т' => 'T', 'Х' => 'X',
     ];
 
     /** Latin → Cyrillic (reverse mapping) */
     private const LATIN_TO_CYRILLIC = [
-        'a' => 'а', 'c' => 'с', 'e' => 'е', 'o' => 'о', 'p' => 'р',
+        'a' => 'а', 'c' => 'с', 'e' => 'е', 'i' => 'і', 'o' => 'о', 'p' => 'р',
         'x' => 'х', 'y' => 'у', 'A' => 'А', 'B' => 'В', 'C' => 'С',
-        'E' => 'Е', 'H' => 'Н', 'K' => 'К', 'M' => 'М', 'O' => 'О',
+        'E' => 'Е', 'I' => 'І', 'H' => 'Н', 'K' => 'К', 'M' => 'М', 'O' => 'О',
         'P' => 'Р', 'T' => 'Т', 'X' => 'Х',
     ];
 
-    /** Special homoglyphs (look like normal chars but from other code blocks) */
+    /**
+     * Suspicious homoglyphs — chars from exotic Unicode blocks
+     * that look like ASCII but are NOT standard Cyrillic/Latin.
+     * These ARE flagged as watermark evidence.
+     *
+     * NOTE: Cyrillic а(U+0430), е(U+0435), і(U+0456) are NOT here
+     * because they are normal letters in ru/uk text. They are handled
+     * by the context-aware CYRILLIC_TO_LATIN / LATIN_TO_CYRILLIC maps.
+     */
     private const SPECIAL_HOMOGLYPHS = [
         // Fullwidth Latin
         "\u{ff41}" => 'a', "\u{ff42}" => 'b', "\u{ff43}" => 'c', "\u{ff44}" => 'd',
         "\u{ff45}" => 'e', "\u{ff46}" => 'f', "\u{ff47}" => 'g',
         // Mathematical / confusable letters
         "\u{2202}" => 'd', // Partial Differential → d
-        "\u{0435}" => 'e', // Cyrillic е → Latin e
         "\u{03b1}" => 'a', // Greek alpha → a
         "\u{03bf}" => 'o', // Greek omicron → o
-        "\u{0456}" => 'i', // Ukrainian і → Latin i
-        "\u{0430}" => 'a', // Cyrillic а → Latin a
         // Subscript / superscript numbers
         "\u{00b2}" => '2', "\u{00b3}" => '3', "\u{00b9}" => '1',
         "\u{2070}" => '0', "\u{2071}" => 'i',
-        // Confusable punctuation
+    ];
+
+    /**
+     * Typography normalization — innocent typographic variants.
+     * Cleaned silently but NOT flagged as watermark evidence.
+     */
+    private const TYPOGRAPHY_NORMALIZE = [
         "\u{2018}" => "'", "\u{2019}" => "'", "\u{201c}" => '"', "\u{201d}" => '"',
         "\u{2012}" => '-', "\u{2013}" => '-', "\u{2014}" => '-',
         "\u{2212}" => '-', // minus sign vs hyphen
@@ -166,6 +179,7 @@ class WatermarkDetector
     public function detect(string $text): WatermarkReport
     {
         $report = new WatermarkReport();
+        $report->originalText = $text;
         $report->cleanedText = $text;
 
         // 1. Zero-width characters
@@ -279,13 +293,18 @@ class WatermarkDetector
                 }
             }
 
-            // Check special homoglyphs
+            // Check special homoglyphs (suspicious — flagged as evidence)
             if (isset(self::SPECIAL_HOMOGLYPHS[$ch])) {
                 $expected = self::SPECIAL_HOMOGLYPHS[$ch];
                 if ($ch !== $expected) {
                     $homoglyphs[] = [$ch, $expected, $i];
                     $chars[$i] = $expected;
                 }
+            }
+
+            // Typography normalization — clean silently, NOT flagged
+            if (isset(self::TYPOGRAPHY_NORMALIZE[$ch])) {
+                $chars[$i] = self::TYPOGRAPHY_NORMALIZE[$ch];
             }
         }
 
@@ -295,8 +314,9 @@ class WatermarkDetector
             $count = count($homoglyphs);
             $report->details[] = "Found {$count} homoglyph substitutions";
             $report->charactersRemoved += $count;
-            $report->cleanedText = implode('', $chars);
         }
+        // Always update cleaned text (typography normalization applied silently)
+        $report->cleanedText = implode('', $chars);
     }
 
     // ───────────────────────────────────────────────────────────

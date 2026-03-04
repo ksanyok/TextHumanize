@@ -28,7 +28,7 @@ class Profiles
             'decancel_intensity' => 0.8,
             'structure_intensity' => 0.8,
             'repetition_intensity' => 0.7,
-            'liveliness_intensity' => 0.3,
+            'liveliness_intensity' => 0.1,
             'target_sentence_len' => [10, 22],
         ],
         'seo' => [

@@ -623,16 +623,11 @@ class SemanticParaphraser:
                 rest = rest[0].lower() + rest[1:]
                 return f"{front}, {rest}{punct}", "adverb_fronting", 0.8
 
-            # Prepositional phrase at end: "... in the garden" → "In the garden, ..."
-            for prep in ("in", "on", "at", "from", "with", "during", "after", "before"):
-                for j in range(len(words) - 2, max(2, len(words) // 2), -1):
-                    if words[j].lower() == prep:
-                        pp_part = " ".join(words[j:])
-                        main_part = " ".join(words[:j]).rstrip(',;')
-                        front = pp_part[0].upper() + pp_part[1:]
-                        main_part = main_part[0].lower() + main_part[1:]
-                        return f"{front}, {main_part}{punct}", "pp_fronting", 0.75
-                break  # only check last PP
+            # Prepositional phrase fronting DISABLED — it breaks sentence
+            # meaning by moving internal modifiers to the front.
+            # Example: "...improvements in diagnostic accuracy" →
+            # "In diagnostic accuracy, ...improvements" (garbled).
+            # The SyntaxRewriter handles safe structural transforms instead.
 
         elif self.lang in ("ru", "uk"):
             # Move temporal adverb from end to start

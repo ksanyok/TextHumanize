@@ -341,7 +341,7 @@ class EntropyInjector:
             result.append(sent)
 
             # After 3+ consecutive medium sentences, inject a short fragment
-            if consecutive_medium >= 3 and self._rng.random() < prob * 0.35:
+            if consecutive_medium >= 3 and self._rng.random() < prob * 0.18:
                 fragment = self._generate_fragment()
                 if fragment:
                     result.append(fragment)
@@ -451,7 +451,7 @@ class EntropyInjector:
         result = []
         for sent in sentences:
             # Only modify some sentences
-            if self._rng.random() > prob * 0.25:
+            if self._rng.random() > prob * 0.12:
                 result.append(sent)
                 continue
 
@@ -897,14 +897,14 @@ class EntropyInjector:
 
         result = []
         injected = 0
-        max_inject = max(1, int(len(sentences) * 0.20))
+        max_inject = max(1, int(len(sentences) * 0.10))
 
         for i, sent in enumerate(sentences):
             if i == 0 or injected >= max_inject:
                 result.append(sent)
                 continue
 
-            if self._rng.random() < prob * 0.15:
+            if self._rng.random() < prob * 0.08:
                 kind = self._rng.choice(list(imperfections.keys()))
                 items = imperfections[kind]
 
@@ -1161,14 +1161,14 @@ class EntropyInjector:
         AI writing typically has CV 0.2-0.4.
         """
         targets = {
-            "chat": 0.70,
-            "web": 0.60,
-            "blog": 0.55,
-            "seo": 0.50,
-            "docs": 0.45,
-            "formal": 0.42,
+            "chat": 0.55,
+            "web": 0.40,
+            "blog": 0.38,
+            "seo": 0.35,
+            "docs": 0.32,
+            "formal": 0.30,
         }
-        return targets.get(self._profile, 0.55)
+        return targets.get(self._profile, 0.38)
 
     @staticmethod
     def _avg_length(sentences: list[str]) -> float:

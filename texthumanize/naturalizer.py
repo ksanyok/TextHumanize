@@ -263,7 +263,7 @@ _AI_WORD_REPLACEMENTS = {
         "computational": ["computer", "digital", "data"],
         "operational": ["working", "daily", "practical"],
         "contemporary": ["modern", "current", "present"],
-        "unprecedented": ["rare", "extreme", "record"],
+        "unprecedented": ["unmatched", "unheard-of", "record"],
         "approximately": ["about", "roughly", "around"],
         "predominantly": ["mostly", "mainly", "largely"],
         "fundamentally": ["basically", "at its core", "deeply"],
@@ -1840,6 +1840,16 @@ class TextNaturalizer:
         if len(words) < 10:
             return None
 
+        # Protected compound terms — never insert dashes between these
+        _PROTECTED_BIGRAMS = {
+            "artificial intelligence", "machine learning", "deep learning",
+            "neural network", "natural language", "data science",
+            "decision making", "cutting-edge", "state-of-the-art",
+            "real-time", "open source", "long-term", "short-term",
+            "high-quality", "low-cost", "well-known", "well-being",
+            "health care", "social media",
+        }
+
         if self.lang == "ru":
             asides = [
                 "— что важно —", "— между прочим —", "— к слову —",
@@ -1855,17 +1865,27 @@ class TextNaturalizer:
         else:
             asides = [
                 "— surprisingly —", "— to be fair —", "— interestingly —",
-                "— in a way —", "— arguably —", "— at least in part —",
                 "— and this matters —",
             ]
 
         aside = self.rng.choice(asides)
-        # Вставляем на 1/3 предложения
+        # Find a safe insertion position (not splitting compound terms)
         pos = len(words) // 3
         if pos < 2:
             pos = 2
-        words.insert(pos, aside)
-        return ' '.join(words)
+        # Check if inserting at this position would split a protected bigram
+        for offset in range(0, min(4, len(words) - pos)):
+            candidate = pos + offset
+            if candidate >= len(words) - 1:
+                break
+            left = words[candidate - 1].lower().rstrip('.,;:!?') if candidate > 0 else ""
+            right = words[candidate].lower().rstrip('.,;:!?')
+            bigram = f"{left} {right}"
+            if bigram not in _PROTECTED_BIGRAMS:
+                words.insert(candidate, aside)
+                return ' '.join(words)
+        # No safe position found
+        return None
 
     # ─── Light perplexity boost for formal profiles ──────────
 
@@ -2299,8 +2319,8 @@ class TextNaturalizer:
                 "relationships": ["ties", "bonds", "links"],
                 "circumstances": ["cases", "events"],
                 # Additional high-syllable AI words
-                "artificial": ["man-made", "fake", "built"],
-                "intelligence": ["smarts", "brains", "AI"],
+                "artificial": ["man-made", "synthetic"],
+                "intelligence": ["intellect", "reasoning"],
                 "operational": ["daily", "working", "running"],
                 "efficiency": ["speed", "output", "gains"],
                 "utilization": ["use", "usage"],
@@ -2315,7 +2335,7 @@ class TextNaturalizer:
                 "proliferation": ["spread", "growth", "rise"],
                 "contemporary": ["modern", "current", "today's"],
                 "integration": ["blending", "adding", "merging"],
-                "unprecedented": ["new", "rare", "first"],
+                "unprecedented": ["unmatched", "unheard-of", "first-ever"],
                 "educational": ["learning", "school", "teaching"],
                 "dissemination": ["spread", "sharing"],
                 "geographical": ["regional", "world", "local"],
@@ -2446,11 +2466,11 @@ class TextNaturalizer:
         Even 1 question + 1 exclamation per ~500 chars moves these features
         from their clamped negative values toward the human-mean.
         """
-        if prob < 0.30:
+        if prob < 0.40:
             return text
 
         sentences = split_sentences(text, lang=self.lang)
-        if len(sentences) < 3:
+        if len(sentences) < 5:
             return text
 
         # Count existing questions/exclamations
@@ -2992,7 +3012,7 @@ class TextNaturalizer:
             # 11 chars
             "irrevocably": "for good",
             "intelligence": "AI",
-            "unprecedented": "new",
+            "unprecedented": "unmatched",
             "capabilities": "skills",
             "integration": "merge",
             "remarkable": "striking",
@@ -3178,6 +3198,8 @@ class TextNaturalizer:
             "generation", "automated", "industries", "accuracy",
             "contextual", "analyzing", "analysis",
             "implementation", "implement", "implementing",
+            "technology", "environment", "information",
+            "development", "education", "management",
         }
 
         skipped: set[str] = set()

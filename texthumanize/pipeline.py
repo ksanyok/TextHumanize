@@ -298,7 +298,7 @@ class Pipeline:
         # the result. If so, run another pass with escalated intensity
         # on the already-processed text to push it further from AI.
         target_ai = self.options.constraints.get("target_ai_score", 0.20)
-        max_loops = self.options.constraints.get("max_detection_loops", 5)
+        max_loops = self.options.constraints.get("max_detection_loops", 3)
         ai_before = result.metrics_before.get("artificiality_score", 0)
 
         # Also check the full combined detection score on the original text.
@@ -344,8 +344,8 @@ class Pipeline:
                 # Targeted escalation: analyze which detector features
                 # are still flagging AI, and escalate accordingly.
                 # Gentler escalation to avoid over-processing cliff.
-                escalation = 1.20 + 0.25 * loop_i  # 1.20×, 1.45×, 1.70×, 1.95×, 2.20×
-                esc_intensity = min(95, int(self.options.intensity * escalation))
+                escalation = 1.10 + 0.15 * loop_i  # 1.10×, 1.25×, 1.40×
+                esc_intensity = min(92, int(self.options.intensity * escalation))
 
                 # Use detection details to target weak features
                 loop_profile = self.options.profile
@@ -364,7 +364,7 @@ class Pipeline:
                     preserve=dict(self.options.preserve),
                     constraints={
                         **self.options.constraints,
-                        "max_change_ratio": 0.55,  # Per-loop limit (raised)
+                        "max_change_ratio": 0.40,  # Per-loop limit
                     },
                     seed=(self.options.seed or 42) + loop_i + 1,
                 )
