@@ -27,7 +27,7 @@
 
 **3 proprietary technologies:** PHANTOM™ (gradient-guided adversarial engine) · ASH™ (adaptive signature humanization) · SentenceValidator™ (interstage quality gate)
 
-[Quick Start](#-quick-start) · [Proprietary Technologies](#-proprietary-technologies) · [Before & After](#-before--after-examples) · [Features](#-feature-matrix) · [Benchmarks](#-performance--benchmarks) · [AI Detection](#-ai-detection-engine) · [API Reference](#-api-reference) · [Documentation](https://ksanyok.github.io/TextHumanize/) · [Live Demo](https://humanizekit.tester-buyreadysite.website/) · [License](#-license--pricing)
+[Quick Start](#-quick-start) · [Proprietary Technologies](#-proprietary-technologies) · [Before & After](#-before--after-examples) · [Features](#-feature-matrix) · [Benchmarks](#-performance--benchmarks) · [AI Detection](#-ai-detection-engine) · [API Reference](#-api-reference) · [Documentation](https://ksanyok.github.io/TextHumanize/) · [Live Demo](https://texthumanize.link/) · [License](#-license--pricing)
 
 </div>
 
@@ -1670,7 +1670,7 @@ Create a language pack in `texthumanize/lang/your_lang.py` following the existin
 Yes. Every module is independently importable. See [Using Individual Modules](#-using-individual-modules).
 
 **Q: Is there a GUI?**
-Try the [Live Demo](https://humanizekit.tester-buyreadysite.website/). For local use, the REST API + SSE streaming integrates easily with any frontend.
+Try the [Live Demo](https://texthumanize.link/). For local use, the REST API + SSE streaming integrates easily with any frontend.
 
 **Q: How deterministic is it?**
 100% deterministic when using the same `seed`. Same input + same seed + same version = byte-identical output.
@@ -1684,7 +1684,7 @@ Try the [Live Demo](https://humanizekit.tester-buyreadysite.website/). For local
 
 ### Web Platform — Auth, Payments & Freemium (NEW)
 - **User registration** with email/password + Google OAuth 2.0
-- **Multi-tier pricing** — Free / Starter $9 / Pro $19 / Business $49/month with monthly/annual toggle
+- **Multi-tier pricing** — Free / Starter $29 / Pro $79 / Business $199/month
 - **API key management** — create, revoke, and group keys per plan (1 / 5 / 20 keys)
 - **Monobank Acquiring** payment integration with webhook activation
 - **Admin panel** — user management, plan overrides, payment history, usage stats
@@ -1761,15 +1761,15 @@ If TextHumanize saves you time or money, consider supporting development:
 
 TextHumanize uses a **dual license model**:
 
-| Use Case | License | Cost |
-|:---------|:--------|:----:|
+| Use Case | License | Monthly |
+|:---------|:--------|:-------:|
 | Personal / Academic / Open-source | Free License | **Free** |
-| Commercial — 1 dev, 1 project | Indie | **$199/year** |
-| Commercial — up to 5 devs | Startup | **$499/year** |
-| Commercial — up to 20 devs | Business | **$1,499/year** |
+| Commercial — 1 dev, 1 project | Indie | **$29/mo** |
+| Commercial — up to 5 devs | Startup | **$79/mo** |
+| Commercial — up to 20 devs | Business | **$199/mo** |
 | Enterprise / On-prem / SLA / White-label | Enterprise | [Contact us](mailto:ksanyok@me.com) |
 
-All commercial licenses include full source code, all updates, priority email support, and access to PHANTOM™ + ASH™ proprietary technologies. **Annual billing — well below market alternatives** ($10–50/mo per cloud API at comparable scale).
+All commercial licenses include full source code, all updates, priority email support, and access to PHANTOM™ + ASH™ proprietary technologies. **100% offline — no data leaves your server, no per-request fees, no cloud lock-in.** Monthly billing, cancel any time.
 
 **[Full licensing details →](COMMERCIAL.md)** · See [LICENSE](LICENSE) for legal text · **Contact:** [ksanyok@me.com](mailto:ksanyok@me.com)
 
@@ -1777,7 +1777,7 @@ All commercial licenses include full source code, all updates, priority email su
 
 <p align="center">
   <a href="https://ksanyok.github.io/TextHumanize/">Documentation</a> ·
-  <a href="https://humanizekit.tester-buyreadysite.website/">Live Demo</a> ·
+  <a href="https://texthumanize.link/">Live Demo</a> ·
   <a href="https://pypi.org/project/texthumanize/">PyPI</a> ·
   <a href="https://github.com/ksanyok/TextHumanize">GitHub</a> ·
   <a href="https://github.com/ksanyok/TextHumanize/issues">Issues</a> ·
