@@ -1656,17 +1656,19 @@ cd js/ && npm install && npm test
 
 ## 🧩 Chrome Extension
 
-**[TextHumanize for Chrome](https://github.com/ksanyok/texthumanize-extension)** — a free, open-source (MIT) browser extension that brings the engine to any page. Select text anywhere and:
+**[TextHumanize for Chrome](https://github.com/ksanyok/texthumanize-extension)** — a free, open-source (MIT) browser extension that brings the engine to any page and puts it right where you write.
 
-- ✨ **Humanize** — reduce AI-style signals and replace the text right on the page (inputs, textareas, editors)
-- 🔍 **Check** — instant AI-style score from a 15-metric statistical detector ported 1:1 from this library
-- 🧹 **Clean** — strip zero-width characters, homoglyphs and other hidden watermarks (incl. a Kirchenbauer-style test)
+- ✨ **Humanize** · 🔍 **Check** · 🧹 **Clean** — reduce AI-style signals, score text with the 15-metric detector (ported 1:1), strip hidden watermarks. Replace text in place inside editors.
+- 🎭 **Tone** · 📖 **Readability** · 🔀 **Paraphrase** · 🧬 **Style DNA** — the wider toolkit, all offline.
+- 🖼️ **Image AI-provenance** *(opt-in)* — hover an image to check it for AI-generation markers (C2PA / XMP / EXIF / generator signatures), scanned on-device.
+- **In-editor chip** in Gmail, X, LinkedIn, Notion, ChatGPT, WordPress and any contenteditable/textarea; selection bubble; popup + full-page workspace with word-level diff; tasteful, reduced-motion-aware effects.
 
-**100% offline** — no servers, no accounts, no network requests; ships the full dictionaries for all 25 languages (665 KiB). UI in 10 languages, dark/light themes, keyboard shortcuts, word-level diff.
+**Private by design** — every text tool runs offline; the only thing that can leave the browser is anonymous, content-free usage counts (on by default, one-click off). Ships full dictionaries for all 25 languages; UI in 10 languages.
 
 | | |
 |---|---|
 | Source & docs | [github.com/ksanyok/texthumanize-extension](https://github.com/ksanyok/texthumanize-extension) |
+| Latest | **v2.0.0** ([release](https://github.com/ksanyok/texthumanize-extension/releases/tag/v2.0.0)) |
 | Chrome Web Store | *pending review* |
 | Engine | zero-dependency ES-module port of the library core + full lang packs |
 
