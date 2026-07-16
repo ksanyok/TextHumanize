@@ -70,6 +70,7 @@ readability, and internal risk signals; it is not a bypass guarantee.
 - [Performance & Benchmarks](#-performance--benchmarks)
 - [Architecture](#-architecture)
 - [TypeScript / JavaScript Port](#-typescript--javascript-port)
+- [Chrome Extension](#-chrome-extension)
 - [PHP Library](#-php-library)
 - [Testing & Quality](#-testing--quality)
 - [Security & Limits](#-security--limits)
@@ -90,7 +91,7 @@ TextHumanize is a **pure-algorithmic text processing engine** that transforms AI
 
 **Built-in toolkit:** AI Detection (3 detectors) · Paraphrasing · Tone Analysis · Watermark Cleaning · Content Spinning · Coherence Analysis · Readability Scoring · Stylistic Fingerprinting · Auto-Tuner · Perplexity Analysis · Plagiarism Detection · Grammar Check · Morphology Engine · Neural LM · **Async API** · **SSE Streaming**
 
-**Platforms:** Python (full — 131 modules) · TypeScript/JavaScript (core) · PHP (full)
+**Platforms:** Python (full — 131 modules) · TypeScript/JavaScript (core) · PHP (full) · [Chrome Extension](https://github.com/ksanyok/texthumanize-extension) (offline, 25 languages)
 
 **For business:** SaaS integration · REST API with SSE streaming · Docker deployment · Bulk processing · Custom dictionaries · On-prem enterprise · White-label ready
 
@@ -1650,6 +1651,24 @@ console.log(`AI: ${(ai.score * 100).toFixed(0)}%`);
 ```bash
 cd js/ && npm install && npm test
 ```
+
+---
+
+## 🧩 Chrome Extension
+
+**[TextHumanize for Chrome](https://github.com/ksanyok/texthumanize-extension)** — a free, open-source (MIT) browser extension that brings the engine to any page. Select text anywhere and:
+
+- ✨ **Humanize** — reduce AI-style signals and replace the text right on the page (inputs, textareas, editors)
+- 🔍 **Check** — instant AI-style score from a 15-metric statistical detector ported 1:1 from this library
+- 🧹 **Clean** — strip zero-width characters, homoglyphs and other hidden watermarks (incl. a Kirchenbauer-style test)
+
+**100% offline** — no servers, no accounts, no network requests; ships the full dictionaries for all 25 languages (665 KiB). UI in 10 languages, dark/light themes, keyboard shortcuts, word-level diff.
+
+| | |
+|---|---|
+| Source & docs | [github.com/ksanyok/texthumanize-extension](https://github.com/ksanyok/texthumanize-extension) |
+| Chrome Web Store | *pending review* |
+| Engine | zero-dependency ES-module port of the library core + full lang packs |
 
 ---
 
