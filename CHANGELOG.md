@@ -5,6 +5,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-07-16
+
 ### Security
 - **Unauthenticated reflected SSRF in the REST API (CWE-918)** — the
   `POST /humanize` handler forwarded the client-controlled `oss_api_url`

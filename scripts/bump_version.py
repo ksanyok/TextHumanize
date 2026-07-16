@@ -74,20 +74,25 @@ def _sub_optional(rel: str, pattern: str, repl: str, changed: list[str]) -> None
         changed.append(rel)
 
 
-def _bump_json(rel: str, new: str, changed: list[str]) -> None:
-    obj = json.loads(_read(rel))
-    touched = False
-    if obj.get("version") is not None:
-        obj["version"] = new
-        touched = True
-    # npm lockfile v2/v3 also carries the version under packages[""].
-    pkgs = obj.get("packages")
-    if isinstance(pkgs, dict) and "" in pkgs and isinstance(pkgs[""], dict):
-        if pkgs[""].get("version") is not None:
-            pkgs[""]["version"] = new
-            touched = True
-    if touched:
-        _write(rel, json.dumps(obj, indent=2, ensure_ascii=False) + "\n")
+def _bump_json(rel: str, old: str, new: str, changed: list[str]) -> None:
+    """Bump the package's own version in a JSON manifest, preserving formatting.
+
+    Replaces every ``"version": "<old>"`` occurrence (the top-level field and,
+    in npm lockfiles, ``packages[""].version``) via text substitution so the
+    file's original indentation and key order are untouched. Dependency pins
+    carry other version numbers and are not matched.
+    """
+    text = _read(rel)
+    # Validate it's parseable and actually at `old` before touching it.
+    obj = json.loads(text)
+    if obj.get("version") != old:
+        raise SystemExit(
+            f"ERROR: {rel} version is {obj.get('version')!r}, expected {old!r}"
+        )
+    pattern = r'("version"\s*:\s*")' + re.escape(old) + r'(")'
+    new_text, n = re.subn(pattern, rf"\g<1>{new}\g<2>", text)
+    if n and new_text != text:
+        _write(rel, new_text)
         changed.append(rel)
 
 
@@ -114,7 +119,7 @@ def main() -> int:
     _sub_once("pyproject.toml", r'^version\s*=\s*"[^"]+"', f'version = "{new}"', changed)
     _sub_once("texthumanize/__init__.py", r'^__version__\s*=\s*"[^"]+"', f'__version__ = "{new}"', changed)
     for rel in ("package.json", "js/package.json", "js/package-lock.json", "composer.json", "php/composer.json"):
-        _bump_json(rel, new, changed)
+        _bump_json(rel, old_v, new, changed)
     _sub_once("js/src/version.ts", r"VERSION\s*=\s*'[^']+'", f"VERSION = '{new}'", changed)
     _sub_once("php/src/TextHumanize.php", r"public const VERSION = '[^']+'", f"public const VERSION = '{new}'", changed)
 
