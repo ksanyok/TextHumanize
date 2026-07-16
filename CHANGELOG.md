@@ -5,6 +5,54 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-07-16
+
+### Security
+- **Unauthenticated reflected SSRF in the REST API (CWE-918)** — the
+  `POST /humanize` handler forwarded the client-controlled `oss_api_url`
+  straight into the OSS provider's `urllib.request.urlopen()`, letting an
+  unauthenticated caller make the server fetch arbitrary internal URLs
+  (loopback services, `169.254.169.254` cloud metadata, private ranges) and
+  reflect the response body back in the `text` field. Reported responsibly by
+  Natnael Wodsnoen. Fixed with defence in depth:
+  - **Remote AI backends are now disabled by default** in the REST API.
+    Requests using `backend != "local"` or supplying `oss_api_url` /
+    `openai_api_key` / `ollama_url` are rejected with HTTP `403` unless the
+    operator sets `TEXTHUMANIZE_API_ALLOW_REMOTE_BACKENDS=1`.
+  - **New SSRF guard** `texthumanize.validate_outbound_url()` (and
+    `UnsafeURLError`) — resolves the host and rejects loopback, private,
+    link-local (cloud-metadata), reserved, multicast and unspecified targets,
+    non-http(s) schemes, and embedded credentials. Applied to any user-supplied
+    URL at the API boundary (HTTP `400` on rejection).
+- **REST API binds to `127.0.0.1` by default** (was `0.0.0.0`). Exposing the
+  unauthenticated API on all interfaces now requires an explicit
+  `--host 0.0.0.0` and prints a warning. See `SECURITY.md` → "REST API
+  hardening".
+- **Bounded outbound responses** — all AI-backend HTTP calls now go through a
+  single `safe_urlopen()` choke point that re-validates the URL and caps the
+  response body (10 MB), so a hostile or oversized upstream reply can't be
+  reflected wholesale or exhaust memory.
+- **Configurable CORS** — `TEXTHUMANIZE_API_CORS_ORIGIN` overrides the default
+  `*` so browser access to the API can be locked to a specific origin.
+
+### Added
+- **Security scanning in CI** — `bandit` (SAST) and `pip-audit` (dependency
+  advisories) run on every push/PR; new **CodeQL** workflow (Python + JS/TS,
+  security-extended) and **Dependabot** config (pip, npm, composer, actions).
+- **Coverage gate** — a dedicated CI job runs the suite under coverage with a
+  regression floor (`--cov-fail-under`).
+- **`scripts/bump_version.py`** — writes every version literal that
+  `check_version_sync.py` validates (manifests, ports, version-assertion tests,
+  CHANGELOG heading, README) in one command, removing manual release drift.
+
+### Changed
+- **REST API uses `ThreadingHTTPServer`** so concurrent clients and the SSE
+  endpoint no longer block each other. Documented as dev/self-hosted; front it
+  with a reverse proxy for production.
+- **ReDoS timing tests scale their wall-clock budget under instrumentation**
+  (coverage/debugger) so the coverage gate is reliable while still catching
+  catastrophic (exponential) backtracking.
+
 ## [0.33.0] - 2026-06-12
 
 ### Added

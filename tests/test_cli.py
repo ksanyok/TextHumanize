@@ -97,6 +97,7 @@ class TestCLIHumanize:
         out = capsys.readouterr().out
         assert len(out.strip()) > 0
 
+    @pytest.mark.perf
     def test_fail_under_quality_exits(self, tmp_path, capsys):
         infile = tmp_path / "input.txt"
         infile.write_text("hello world")

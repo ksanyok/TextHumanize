@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texthumanize"
-version = "0.33.0"
+version = "0.34.0"
 description = "Algorithmic text humanization with AI detection, tone analysis, paraphrasing, and spinning — 38-stage pipeline, 25 languages, SentenceValidator™, PHANTOM™"
 readme = "README.md"
 license = "LicenseRef-Proprietary"
@@ -58,6 +58,8 @@ dev = [
     "mypy>=1.0",
     "pre-commit>=3.0",
     "hypothesis>=6.0",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
 ]
 docs = [
     "mkdocs>=1.5",
@@ -116,6 +118,9 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 timeout = 300
+markers = [
+    "perf: wall-clock/performance-sensitive test — unreliable under coverage instrumentation; deselected in the coverage job with -m 'not perf'.",
+]
 
 [tool.coverage.run]
 parallel = true
@@ -199,3 +204,19 @@ disable_error_code = [
     "union-attr",
     "call-arg",
 ]
+
+# Don't analyze numpy's own stubs: recent numpy ships PEP 695 `type` statements
+# that trip mypy when targeting an older python_version. We only consume numpy,
+# so skipping its internals keeps the type check about our code.
+[[tool.mypy.overrides]]
+module = "numpy.*"
+follow_imports = "skip"
+follow_imports_for_stubs = true
+
+[tool.bandit]
+# Scan the library source; tests and vendored/generated code are excluded.
+exclude_dirs = ["tests", "build", "dist", ".venv", "benchmarks", "examples"]
+# B310 (urllib) is handled explicitly: outbound URLs are validated by
+# texthumanize._urlguard before they reach urllib. Suppress at call sites
+# with `# nosec` rather than globally where practical.
+skips = []

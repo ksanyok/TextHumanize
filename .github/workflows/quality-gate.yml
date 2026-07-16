@@ -21,6 +21,9 @@ on:
         required: false
         default: '40'
 
+permissions:
+  contents: read
+
 jobs:
   quality-gate:
     name: Content Quality Gate

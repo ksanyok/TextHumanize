@@ -1,5 +1,7 @@
 """Тесты для обнаружения водяных знаков (watermark.py)."""
 
+import pytest
+
 from texthumanize.core import watermark_report
 from texthumanize.watermark import (
     WatermarkDetector,
@@ -119,6 +121,7 @@ class TestStatisticalWatermarkCalibration:
         # A marginal z (1.5-2.0) must not flip has_watermarks on clean prose.
         assert report["has_watermarks"] is False
 
+    @pytest.mark.perf
     def test_long_text_is_bounded(self) -> None:
         import time
 

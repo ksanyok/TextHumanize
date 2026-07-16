@@ -19,9 +19,11 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import glob
 import logging
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Sequence
@@ -31,6 +33,90 @@ from pathlib import Path
 from texthumanize.core import analyze, detect_ai, detect_watermarks
 
 logger = logging.getLogger(__name__)
+
+# Repo scaffolding / meta-documentation is not "content": it is markdown-heavy
+# (badges, tables, code fences, changelogs) and readability/AI-detection metrics
+# are not meaningful for it. These basenames are skipped by default so the gate
+# targets actual prose. Extend or override with --exclude / --no-default-excludes.
+#
+# Patterns are precise (exact stem or ``stem.<ext>``) so a real content file
+# such as ``readme-guide.md`` is NOT swept up by a broad ``README*``.
+_META_DOC_STEMS: tuple[str, ...] = (
+    "readme",
+    "changelog",
+    "security",
+    "contributing",
+    "code_of_conduct",
+    "contributors",
+    "authors",
+    "notice",
+    "roadmap",
+    "commercial",
+    "license",
+)
+_DEFAULT_EXCLUDE_GLOBS: tuple[str, ...] = tuple(
+    g for stem in _META_DOC_STEMS for g in (stem, f"{stem}.*")
+)
+
+# Developer/reference documentation and generated sites are not "content" the
+# gate is meant to police (published prose). Skipping these directories by
+# default keeps the gate meaningful and CI reliable; a `content/` area or
+# explicitly-passed files are still checked. Override with --no-default-excludes.
+_DEFAULT_EXCLUDE_DIRS: tuple[str, ...] = ("docs", "docs-src", "site", ".github")
+
+
+def _is_excluded(path: str, patterns: Sequence[str]) -> bool:
+    """True if the file's basename matches any exclusion glob (case-insensitive)."""
+    name = os.path.basename(path)
+    return any(fnmatch.fnmatch(name.lower(), pat.lower()) for pat in patterns)
+
+
+def _in_excluded_dir(path: str, dirs: Sequence[str]) -> bool:
+    """True if any path component is an excluded directory."""
+    parts = {part.lower() for part in Path(path).parts}
+    return any(d.lower() in parts for d in dirs)
+
+
+# Markup extensions whose raw source (code fences, tables, tags, badges) must be
+# reduced to prose before scoring — otherwise readability/AI metrics are garbage.
+_MARKUP_EXTS = (".md", ".markdown", ".rst", ".html", ".htm", ".adoc")
+
+_RE_FENCE = re.compile(r"^```.*?^```|^~~~.*?^~~~", re.MULTILINE | re.DOTALL)
+_RE_INLINE_CODE = re.compile(r"`[^`]*`")
+_RE_HTML_TAG = re.compile(r"<[^>]+>")
+_RE_IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+_RE_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_RE_TABLE_SEP = re.compile(r"^\s*\|?\s*:?-{2,}.*$", re.MULTILINE)
+_RE_TABLE_ROW = re.compile(r"^\s*\|.*\|\s*$", re.MULTILINE)
+_RE_HEADING_HASH = re.compile(r"^\s{0,3}#{1,6}\s*", re.MULTILINE)
+_RE_BLOCKQUOTE = re.compile(r"^\s{0,3}>\s?", re.MULTILINE)
+_RE_LIST_MARK = re.compile(r"^\s*([-*+]|\d+\.)\s+", re.MULTILINE)
+_RE_EMPHASIS = re.compile(r"[*_~]{1,3}")
+_RE_AUTOLINK = re.compile(r"https?://\S+")
+_RE_MULTIBLANK = re.compile(r"\n{3,}")
+
+
+def strip_markup(text: str) -> str:
+    """Reduce markdown/reST/HTML source to plain prose for content scoring.
+
+    Removes fenced/inline code, HTML tags, images and badges, table scaffolding,
+    heading/list/quote markers and emphasis, keeping link *text*. This keeps the
+    readability and AI-detection signals meaningful for documentation instead of
+    being dominated by markup punctuation.
+    """
+    text = _RE_FENCE.sub(" ", text)
+    text = _RE_IMAGE.sub(" ", text)
+    text = _RE_LINK.sub(r"\1", text)
+    text = _RE_INLINE_CODE.sub(" ", text)
+    text = _RE_HTML_TAG.sub(" ", text)
+    text = _RE_TABLE_SEP.sub(" ", text)
+    text = _RE_TABLE_ROW.sub(lambda m: m.group(0).replace("|", " "), text)
+    text = _RE_HEADING_HASH.sub("", text)
+    text = _RE_BLOCKQUOTE.sub("", text)
+    text = _RE_LIST_MARK.sub("", text)
+    text = _RE_AUTOLINK.sub(" ", text)
+    text = _RE_EMPHASIS.sub("", text)
+    return _RE_MULTIBLANK.sub("\n\n", text).strip()
 
 # ─────────────────────────────────────────────────────────────
 #  Dataclasses
@@ -86,6 +172,14 @@ def check_file(path: str, config: GateConfig | None = None) -> GateResult:
     if not text.strip():
         return result  # empty file is OK
 
+    # Reduce markup source to prose so metrics reflect the writing, not the
+    # code fences / tables / badges around it.
+    is_markup = p.suffix.lower() in _MARKUP_EXTS
+    if is_markup:
+        text = strip_markup(text)
+        if not text.strip():
+            return result  # nothing but markup/code — nothing to score
+
     # 1) AI score
     try:
         ai = detect_ai(text, lang="auto")
@@ -98,17 +192,25 @@ def check_file(path: str, config: GateConfig | None = None) -> GateResult:
     except Exception as exc:
         result.issues.append(f"AI detection error: {exc}")
 
-    # 2) Readability
+    # 2) Readability — a bounded 0..100 proxy from the artificiality signal.
+    # NOTE: this is only *enforced* for plain-prose content. Reference docs
+    # (markdown/reST/HTML) are legitimately dense (APIs, tables, jargon) and a
+    # reading-ease floor is not a meaningful pass/fail signal for them, so it is
+    # reported as an informational note there rather than failing the gate.
     try:
         report = analyze(text, lang="auto")
-        # Use a basic readability proxy from report
-        result.readability = 100.0 - getattr(report, "artificiality_score", 0.0) * 100
+        artificiality = float(getattr(report, "artificiality_score", 0.0))
+        result.readability = max(0.0, min(100.0, 100.0 - artificiality * 100.0))
         if result.readability < cfg.readability_threshold:
-            result.passed = False
-            result.issues.append(
+            msg = (
                 f"Readability {result.readability:.0f} < threshold "
                 f"{cfg.readability_threshold:.0f}"
             )
+            if is_markup:
+                result.issues.append(f"{msg} (informational; not gated for docs)")
+            else:
+                result.passed = False
+                result.issues.append(msg)
     except Exception as exc:
         result.issues.append(f"Analysis error: {exc}")
 
@@ -221,6 +323,15 @@ def main(argv: list[str] | None = None) -> int:
         "--format", choices=["text", "json"], default="text",
         help="Output format",
     )
+    parser.add_argument(
+        "--exclude", action="append", default=[], metavar="GLOB",
+        help="Basename glob to skip (repeatable). Extends the default "
+             "meta-doc excludes unless --no-default-excludes is given.",
+    )
+    parser.add_argument(
+        "--no-default-excludes", action="store_true",
+        help="Do not skip standard repo meta-docs (README, CHANGELOG, ...).",
+    )
 
     args = parser.parse_args(argv)
 
@@ -238,6 +349,24 @@ def main(argv: list[str] | None = None) -> int:
     else:
         parser.error("Specify files/directories or use --changed-only")
         return 2
+
+    # Skip repo scaffolding / meta-docs and developer-doc directories unless
+    # opted out. The gate targets publishable content, not reference docs.
+    exclude_globs = list(args.exclude)
+    exclude_dirs: list[str] = []
+    if not args.no_default_excludes:
+        exclude_globs.extend(_DEFAULT_EXCLUDE_GLOBS)
+        exclude_dirs.extend(_DEFAULT_EXCLUDE_DIRS)
+
+    kept: list[str] = []
+    for f in files:
+        if _is_excluded(f, exclude_globs):
+            print(f"⏭  SKIP  {f} (excluded meta-doc)")
+        elif _in_excluded_dir(f, exclude_dirs):
+            print(f"⏭  SKIP  {f} (excluded docs directory)")
+        else:
+            kept.append(f)
+    files = kept
 
     if not files:
         print("quality-gate: no files to check")

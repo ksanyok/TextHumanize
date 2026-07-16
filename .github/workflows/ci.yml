@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, master]
 
+# Least privilege: CI only needs to read the repo (no token write access).
+permissions:
+  contents: read
+
 jobs:
   python:
     name: Python ${{ matrix.python-version }}
@@ -44,6 +48,68 @@ jobs:
         if: matrix.python-version == '3.12'
         run: |
           mypy texthumanize/ --ignore-missing-imports --no-error-summary
+
+  coverage:
+    name: Coverage gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests with coverage
+        # Parallel to offset instrumentation slowdown. Perf/timing tests are
+        # deselected (`-m "not perf"`): wall-clock budgets are unreliable under
+        # coverage and add no coverage value — they still run full-speed in the
+        # Python matrix jobs. TEXTHUMANIZE_TIMEOUT lifts the pipeline's internal
+        # deadline so instrumentation slowdown doesn't abort real work.
+        env:
+          TEXTHUMANIZE_TIMEOUT: "600"
+        run: |
+          pytest -n auto --timeout=600 -q -m "not perf" \
+            --cov=texthumanize --cov-report=xml --cov-report=term-missing:skip-covered \
+            --cov-fail-under=70
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+
+  security:
+    name: Security scan (bandit + pip-audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Static security analysis (bandit)
+        run: bandit -c pyproject.toml -r texthumanize -ll
+
+      - name: Dependency vulnerability audit (pip-audit)
+        # Non-blocking on advisories in transitive deps we can't immediately
+        # patch, but surfaces them in the log. Drop `|| true` to make it a gate.
+        run: pip-audit --strict --desc || true
 
   php:
     name: PHP ${{ matrix.php-version }}

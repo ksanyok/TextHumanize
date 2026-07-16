@@ -408,9 +408,10 @@ class WatermarkForensics:
         # Use hash to create a threshold for this context
         threshold = h[0] / 256.0  # 0.0–1.0
 
-        # Hash the current token
+        # Hash the current token (deterministic fingerprint, not security)
         curr_hash = hashlib.md5(
-            f"{scheme_id}:{curr}".encode("utf-8", errors="ignore")
+            f"{scheme_id}:{curr}".encode("utf-8", errors="ignore"),
+            usedforsecurity=False,
         ).digest()
         curr_val = curr_hash[0] / 256.0
 

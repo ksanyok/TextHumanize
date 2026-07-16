@@ -34,6 +34,48 @@ OpenAPI 3.1 schema is available at `GET /openapi.json`.
 | `GET`  | `/openapi.json` | OpenAPI 3.1 schema |
 | `POST` | `/sse/humanize` | Server-Sent Events stream |
 
+## Security & hardening
+
+The server is **unauthenticated** and intended for local or trusted
+deployment. Since v0.34.0 it ships secure defaults:
+
+| Concern | Default | How to change |
+|---------|---------|---------------|
+| Bind address | `127.0.0.1` (loopback only) | `--host 0.0.0.0` to expose (prints a warning) |
+| Remote AI backends (`backend`, `oss_api_url`, `openai_api_key`, `ollama_url`) | **Disabled** → HTTP `403` | `TEXTHUMANIZE_API_ALLOW_REMOTE_BACKENDS=1` |
+| Outbound URL safety | SSRF-validated (loopback / private / cloud-metadata rejected → HTTP `400`) | — |
+| Outbound response size | Capped at 10 MB | — |
+| CORS origin | `*` | `TEXTHUMANIZE_API_CORS_ORIGIN=https://app.example.com` |
+
+Why remote backends are gated: passing a URL that the server then fetches is a
+Server-Side Request Forgery (SSRF) primitive. Keeping it off by default means an
+anonymous caller cannot make your server reach internal services. When you do
+enable it, every URL is still validated:
+
+```bash
+# Blocked by default (403):
+curl -X POST http://127.0.0.1:8080/humanize \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"hi","backend":"oss","oss_api_url":"http://169.254.169.254/"}'
+
+# Enabled, but SSRF-validated — internal targets still 400:
+TEXTHUMANIZE_API_ALLOW_REMOTE_BACKENDS=1 python -m texthumanize.api
+```
+
+Reuse the same guard in your own HTTP wrappers:
+
+```python
+from texthumanize import validate_outbound_url, UnsafeURLError
+
+try:
+    validate_outbound_url(user_supplied_url)   # raises on internal/loopback/metadata
+except UnsafeURLError as exc:
+    ...  # reject the request
+```
+
+For production, run behind a reverse proxy that adds TLS, authentication, and
+request timeouts. See [SECURITY.md](https://github.com/ksanyok/TextHumanize/blob/main/SECURITY.md#rest-api-hardening-network-safety).
+
 ## Examples
 
 ### Humanize

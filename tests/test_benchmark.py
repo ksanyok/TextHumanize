@@ -5,6 +5,8 @@ from __future__ import annotations
 import time
 import unittest
 
+import pytest
+
 from texthumanize import detect_ai, humanize
 from texthumanize.benchmarks import (
     detector_benchmark,
@@ -16,6 +18,7 @@ from texthumanize.benchmarks import (
 class TestPerformance(unittest.TestCase):
     """Performance regression tests — ensure we don't get slower."""
 
+    @pytest.mark.perf
     def test_humanize_short_under_2s(self):
         """Short text should complete in under 5 seconds (generous for CI + coverage)."""
         text = "Furthermore, it is important to note that this approach facilitates optimization."
@@ -25,6 +28,7 @@ class TestPerformance(unittest.TestCase):
         self.assertLess(elapsed, 30.0, f"Short text took {elapsed:.2f}s")
         self.assertTrue(len(result.text) > 0)
 
+    @pytest.mark.perf
     def test_humanize_medium_under_3s(self):
         """Medium text (~500 chars) should complete in under 10 seconds (generous for CI + coverage)."""
         text = (
@@ -40,6 +44,7 @@ class TestPerformance(unittest.TestCase):
         self.assertLess(elapsed, 30.0, f"Medium text took {elapsed:.2f}s")
         self.assertTrue(len(result.text) > 0)
 
+    @pytest.mark.perf
     def test_detect_ai_under_500ms(self):
         """AI detection should be fast — under 500ms for medium text."""
         text = (

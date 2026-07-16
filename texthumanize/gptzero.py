@@ -278,7 +278,8 @@ class GPTZeroClient:
         for attempt in range(self.max_retries):
             try:
                 req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                # nosec B310 — fixed, trusted GPTZero API endpoints (see module constants).
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # nosec B310
                     body = resp.read().decode("utf-8")
                     return json.loads(body)  # type: ignore[no-any-return]
             except urllib.error.HTTPError as e:
@@ -357,8 +358,10 @@ class GPTZeroClient:
         self._last_request_time = time.monotonic()
 
     def _cache_key(self, text: str) -> str:
-        """Generate cache key from text content."""
-        return hashlib.md5(text.encode("utf-8")).hexdigest()
+        """Generate cache key from text content (not security-sensitive)."""
+        return hashlib.md5(
+            text.encode("utf-8"), usedforsecurity=False
+        ).hexdigest()
 
     def _cache_put(self, key: str, value: GPTZeroResult) -> None:
         """Put result in LRU cache."""

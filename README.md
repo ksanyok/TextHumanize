@@ -21,7 +21,7 @@ readability, and internal risk signals; it is not a bypass guarantee.
 [![Tests](https://img.shields.io/badge/tests-2269%20passed-2ea44f.svg?logo=pytest&logoColor=white)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
 &nbsp;&nbsp;
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)]()
-[![PyPI](https://img.shields.io/badge/pypi-v0.33.0-3775A9.svg?logo=pypi&logoColor=white)](https://pypi.org/project/texthumanize/)
+[![PyPI](https://img.shields.io/badge/pypi-v0.34.0-3775A9.svg?logo=pypi&logoColor=white)](https://pypi.org/project/texthumanize/)
 [![License](https://img.shields.io/badge/license-Dual%20(Free%20%2B%20Commercial)-blue.svg)](LICENSE)
 
 <br/>
@@ -76,7 +76,7 @@ readability, and internal risk signals; it is not a bypass guarantee.
 - [Responsible Use](#-responsible-use)
 - [For Business & Enterprise](#-for-business--enterprise)
 - [FAQ & Troubleshooting](#-faq--troubleshooting)
-- [What's New in v0.33.0](#-whats-new-in-v0330)
+- [What's New in v0.34.0](#-whats-new-in-v0340)
 - [Contributing](#-contributing)
 - [Limitations](#-limitations)
 - [Support the Project](#-support-the-project)
@@ -194,7 +194,7 @@ git clone https://github.com/ksanyok/TextHumanize.git
 cd TextHumanize && pip install -e .
 ```
 
-> **Tip:** Pin your version for production: `pip install texthumanize==0.33.0`
+> **Tip:** Pin your version for production: `pip install texthumanize==0.34.0`
 
 <details>
 <summary><b>PHP / TypeScript</b></summary>
@@ -1341,11 +1341,25 @@ texthumanize input.txt -l en --report report.html
 
 ## 🌐 REST API Server
 
-Zero-dependency HTTP server with rate limiting and CORS:
+Zero-dependency, threaded HTTP server with rate limiting and CORS:
 
 ```bash
 python -m texthumanize.api --port 8080
 ```
+
+**Secure by default.** The server is **unauthenticated** and meant for local
+or trusted deployment, so it ships hardened defaults:
+
+- Binds to `127.0.0.1`. To expose it, pass `--host 0.0.0.0` explicitly (it
+  warns), and put it behind auth + a reverse proxy first.
+- Remote AI backends (client-supplied `backend`, `oss_api_url`,
+  `openai_api_key`, `ollama_url`) are **disabled** — requests using them get
+  HTTP `403` unless you set `TEXTHUMANIZE_API_ALLOW_REMOTE_BACKENDS=1`. When
+  enabled, any URL is SSRF-validated (loopback / private / cloud-metadata
+  targets are rejected).
+- `TEXTHUMANIZE_API_CORS_ORIGIN` locks the CORS origin down from the default `*`.
+
+See [SECURITY.md](SECURITY.md#rest-api-hardening-network-safety) for details.
 
 For FastAPI deployments, see `examples/fastapi_integration.py`. It includes
 request body limits, text and batch size limits, per-request timeouts,
@@ -1460,7 +1474,7 @@ reporting rules, and detector limitations.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  TextHumanize v0.33.0 — AI Score Benchmark              │
+│  TextHumanize v0.34.0 — AI Score Benchmark              │
 ├──────────────────────────────────────────────────────────┤
 │  EN (web/50):    94% → 27%    (reduction: -67pp)        │
 │  EN (web/60):    94% → 23%    (reduction: -71pp)        │
@@ -1852,7 +1866,13 @@ Try the [Live Demo](https://texthumanize.link/). For local use, the REST API + S
 
 ---
 
-## 🆕 What's New in v0.33.0
+## 🆕 What's New in v0.34.0
+
+### Security & REST API hardening (0.34.0)
+- **Fixed an unauthenticated reflected SSRF (CWE-918)** in the REST API. `POST /humanize` forwarded a client-supplied `oss_api_url` straight into an outbound request, so an anonymous caller could make the server fetch internal/loopback/cloud-metadata URLs and read the response. Reported responsibly by Natnael Wodsnoen.
+- **Secure-by-default REST API** — remote AI backends (`backend`, `oss_api_url`, `openai_api_key`, `ollama_url`) are now **disabled by default** (HTTP `403` unless `TEXTHUMANIZE_API_ALLOW_REMOTE_BACKENDS=1`); the server **binds to `127.0.0.1`** (was `0.0.0.0`); CORS is configurable via `TEXTHUMANIZE_API_CORS_ORIGIN`.
+- **New SSRF guard** — `validate_outbound_url()` / `safe_urlopen()` (and `UnsafeURLError`) reject loopback, private, link-local (cloud-metadata), reserved and multicast targets, non-http(s) schemes and embedded credentials, and cap outbound response size. Reuse them in your own wrappers.
+- **Supply-chain & CI** — `bandit` + `pip-audit`, **CodeQL**, and **Dependabot** now run in CI, plus a coverage gate and `ThreadingHTTPServer` for the REST API. See [`SECURITY.md`](SECURITY.md#rest-api-hardening-network-safety).
 
 ### Media watermark forensics — images, audio & video (0.33.0)
 - **New `texthumanize.media_watermark` engine** — `detect_media_watermarks()` and `clean_media_watermarks()` audit and strip AI-watermark/provenance signals in **images, audio and video**, pure-Python + numpy (Pillow optional), fully offline.

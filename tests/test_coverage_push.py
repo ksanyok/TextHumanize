@@ -321,7 +321,7 @@ class TestAPIBranch:
     def test_run_server_mock(self):
         """run_server starts and stops (L283-290)."""
         from texthumanize.api import run_server
-        with patch("texthumanize.api.HTTPServer") as mock_http:
+        with patch("texthumanize.api.ThreadingHTTPServer") as mock_http:
             mock_server = MagicMock()
             mock_server.serve_forever.side_effect = KeyboardInterrupt
             mock_http.return_value = mock_server
