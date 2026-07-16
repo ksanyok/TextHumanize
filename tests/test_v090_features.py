@@ -302,6 +302,44 @@ class TestQualityGate:
                    "--readability-threshold", "40"])
         assert rc in (0, 1)  # actually evaluated, not skipped
 
+    def test_strip_markup_removes_code_and_tables(self):
+        from texthumanize.quality_gate import strip_markup
+
+        md = (
+            "# Heading\n\n"
+            "Some **real** prose here.\n\n"
+            "```python\nprint('code')\n```\n\n"
+            "| a | b |\n|---|---|\n| 1 | 2 |\n\n"
+            "See [the docs](https://x/y) and `inline`.\n"
+        )
+        out = strip_markup(md)
+        assert "print('code')" not in out
+        assert "```" not in out
+        assert "|" not in out
+        assert "real prose here" in out
+        assert "the docs" in out  # link text kept
+        assert "https://" not in out
+
+    def test_docs_directory_excluded(self, tmp_path):
+        from texthumanize.quality_gate import main
+
+        docs = tmp_path / "docs-src"
+        docs.mkdir()
+        f = docs / "api.md"
+        f.write_text("# API\n\n```py\nx=1\n```\n| c | d |\n|---|---|\n")
+        rc = main([str(f)])
+        assert rc == 0  # skipped as docs directory
+
+    def test_readability_informational_for_markup(self, tmp_path):
+        from texthumanize.quality_gate import GateConfig, check_file
+
+        f = tmp_path / "post.md"  # markup, but NOT in a docs dir
+        f.write_text("# T\n\n" + "The comprehensive framework. " * 5)
+        res = check_file(str(f), GateConfig(readability_threshold=99.0))
+        # readability is bounded 0..100 and does not fail a markup file
+        assert 0.0 <= res.readability <= 100.0
+        assert res.passed  # readability note only, not a failure
+
 
 # ═══════════════════════════════════════════════════════════════
 #  4. Selective humanization
