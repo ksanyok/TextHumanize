@@ -118,6 +118,9 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 timeout = 300
+markers = [
+    "perf: wall-clock/performance-sensitive test — unreliable under coverage instrumentation; deselected in the coverage job with -m 'not perf'.",
+]
 
 [tool.coverage.run]
 parallel = true

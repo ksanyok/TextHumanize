@@ -67,12 +67,15 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Run tests with coverage
-        # Parallel to offset instrumentation slowdown. The floor is a
-        # conservative regression guard, not the actual coverage number —
-        # raise it once CI reports the real figure. ReDoS timing tests scale
-        # their budget under coverage (see tests/test_redos.py).
+        # Parallel to offset instrumentation slowdown. Perf/timing tests are
+        # deselected (`-m "not perf"`): wall-clock budgets are unreliable under
+        # coverage and add no coverage value — they still run full-speed in the
+        # Python matrix jobs. TEXTHUMANIZE_TIMEOUT lifts the pipeline's internal
+        # deadline so instrumentation slowdown doesn't abort real work.
+        env:
+          TEXTHUMANIZE_TIMEOUT: "600"
         run: |
-          pytest -n auto --timeout=300 -q \
+          pytest -n auto --timeout=600 -q -m "not perf" \
             --cov=texthumanize --cov-report=xml --cov-report=term-missing:skip-covered \
             --cov-fail-under=70
 
