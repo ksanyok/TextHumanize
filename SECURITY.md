@@ -9,8 +9,8 @@ normalization logic that may be embedded in production systems.
 
 | Version | Status |
 | ------- | ------ |
-| `0.28.x` | Supported |
-| `< 0.28` | Best-effort fixes only |
+| `0.34.x` | Supported |
+| `< 0.34` | Best-effort fixes only |
 
 ## Reporting a Vulnerability
 
@@ -57,6 +57,30 @@ Out of scope:
 - Social engineering, spam, or automated abuse against project maintainers.
 - Denial-of-service tests against public project infrastructure without prior
   approval.
+
+## REST API hardening (network safety)
+
+The bundled REST API (`python -m texthumanize.api`) is **unauthenticated** and
+intended for local/trusted deployment. As of `0.34.0` it ships secure defaults:
+
+- **Binds to `127.0.0.1` by default.** Exposing it on all interfaces requires an
+  explicit `--host 0.0.0.0`, which prints a warning. Put it behind
+  authentication and a reverse proxy before exposing it.
+- **Remote AI backends are disabled by default.** Client-supplied backend
+  parameters (`backend`, `oss_api_url`, `openai_api_key`, `ollama_url`) are
+  rejected with HTTP `403` unless the operator sets
+  `TEXTHUMANIZE_API_ALLOW_REMOTE_BACKENDS=1`. This closes the unauthenticated
+  SSRF vector (CWE-918) where a caller could point the server at an internal URL.
+- **Outbound URLs are SSRF-validated.** Even when remote backends are enabled,
+  any user-supplied URL is checked by `texthumanize.validate_outbound_url()`,
+  which resolves the host and rejects loopback, private (RFC1918/ULA),
+  link-local (including the `169.254.169.254` cloud-metadata endpoint),
+  reserved, and multicast targets. HTTP `400` is returned for unsafe URLs.
+
+If you embed the library behind your own HTTP surface, reuse
+`validate_outbound_url()` for any endpoint you let end users influence. Note it
+validates at resolve time; pin the resolved IP through the connection if your
+threat model includes DNS rebinding.
 
 ## Safe Harbor
 

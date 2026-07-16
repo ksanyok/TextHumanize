@@ -278,7 +278,8 @@ class GPTZeroClient:
         for attempt in range(self.max_retries):
             try:
                 req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                # nosec B310 — fixed, trusted GPTZero API endpoints (see module constants).
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # nosec B310
                     body = resp.read().decode("utf-8")
                     return json.loads(body)  # type: ignore[no-any-return]
             except urllib.error.HTTPError as e:

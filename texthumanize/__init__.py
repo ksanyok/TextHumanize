@@ -44,6 +44,9 @@ __version__ = "0.33.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 
+# SSRF-safety helper for outbound URLs (lightweight, stdlib-only).
+from texthumanize._urlguard import validate_outbound_url
+
 # Exceptions — always available (lightweight module, no heavy deps)
 from texthumanize.exceptions import (
     AIBackendError,
@@ -55,6 +58,7 @@ from texthumanize.exceptions import (
     PipelineError,
     StageError,
     TextHumanizeError,
+    UnsafeURLError,
     UnsupportedLanguageError,
 )
 
@@ -470,6 +474,7 @@ __all__ = [
     "TrainingResult",
     "TransferResult",
     "UniquenessReport",
+    "UnsafeURLError",
     "UnsupportedLanguageError",
     "WatermarkForensics",
     "WordLanguageModel",
@@ -600,6 +605,7 @@ __all__ = [
     "uniqueness_score",
     "update_markers",
     "validate_contributor_pack",
+    "validate_outbound_url",
     "word_naturalness",
     "word_perplexity",
     "watermark_report",

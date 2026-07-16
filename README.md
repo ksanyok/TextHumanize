@@ -1341,11 +1341,25 @@ texthumanize input.txt -l en --report report.html
 
 ## 🌐 REST API Server
 
-Zero-dependency HTTP server with rate limiting and CORS:
+Zero-dependency, threaded HTTP server with rate limiting and CORS:
 
 ```bash
 python -m texthumanize.api --port 8080
 ```
+
+**Secure by default.** The server is **unauthenticated** and meant for local
+or trusted deployment, so it ships hardened defaults:
+
+- Binds to `127.0.0.1`. To expose it, pass `--host 0.0.0.0` explicitly (it
+  warns), and put it behind auth + a reverse proxy first.
+- Remote AI backends (client-supplied `backend`, `oss_api_url`,
+  `openai_api_key`, `ollama_url`) are **disabled** — requests using them get
+  HTTP `403` unless you set `TEXTHUMANIZE_API_ALLOW_REMOTE_BACKENDS=1`. When
+  enabled, any URL is SSRF-validated (loopback / private / cloud-metadata
+  targets are rejected).
+- `TEXTHUMANIZE_API_CORS_ORIGIN` locks the CORS origin down from the default `*`.
+
+See [SECURITY.md](SECURITY.md#rest-api-hardening-network-safety) for details.
 
 For FastAPI deployments, see `examples/fastapi_integration.py`. It includes
 request body limits, text and batch size limits, per-request timeouts,

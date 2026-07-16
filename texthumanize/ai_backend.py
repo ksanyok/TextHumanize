@@ -41,6 +41,8 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from texthumanize._urlguard import safe_urlopen
+
 logger = logging.getLogger(__name__)
 
 # ───────────────────────────────────────────────────────
@@ -137,7 +139,8 @@ class _OpenAIProvider:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(
+            # nosec B310 — fixed, trusted endpoint (_API_URL = api.openai.com).
+            with urllib.request.urlopen(  # nosec B310
                 req, timeout=self._timeout
             ) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
@@ -210,7 +213,8 @@ class _OllamaProvider:
                 f"{self._base_url}/api/tags",
                 method="GET",
             )
-            with urllib.request.urlopen(req, timeout=5.0) as resp:
+            # nosec B310 — developer-configured Ollama URL (default localhost).
+            with urllib.request.urlopen(req, timeout=5.0) as resp:  # nosec B310
                 self._available = resp.status == 200
         except Exception:
             self._available = False
@@ -264,7 +268,8 @@ class _OllamaProvider:
             url, data=body, headers=headers, method="POST",
         )
         try:
-            with urllib.request.urlopen(
+            # nosec B310 — developer-configured Ollama URL (default localhost).
+            with urllib.request.urlopen(  # nosec B310
                 req, timeout=self._timeout
             ) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
@@ -321,6 +326,7 @@ class _OSSProvider:
     _MAX_CONSECUTIVE_FAILURES = 3
     _CIRCUIT_COOLDOWN = 300.0  # 5 minutes
     _MAX_RETRIES = 2
+    _MAX_RESPONSE_BYTES = 10_000_000  # 10 MB — bound reflected/oversized bodies
 
     def __init__(
         self,
@@ -461,12 +467,19 @@ class _OSSProvider:
                     method="POST",
                 )
                 try:
-                    with urllib.request.urlopen(
-                        req, timeout=self._timeout
-                    ) as resp:
-                        data = json.loads(
-                            resp.read().decode("utf-8")
-                        )
+                    # Route through the SSRF guard: validates the URL again
+                    # (metadata/multicast/reserved always blocked) and caps
+                    # the response size. Loopback/private are allowed here so
+                    # trusted callers can target a local Gradio instance; the
+                    # REST API blocks those at its boundary before this point.
+                    body = safe_urlopen(
+                        req,
+                        timeout=self._timeout,
+                        max_bytes=self._MAX_RESPONSE_BYTES,
+                        allow_loopback=True,
+                        allow_private=True,
+                    )
+                    data = json.loads(body.decode("utf-8"))
                     # Parse response — try multiple formats
                     result = self._extract_text(data)
                     if result:

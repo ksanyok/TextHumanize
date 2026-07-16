@@ -63,6 +63,23 @@ class InputTooLargeError(ConfigError):
         )
 
 
+class UnsafeURLError(ConfigError):
+    """Raised when an outbound URL fails SSRF safety validation.
+
+    Subclasses :class:`ConfigError` (and thus ``ValueError``) so callers
+    that already guard against bad input catch it transparently.
+
+    Attributes:
+        url: The rejected URL.
+        reason: Human-readable reason the URL was rejected.
+    """
+
+    def __init__(self, url: str, reason: str):
+        self.url = url
+        self.reason = reason
+        super().__init__(f"Unsafe URL rejected ({reason}): {url!r}")
+
+
 # ── AI Backend errors ─────────────────────────────────────
 
 class AIBackendError(TextHumanizeError):

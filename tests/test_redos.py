@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+import sys
 import time
 
 from texthumanize.paraphrase_engine import ParaphraseEngine
@@ -17,6 +18,19 @@ def _elapsed_seconds(fn) -> float:
     return time.perf_counter() - started
 
 
+def _budget(seconds: float) -> float:
+    """A wall-clock ReDoS ceiling, scaled up under instrumentation.
+
+    Coverage / debugger tracing (``sys.gettrace()`` non-None) slows execution
+    by roughly an order of magnitude, which spuriously trips a tight fixed
+    budget. True catastrophic backtracking is *exponential*, so it still
+    blows past the scaled ceiling — the guard stays meaningful while the
+    coverage gate stays reliable.
+    """
+    instrumented = sys.gettrace() is not None or "coverage" in sys.modules
+    return seconds * 30.0 if instrumented else seconds
+
+
 def test_segmenter_handles_unclosed_html_without_regex_blowup() -> None:
     tag_count = 3_000
     text = "<script>" + ("<script>" * tag_count) + ("x" * 3_000)
@@ -25,7 +39,7 @@ def test_segmenter_handles_unclosed_html_without_regex_blowup() -> None:
     elapsed = _elapsed_seconds(lambda: segmenter.segment(text))
     segmented = segmenter.segment(text)
 
-    assert elapsed < 1.0
+    assert elapsed < _budget(1.0)
     assert len(segmented.segments) >= tag_count
     assert segmented.restore(segmented.text) == text
 
@@ -55,4 +69,4 @@ def test_sentence_regex_transforms_bound_adversarial_non_matches() -> None:
         )
     )
 
-    assert elapsed < 1.0
+    assert elapsed < _budget(1.0)

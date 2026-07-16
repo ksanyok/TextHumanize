@@ -27,11 +27,13 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from typing import Any
 
 from texthumanize import __version__
+from texthumanize._urlguard import validate_outbound_url
 from texthumanize.core import (
     adjust_tone,
     analyze,
@@ -47,10 +49,21 @@ from texthumanize.core import (
     spin,
     spin_variants,
 )
+from texthumanize.exceptions import UnsafeURLError
 
 logger = logging.getLogger(__name__)
 
 # ─── Helpers ──────────────────────────────────────────────────
+
+def _cors_origin() -> str:
+    """Allowed CORS origin.
+
+    Defaults to ``*`` (open) for backward compatibility and local use.
+    Set ``TEXTHUMANIZE_API_CORS_ORIGIN`` to a specific origin (e.g.
+    ``https://app.example.com``) to lock browser access down.
+    """
+    return os.environ.get("TEXTHUMANIZE_API_CORS_ORIGIN", "*").strip() or "*"
+
 
 def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200) -> None:
     """Отправить JSON-ответ."""
@@ -58,11 +71,45 @@ def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Content-Length", str(len(body)))
-    handler.send_header("Access-Control-Allow-Origin", "*")
+    handler.send_header("Access-Control-Allow-Origin", _cors_origin())
     handler.end_headers()
     handler.wfile.write(body)
 
 MAX_REQUEST_BODY = 5_000_000  # 5 MB
+
+
+# ─── Remote-backend gate (SSRF hardening) ─────────────────────
+#
+# The REST API is an unauthenticated network boundary. Client-supplied
+# AI-backend parameters (``backend``, ``oss_api_url``, ``openai_api_key``,
+# ``ollama_url``) let a caller make the server perform outbound requests,
+# which is an SSRF / abuse primitive (CWE-918). These parameters are
+# therefore DISABLED by default and only honoured when the operator opts
+# in via the environment. Even when enabled, any URL is SSRF-validated so
+# it cannot target loopback/private/link-local (cloud-metadata) addresses.
+
+_REMOTE_BACKEND_KEYS = (
+    "oss_api_url",
+    "openai_api_key",
+    "openai_model",
+    "ollama_url",
+)
+
+_TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
+
+
+class RemoteBackendDisabled(Exception):
+    """Raised when a request uses remote-backend params that are gated off."""
+
+
+def _remote_backends_allowed() -> bool:
+    """Whether client-supplied remote AI backends are permitted.
+
+    Controlled by ``TEXTHUMANIZE_API_ALLOW_REMOTE_BACKENDS`` (off by default).
+    Read per-request so operators/tests can toggle it without a restart.
+    """
+    val = os.environ.get("TEXTHUMANIZE_API_ALLOW_REMOTE_BACKENDS", "")
+    return val.strip().lower() in _TRUE_VALUES
 
 # ─── Rate Limiter ─────────────────────────────────────────────
 
@@ -117,8 +164,18 @@ def _handle_humanize(data: dict) -> dict:
         "intensity": data.get("intensity", 60),
         "seed": data.get("seed"),
     }
-    # AI backend support
+    # AI backend support — gated off by default (SSRF hardening).
     backend = data.get("backend", "local")
+    wants_remote = backend not in ("local", "builtin") or any(
+        data.get(k) for k in _REMOTE_BACKEND_KEYS
+    )
+    if wants_remote and not _remote_backends_allowed():
+        raise RemoteBackendDisabled(
+            "Remote AI backends are disabled on this server. "
+            "Set TEXTHUMANIZE_API_ALLOW_REMOTE_BACKENDS=1 to enable them; "
+            "the default 'local' backend requires no network access."
+        )
+
     if backend != "local":
         kwargs["backend"] = backend
     if data.get("openai_api_key"):
@@ -126,7 +183,8 @@ def _handle_humanize(data: dict) -> dict:
     if data.get("openai_model"):
         kwargs["openai_model"] = data["openai_model"]
     if data.get("oss_api_url"):
-        kwargs["oss_api_url"] = data["oss_api_url"]
+        # Validate before it reaches urllib in the OSS provider (CWE-918).
+        kwargs["oss_api_url"] = validate_outbound_url(str(data["oss_api_url"]))
     result = humanize(text, **kwargs)
     return {
         "text": result.text,
@@ -655,7 +713,7 @@ class TextHumanizeHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self) -> None:
         """CORS preflight."""
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", _cors_origin())
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Max-Age", "86400")
@@ -710,6 +768,18 @@ class TextHumanizeHandler(BaseHTTPRequestHandler):
             elapsed = time.monotonic() - t0
             result["_elapsed_ms"] = round(elapsed * 1000, 1)
             _json_response(self, result)
+        except RemoteBackendDisabled as exc:
+            _json_response(
+                self,
+                {"error": str(exc), "type": "RemoteBackendDisabled"},
+                status=403,
+            )
+        except UnsafeURLError as exc:
+            _json_response(
+                self,
+                {"error": str(exc), "type": "UnsafeURLError"},
+                status=400,
+            )
         except ValueError as exc:
             _json_response(self, {"error": str(exc)}, status=400)
         except Exception as exc:
@@ -739,7 +809,7 @@ class TextHumanizeHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Cache-Control", "no-cache")
         self.send_header("Connection", "keep-alive")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", _cors_origin())
         self.end_headers()
 
         try:
@@ -780,14 +850,33 @@ class TextHumanizeHandler(BaseHTTPRequestHandler):
 
 # ─── Server factory ──────────────────────────────────────────
 
-def create_app(host: str = "0.0.0.0", port: int = 8080) -> HTTPServer:
-    """Создать HTTP-сервер."""
-    return HTTPServer((host, port), TextHumanizeHandler)
+def create_app(host: str = "127.0.0.1", port: int = 8080) -> HTTPServer:
+    """Создать HTTP-сервер.
 
-def run_server(host: str = "0.0.0.0", port: int = 8080) -> None:
+    Uses :class:`~http.server.ThreadingHTTPServer` so concurrent clients
+    (and the SSE streaming endpoint) don't block each other.
+
+    Binds to loopback (``127.0.0.1``) by default so the unauthenticated
+    API is not exposed to the network unintentionally. Pass
+    ``host="0.0.0.0"`` explicitly to expose it (and put it behind auth /
+    a reverse proxy when you do).
+
+    This stdlib server is intended for local use, development, and
+    self-hosted single-tenant deployment. For internet-facing production
+    traffic, run it behind a reverse proxy (TLS, auth, timeouts) or wrap
+    the pure functions in an ASGI/WSGI app.
+    """
+    return ThreadingHTTPServer((host, port), TextHumanizeHandler)
+
+def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:
     """Запустить HTTP-сервер."""
     server = create_app(host, port)
     print(f"TextHumanize API v{__version__} running on http://{host}:{port}")
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        print(
+            "  ⚠ Bound to a non-loopback address: this API is "
+            "UNAUTHENTICATED. Restrict access or place it behind a proxy."
+        )
     print(f"Endpoints: {', '.join(sorted(ROUTES.keys()))}")
     try:
         server.serve_forever()
@@ -800,7 +889,12 @@ def run_server(host: str = "0.0.0.0", port: int = 8080) -> None:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="TextHumanize API Server")
-    parser.add_argument("--host", default="0.0.0.0", help="Bind host")
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Bind host (default 127.0.0.1; use 0.0.0.0 to expose on all "
+        "interfaces — the API is unauthenticated, so secure it first)",
+    )
     parser.add_argument("--port", type=int, default=8080, help="Bind port")
     args = parser.parse_args()
     run_server(host=args.host, port=args.port)
