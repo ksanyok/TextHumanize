@@ -358,8 +358,10 @@ class GPTZeroClient:
         self._last_request_time = time.monotonic()
 
     def _cache_key(self, text: str) -> str:
-        """Generate cache key from text content."""
-        return hashlib.md5(text.encode("utf-8")).hexdigest()
+        """Generate cache key from text content (not security-sensitive)."""
+        return hashlib.md5(
+            text.encode("utf-8"), usedforsecurity=False
+        ).hexdigest()
 
     def _cache_put(self, key: str, value: GPTZeroResult) -> None:
         """Put result in LRU cache."""

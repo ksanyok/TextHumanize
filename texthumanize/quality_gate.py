@@ -19,6 +19,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import glob
 import logging
 import os
@@ -31,6 +32,36 @@ from pathlib import Path
 from texthumanize.core import analyze, detect_ai, detect_watermarks
 
 logger = logging.getLogger(__name__)
+
+# Repo scaffolding / meta-documentation is not "content": it is markdown-heavy
+# (badges, tables, code fences, changelogs) and readability/AI-detection metrics
+# are not meaningful for it. These basenames are skipped by default so the gate
+# targets actual prose. Extend or override with --exclude / --no-default-excludes.
+#
+# Patterns are precise (exact stem or ``stem.<ext>``) so a real content file
+# such as ``readme-guide.md`` is NOT swept up by a broad ``README*``.
+_META_DOC_STEMS: tuple[str, ...] = (
+    "readme",
+    "changelog",
+    "security",
+    "contributing",
+    "code_of_conduct",
+    "contributors",
+    "authors",
+    "notice",
+    "roadmap",
+    "commercial",
+    "license",
+)
+_DEFAULT_EXCLUDE_GLOBS: tuple[str, ...] = tuple(
+    g for stem in _META_DOC_STEMS for g in (stem, f"{stem}.*")
+)
+
+
+def _is_excluded(path: str, patterns: Sequence[str]) -> bool:
+    """True if the file's basename matches any exclusion glob (case-insensitive)."""
+    name = os.path.basename(path)
+    return any(fnmatch.fnmatch(name.lower(), pat.lower()) for pat in patterns)
 
 # ─────────────────────────────────────────────────────────────
 #  Dataclasses
@@ -221,6 +252,15 @@ def main(argv: list[str] | None = None) -> int:
         "--format", choices=["text", "json"], default="text",
         help="Output format",
     )
+    parser.add_argument(
+        "--exclude", action="append", default=[], metavar="GLOB",
+        help="Basename glob to skip (repeatable). Extends the default "
+             "meta-doc excludes unless --no-default-excludes is given.",
+    )
+    parser.add_argument(
+        "--no-default-excludes", action="store_true",
+        help="Do not skip standard repo meta-docs (README, CHANGELOG, ...).",
+    )
 
     args = parser.parse_args(argv)
 
@@ -238,6 +278,17 @@ def main(argv: list[str] | None = None) -> int:
     else:
         parser.error("Specify files/directories or use --changed-only")
         return 2
+
+    # Skip repo scaffolding / meta-docs (README, CHANGELOG, ...) unless opted out.
+    exclude_globs = list(args.exclude)
+    if not args.no_default_excludes:
+        exclude_globs.extend(_DEFAULT_EXCLUDE_GLOBS)
+    if exclude_globs:
+        kept = [f for f in files if not _is_excluded(f, exclude_globs)]
+        skipped = [f for f in files if _is_excluded(f, exclude_globs)]
+        for f in skipped:
+            print(f"⏭  SKIP  {f} (excluded meta-doc)")
+        files = kept
 
     if not files:
         print("quality-gate: no files to check")

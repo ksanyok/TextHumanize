@@ -9,6 +9,10 @@ on:
     # Weekly, so newly-published rules catch existing code too.
     - cron: '27 4 * * 1'
 
+# Top-level default; the analyze job additionally grants security-events: write.
+permissions:
+  contents: read
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})

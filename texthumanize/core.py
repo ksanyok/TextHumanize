@@ -2435,8 +2435,10 @@ def _is_green_hypothesis(
     seed = hashlib.sha256(
         f"{scheme_id}:{window}:{context}".encode("utf-8", errors="ignore")
     ).digest()
+    # Deterministic PRNG for scheme rotation — not security-sensitive.
     current_hash = hashlib.md5(
-        f"{scheme_id}:{current}".encode("utf-8", errors="ignore")
+        f"{scheme_id}:{current}".encode("utf-8", errors="ignore"),
+        usedforsecurity=False,
     ).digest()
     rotated = ((current_hash[0] / 256.0) + (seed[0] / 256.0)) % 1.0
     return rotated < gamma

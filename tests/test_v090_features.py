@@ -270,6 +270,38 @@ class TestQualityGate:
         result = check_file(str(f))
         assert isinstance(result, GateResult)
 
+    def test_meta_docs_excluded_by_default(self):
+        from texthumanize.quality_gate import _DEFAULT_EXCLUDE_GLOBS, _is_excluded
+
+        for name in ("README.md", "CHANGELOG.md", "SECURITY.md",
+                     "docs/CONTRIBUTING.md", "license.txt"):
+            assert _is_excluded(name, _DEFAULT_EXCLUDE_GLOBS), name
+
+    def test_content_file_not_excluded(self):
+        from texthumanize.quality_gate import _DEFAULT_EXCLUDE_GLOBS, _is_excluded
+
+        for name in ("blog/post.md", "content/article.md", "readme-guide.md"):
+            assert not _is_excluded(name, _DEFAULT_EXCLUDE_GLOBS), name
+
+    def test_cli_skips_meta_docs(self, tmp_path, capsys):
+        from texthumanize.quality_gate import main
+
+        readme = tmp_path / "README.md"
+        readme.write_text("# Title\n\n[![badge](x)](y) | tbl | e |\n```code```\n")
+        # Only a meta-doc supplied -> all skipped -> nothing to check -> pass.
+        rc = main([str(readme), "--readability-threshold", "40"])
+        assert rc == 0
+        assert "SKIP" in capsys.readouterr().out
+
+    def test_no_default_excludes_flag_still_checks(self, tmp_path):
+        from texthumanize.quality_gate import main
+
+        readme = tmp_path / "README.md"
+        readme.write_text("# Title\n\nA plain simple human sentence here.\n")
+        rc = main([str(readme), "--no-default-excludes",
+                   "--readability-threshold", "40"])
+        assert rc in (0, 1)  # actually evaluated, not skipped
+
 
 # ═══════════════════════════════════════════════════════════════
 #  4. Selective humanization

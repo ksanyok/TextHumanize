@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, master]
 
+# Least privilege: CI only needs to read the repo (no token write access).
+permissions:
+  contents: read
+
 jobs:
   python:
     name: Python ${{ matrix.python-version }}

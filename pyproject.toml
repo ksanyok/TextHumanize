@@ -202,6 +202,14 @@ disable_error_code = [
     "call-arg",
 ]
 
+# Don't analyze numpy's own stubs: recent numpy ships PEP 695 `type` statements
+# that trip mypy when targeting an older python_version. We only consume numpy,
+# so skipping its internals keeps the type check about our code.
+[[tool.mypy.overrides]]
+module = "numpy.*"
+follow_imports = "skip"
+follow_imports_for_stubs = true
+
 [tool.bandit]
 # Scan the library source; tests and vendored/generated code are excluded.
 exclude_dirs = ["tests", "build", "dist", ".venv", "benchmarks", "examples"]
