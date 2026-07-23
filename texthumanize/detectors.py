@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import math
 import re
@@ -68,6 +69,7 @@ class DetectionResult:
     entity_score: float = 0.0        # Специфичность упоминаний
     voice_score: float = 0.0         # Passive vs active voice
     topic_sent_score: float = 0.0    # Topic sentence паттерн
+    structure_score: float = 0.0     # Enumeration/scaffold structure (2026)
 
     # Домен и адаптация
     detected_domain: str = "general"  # academic/news/blog/legal/social/code_docs/general
@@ -146,6 +148,58 @@ def _get_ai_words() -> dict[str, dict[str, set[str]]]:
     return _AI_WORDS
 
 # ═══════════════════════════════════════════════════════════════
+#  Anti-evasion input normalization
+# ═══════════════════════════════════════════════════════════════
+# Homoglyph and zero-width insertion break token-frequency detectors badly
+# (−42…−76 pp in the RAID benchmark), so normalize BEFORE any metric runs.
+
+_INVISIBLES_RE = re.compile(
+    "[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff]")
+
+# Confusable Cyrillic/Greek letters → Latin look-alike. Applied ONLY to a word
+# that is majority-Latin, so genuine Cyrillic/Greek words are left untouched.
+_CONFUSABLE_TO_LATIN = {
+    "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x",
+    "і": "i", "ј": "j", "ѕ": "s", "һ": "h", "к": "k", "м": "m", "т": "t",
+    "в": "b", "н": "h", "ё": "e",
+    "А": "A", "Е": "E", "О": "O", "Р": "P", "С": "C", "У": "Y", "Х": "X",
+    "І": "I", "В": "B", "Н": "H", "К": "K", "М": "M", "Т": "T", "Ѕ": "S", "Ј": "J",
+    "α": "a", "ο": "o", "ρ": "p", "ε": "e", "ν": "v", "κ": "k",
+    "Α": "A", "Β": "B", "Ε": "E", "Ζ": "Z", "Η": "H", "Ι": "I", "Κ": "K",
+    "Μ": "M", "Ν": "N", "Ο": "O", "Ρ": "P", "Τ": "T", "Υ": "Y", "Χ": "X",
+}
+_LATIN_CHAR_RE = re.compile(r"[a-z]", re.IGNORECASE)
+_CONFUSABLE_BLOCK_RE = re.compile(r"[Ѐ-ӿͰ-Ͽ]")
+
+
+def _fold_word(word: str) -> str:
+    if not _LATIN_CHAR_RE.search(word):
+        return word  # no Latin → genuine other-script word
+    latin = confusable = 0
+    for ch in word:
+        if ch.isascii() and ch.isalpha():
+            latin += 1
+        elif ch in _CONFUSABLE_TO_LATIN:
+            confusable += 1
+    if not confusable or latin < confusable:
+        return word
+    return "".join(_CONFUSABLE_TO_LATIN.get(ch, ch) for ch in word)
+
+
+def _normalize_for_detection(text: str) -> str:
+    """Strip invisibles and fold homoglyphs in Latin-majority words so a
+    homoglyph/zero-width evasion cannot hide AI markers from token metrics.
+    Whole-word Cyrillic/Greek text is preserved. See research/text-signals-2026.md.
+    """
+    if not text:
+        return text
+    text = _INVISIBLES_RE.sub("", text)
+    if not _CONFUSABLE_BLOCK_RE.search(text):
+        return text  # fast path: no mixed-script risk
+    return re.sub(r"\S+", lambda m: _fold_word(m.group(0)), text)
+
+
+# ═══════════════════════════════════════════════════════════════
 #  ОСНОВНОЙ ДЕТЕКТОР
 # ═══════════════════════════════════════════════════════════════
 
@@ -157,25 +211,31 @@ class AIDetector:
     """
 
     # Веса метрик (калиброваны для максимальной точности)
+    # Rebalanced 2026 against measured per-metric separation (see
+    # research/text-signals-2026.md): weight moved off metrics that neither
+    # separate nor survive paraphrase onto the ones that measurably do, plus the
+    # new `structure` scaffold signal. punctuation/opening de-weighted after the
+    # inversion fixes; passive dropped from `voice`.
     _WEIGHTS = {
-        "pattern": 0.20,           # AI patterns — самый сильный сигнал
-        "burstiness": 0.14,        # Сильный сигнал: AI = равномерные предложения
-        "stylometry": 0.09,        # Хорошая дискриминация (0.65 vs 0.19)
-        "voice": 0.08,             # Отличная дискриминация (0.76 vs 0.00)
-        "entity": 0.07,            # Хорошая (0.69 vs 0.17)
-        "opening": 0.06,
-        "grammar": 0.05,
+        "pattern": 0.18,           # AI patterns — самый сильный сигнал
+        "burstiness": 0.13,        # AI = равномерные предложения
+        "voice": 0.10,             # номинализация (пассив убран)
+        "stylometry": 0.10,        # хорошая дискриминация, парафраз-устойчива
+        "entity": 0.08,
+        "structure": 0.08,         # перечисления/каркас (2026)
+        "discourse": 0.06,         # дискурсивная структура
+        "rhythm": 0.05,
         "entropy": 0.04,
-        "discourse": 0.04,         # Дискурсивная структура
-        "vocabulary": 0.04,
-        "rhythm": 0.04,
-        "perplexity": 0.03,
-        "semantic_rep": 0.03,      # Семантические повторы
+        "opening": 0.03,
+        "grammar": 0.03,
+        "vocabulary": 0.02,
+        "perplexity": 0.02,
+        "semantic_rep": 0.02,
         "topic_sentence": 0.02,
-        "readability": 0.02,       # Слабая дискриминация (~0.50 для всех)
-        "punctuation": 0.02,       # Слабая дискриминация
-        "coherence": 0.02,         # Слабая дискриминация
-        "zipf": 0.01,              # Ненадёжен для коротких текстов
+        "coherence": 0.02,
+        "readability": 0.005,      # почти нейтральна
+        "punctuation": 0.005,      # де-инвертирована, слабый сигнал
+        "zipf": 0.01,
     }
 
     # Domain-specific weight adjustments
@@ -278,9 +338,44 @@ class AIDetector:
 
         return "general"
 
+    # Fitted weights are loaded once from detector_weights.json (produced by the
+    # offline training pipeline in training/) and cached. When the file is
+    # absent or invalid, the hand-tuned _WEIGHTS above are used. This is the
+    # library's "learned model": a transparent, inspectable set of numbers,
+    # trained offline and versioned in git — no runtime ML, no black box.
+    _fitted_weights_cache: dict[str, float] | None = None
+
+    @classmethod
+    def _load_fitted_weights(cls) -> dict[str, float]:
+        """Load + validate detector_weights.json, falling back to _WEIGHTS."""
+        try:
+            from importlib.resources import files
+            raw = (files("texthumanize") / "detector_weights.json").read_text("utf-8")
+            data = json.loads(raw)
+            fitted = data.get("weights", data)
+            if not isinstance(fitted, dict):
+                return dict(cls._WEIGHTS)
+            merged = dict(cls._WEIGHTS)
+            for metric, value in fitted.items():
+                # Only override known metrics with sane, non-negative numbers.
+                if metric in merged and isinstance(value, (int, float)) and value >= 0:
+                    merged[metric] = float(value)
+            total = sum(merged.values())
+            if total <= 0:
+                return dict(cls._WEIGHTS)
+            return merged
+        except Exception:
+            return dict(cls._WEIGHTS)
+
+    @classmethod
+    def _resolved_weights(cls) -> dict[str, float]:
+        if cls._fitted_weights_cache is None:
+            cls._fitted_weights_cache = cls._load_fitted_weights()
+        return cls._fitted_weights_cache
+
     def _get_adaptive_weights(self, domain: str) -> dict[str, float]:
         """Get domain-adjusted metric weights."""
-        weights = dict(self._WEIGHTS)
+        weights = dict(self._resolved_weights())
         mods = self._DOMAIN_WEIGHT_MODS.get(domain, {})
         for metric, delta in mods.items():
             if metric in weights:
@@ -304,6 +399,9 @@ class AIDetector:
         Returns:
             DetectionResult с подробными метриками.
         """
+        if isinstance(text, str):
+            text = _normalize_for_detection(text)
+
         effective_lang = lang or self.lang
         if effective_lang == "auto":
             from texthumanize.lang_detect import detect_language
@@ -349,6 +447,7 @@ class AIDetector:
         result.entity_score = self._calc_entity_specificity(text, words)
         result.voice_score = self._calc_voice(text, sentences)
         result.topic_sent_score = self._calc_topic_sentence(text, sentences)
+        result.structure_score = self._calc_structure(text, sentences)
 
         # ── Domain detection & adaptive weights ──
         detected_domain = self._detect_domain(text, words)
@@ -375,6 +474,7 @@ class AIDetector:
             "entity": result.entity_score,
             "voice": result.voice_score,
             "topic_sentence": result.topic_sent_score,
+            "structure": result.structure_score,
         }
 
         # ── Ensemble boosting aggregation ──
@@ -1250,44 +1350,20 @@ class AIDetector:
         # Per 1000 chars
         k = 1000 / total_chars
 
-        semi_rate = semicolons * k
-        colon_rate = colons * k
-        dash_rate = em_dashes * k
         ellipsis_rate = ellipsis * k
         excl_rate = exclamations * k
 
-        # AI: высокая частота ; и : , низкая ... и !
-        # Human: больше ... и !, меньше ;
-
-        # Semicolons: AI ~2-5 per 1K, Human ~0-1 per 1K
-        semi_score = min(semi_rate / 3.0, 1.0)
-
-        # Colons: AI ~2-4 per 1K, Human ~0.5-1.5 per 1K
-        colon_score = min(colon_rate / 3.0, 1.0)
-
-        # Em dashes: AI использует идеальные — , human чаще -
-        dash_score = min(dash_rate / 4.0, 1.0)
-
-        # Ellipsis: human ~1-3 per 1K, AI ~0
-        ellipsis_score = max(0, 1.0 - ellipsis_rate / 2.0)
-
-        # Exclamations: human uses more
-        excl_score = max(0, 1.0 - excl_rate / 2.0)
-
-        # Punctuation diversity: AI uses fewer types
-        punct_types = sum(1 for v in [semicolons, colons, em_dashes, ellipsis,
-                                        exclamations, questions, parens] if v > 0)
-        diversity_score = max(0, 1.0 - punct_types / 5.0)
-
-        score = (
-            semi_score * 0.2
-            + colon_score * 0.15
-            + dash_score * 0.15
-            + ellipsis_score * 0.15
-            + excl_score * 0.1
-            + diversity_score * 0.25
-        )
-        return max(0.0, min(1.0, score))
+        # Semicolons, colons, em dashes and « » are marks of careful HUMAN
+        # editing, not AI — scoring them as AI (and penalising punctuation
+        # diversity) made this metric fire on well-edited prose, i.e. it ran
+        # inverted (measured human 0.56 > ai 0.48). Em-dash frequency is also
+        # epoch-dependent and now user-tunable, so it is an unreliable,
+        # high-false-positive signal. Keep only the weak, low-FP direction:
+        # AI assistant/blog prose rarely uses exclamations or trailing ellipses.
+        del semicolons, colons, em_dashes, questions, parens
+        calm_score = max(0.0, 1.0 - (excl_rate + ellipsis_rate) / 2.0)
+        # Blend gently toward neutral so this never dominates or inverts again.
+        return max(0.0, min(1.0, 0.42 + calm_score * 0.16))
 
     # ─── 8. КОГЕРЕНТНОСТЬ ─────────────────────────────────────
 
@@ -2122,8 +2198,69 @@ class AIDetector:
         active_ratio = active_markers / total_clauses if total_clauses > 0 else 0
         active_score = max(0.0, 1.0 - active_ratio / 0.3)
 
-        score = passive_score * 0.35 + nom_score * 0.35 + active_score * 0.30
+        # Nominalization (heavy noun style) is the robust AI tell — ×1.5–2 in
+        # instruction-tuned output (Reinhart, PNAS 2025). The PASSIVE ratio is
+        # deliberately NOT scored as AI: in English GPT-4o uses agentless passive
+        # at ~half the human rate (high passive skews HUMAN), and in RU/UK/DE
+        # passive+nominal is ordinary bureaucratic register. Counting it inverted
+        # the metric on edited human prose. `passive_score` kept for reporting.
+        _ = passive_score
+        score = nom_score * 0.62 + active_score * 0.38
         return max(0.0, min(1.0, score))
+
+    # ─── 19. СТРУКТУРНЫЙ КАРКАС (2026) ─────────────────────────
+
+    # Sequential enumeration openers ("First,/Finally", "во-первых", …).
+    _ENUM_MARKERS = [
+        r'(?:^|[.!?…]["»\']?\s+)(?:first|second|third|fourth|fifth|firstly|secondly|thirdly|finally|lastly|next|then|moreover|furthermore)\s*,',
+        r'(?:^|[.!?…]\s+)(?:во-первых|во-вторых|в-третьих|в-четвёртых|наконец|далее|затем)\b',
+        r'(?:^|[.!?…]\s+)(?:по-перше|по-друге|по-третє|нарешті|далі|потім)\b',
+        r'(?:^|[.!?…]\s+)(?:erstens|zweitens|drittens|schließlich|außerdem)\b',
+        r'(?:^|[.!?…]\s+)(?:primero|segundo|tercero|finalmente|por último|además)\b',
+        r'(?:^|\n)\s*(?:\d{1,2}[.)]\s|[-*•]\s)',
+    ]
+    _LIST_INTRO = [
+        r'\b(?:following|these|key|main|several|important|below|steps|components|reasons|benefits|factors|ways|points|aspects|elements)\s*:',
+        r'\b(?:следующ\w+|ключев\w+|основн\w+|несколько|важн\w+|причин\w+|преимуществ\w+|факторов|шаг\w+|компонент\w+)\s*:',
+    ]
+    _PARTICIPIAL_TAILS = [
+        r',\s+(?:enabling|providing|allowing|ensuring|highlighting|making|creating|offering|leveraging|fostering|driving|improving|reducing|increasing|helping|leading|resulting|reflecting|showcasing|emphasizing|underscoring|empowering|streamlining|enhancing|delivering)\b',
+    ]
+    _NEG_PARALLEL = [
+        r'\bnot only\b[^.!?]{3,60}\bbut also\b',
+        r"\bit'?s not (?:just |merely |simply )?[^.!?,]{2,40},?\s+it'?s\b",
+        r'\bне только\b[^.!?]{3,60}\bно и\b',
+        r'\bне просто\b[^.!?]{2,40},?\s+а\b',
+    ]
+
+    def _calc_structure(self, text: str, sentences: list[str]) -> float:
+        """Структурный каркас instruction-tuned письма: перечисления,
+        list-intro двоеточия, причастные -ing хвосты, негативный параллелизм.
+
+        Этот сигнал переживает парафраз и смену поколений моделей (в отличие от
+        лексики) и был полностью пропущен старым набором метрик — ассистентский
+        регистр набирал ~40%. См. research/text-signals-2026.md.
+
+        Возвращает: 0.0 (нет каркаса = human) — 1.0 (жёсткий каркас = AI)
+        """
+        n_sent = max(1, len(sentences))
+        low = text.lower()
+
+        def hits(pats: list[str]) -> int:
+            return sum(len(re.findall(p, low, re.IGNORECASE | re.MULTILINE)) for p in pats)
+
+        enum_hits = hits(self._ENUM_MARKERS)
+        list_hits = hits(self._LIST_INTRO)
+        part_hits = hits(self._PARTICIPIAL_TAILS)
+        neg_hits = hits(self._NEG_PARALLEL)
+
+        enum_score = min(enum_hits / n_sent / 0.5, 1.0)
+        list_score = min(list_hits / n_sent / 0.25, 1.0)
+        part_score = min(part_hits / n_sent / 0.4, 1.0)
+        neg_score = min(neg_hits / n_sent / 0.2, 1.0)
+
+        raw = enum_score * 0.42 + part_score * 0.28 + list_score * 0.18 + neg_score * 0.12
+        return max(0.0, min(1.0, 0.34 + raw * 0.62))
 
     # ─── 18. TOPIC SENTENCE ПАТТЕРН ───────────────────────────
 
@@ -2225,8 +2362,8 @@ class AIDetector:
         # Если ключевые «сильные» метрики все высокие/низкие —
         # это сильный сигнал независимо от остальных
         strong_metrics = [
-            "pattern", "burstiness", "opening", "stylometry",
-            "discourse", "voice", "grammar",
+            "pattern", "burstiness", "stylometry",
+            "discourse", "voice", "structure",
         ]
         strong_vals = [scores.get(m, 0.5) for m in strong_metrics]
         strong_avg = statistics.mean(strong_vals)

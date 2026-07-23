@@ -5,6 +5,38 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-07-21
+
+### Detection quality (evidence-driven; see the extension's research/ catalogs)
+- **New `structure` metric** — scores the enumeration/list-intro/participial-tail/
+  negative-parallelism scaffolding of instruction-tuned writing. This is the tell
+  that survives paraphrase and model-generation changes, and the one the old
+  metric set missed entirely (assistant-register text scored ~40%).
+- **Fixed two inverted signals.** `voice` no longer scores passive as AI: in
+  English GPT-4o uses agentless passive at ~half the human rate, and in RU/UK/DE
+  passive+nominal is ordinary bureaucratic register — counting it inverted the
+  metric on edited human prose. It now leans on nominalization (the robust ×1.5–2
+  tell). `punctuation` no longer scores semicolons/colons/em-dashes/« » as AI
+  (marks of careful human editing; the metric was firing on classic prose).
+- **Anti-evasion normalization** — homoglyph and zero-width insertion (which
+  collapse token-frequency detectors by 42–76 pp in the RAID benchmark) are now
+  stripped/folded before analysis. Whole-word Cyrillic/Greek text is preserved.
+- **Metric weights rebalanced** against measured per-metric separation; weight
+  moved off metrics that neither separate nor survive paraphrase.
+- **AI-cliché dictionary expanded** with the 2025–2026 assistant register
+  ("Great question", "Let's break down", "Here's the deal", "I hope this helps",
+  and RU equivalents), feeding both detection and humanization.
+
+### Media provenance
+- **Fixed a false-positive class**: a human image carrying a `Description`/
+  `Title`/`Comment`/`Software` text chunk was reported as AI. Generic keywords
+  now require an actual generation-parameter value; only tool-unique chunk keys
+  (`parameters`, `workflow`, `sd-metadata`, `invokeai_metadata`,
+  `sui_image_params`, `dream`) are conclusive on the key name alone.
+- **Wider coverage**: ComfyUI `class_type`/`sampler_name`, SwarmUI, and 2026
+  generator signatures (Recraft, Seedream/Seedance, Hunyuan, Reve, IPTC
+  `trainedAlgorithmicMedia`).
+
 ## [0.34.0] - 2026-07-16
 
 ### Security

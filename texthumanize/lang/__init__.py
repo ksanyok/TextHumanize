@@ -6,6 +6,7 @@
 и любые другие языки через универсальный процессор.
 """
 
+from texthumanize.lang import _ai_cliches
 from texthumanize.lang.ar import LANG_AR
 from texthumanize.lang.cs import LANG_CS
 from texthumanize.lang.da import LANG_DA
@@ -59,6 +60,11 @@ LANGUAGES = {
     "tr": LANG_TR,
     "vi": LANG_VI,
 }
+
+# Клише ИИ-текстов детектор штрафует, но в словарях пакетов их не было —
+# подмешиваем, чтобы гуманизатор умел их убирать (см. _ai_cliches).
+for _pack in LANGUAGES.values():
+    _ai_cliches.merge_into(_pack)
 
 _LANG_PACK_CACHE: dict[str, dict] = {}
 

@@ -1,0 +1,88 @@
+name: Retrain detector weights
+
+# Refits the detector's metric weights from training/corpus.jsonl and opens a
+# pull request when the fit improves — the model never updates itself unattended.
+# See training/README.md.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main, master]
+    paths:
+      - 'training/corpus.jsonl'
+  schedule:
+    # Weekly, Monday 06:00 UTC — picks up any corpus growth merged during the week.
+    - cron: '0 6 * * 1'
+
+# The job needs to push a branch and open a PR.
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: retrain-weights
+  cancel-in-progress: true
+
+jobs:
+  retrain:
+    name: Fit + gate + propose
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Fit weights (writes only if the held-out gate passes)
+        id: fit
+        run: |
+          python training/train_weights.py --write | tee /tmp/train_report.txt
+          # Stamp the training date (Date is unavailable inside the trainer).
+          python - <<'PY'
+          import json, datetime, pathlib
+          p = pathlib.Path("texthumanize/detector_weights.json")
+          d = json.loads(p.read_text())
+          if d.get("fitted"):
+              d["trained_at"] = datetime.date.today().isoformat()
+              p.write_text(json.dumps(d, indent=2, ensure_ascii=False) + "\n")
+          PY
+
+      - name: Verify the fitted weights still pass the suite
+        run: |
+          pip install -e ".[dev]" || pip install pytest
+          pytest tests/ -k "detect or golden or snapshot" -q --timeout=120
+
+      # Open a PR with the gh CLI (pre-installed on the runner) rather than a
+      # third-party action — nothing to pin, no supply-chain surface.
+      - name: Open a pull request if the weights changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- texthumanize/detector_weights.json; then
+            echo "weights unchanged — nothing to propose."
+            exit 0
+          fi
+          branch="auto/retrain-weights"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add texthumanize/detector_weights.json
+          git commit -m "chore(detector): refit weights from corpus"
+          git push --force-with-lease origin "$branch"
+          if gh pr view "$branch" --json state -q .state 2>/dev/null | grep -q OPEN; then
+            echo "PR already open; branch updated."
+          else
+            gh pr create --base "${GITHUB_REF_NAME}" --head "$branch" \
+              --title "Retrain: updated detector weights" \
+              --body-file /tmp/train_report.txt \
+              --label automated --label detector
+          fi
