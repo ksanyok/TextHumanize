@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texthumanize"
-version = "0.34.0"
+version = "0.35.0"
 description = "Algorithmic text humanization with AI detection, tone analysis, paraphrasing, and spinning — 38-stage pipeline, 25 languages, SentenceValidator™, PHANTOM™"
 readme = "README.md"
 license = "LicenseRef-Proprietary"
@@ -110,7 +110,7 @@ Demo = "https://humanizekit.tester-buyreadysite.website/"
 include = ["texthumanize*"]
 
 [tool.setuptools.package-data]
-texthumanize = ["data/*.json", "weights/*.zb85", "_data/*.json.gz"]
+texthumanize = ["data/*.json", "weights/*.zb85", "_data/*.json.gz", "detector_weights.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

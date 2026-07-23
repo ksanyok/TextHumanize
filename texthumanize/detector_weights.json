@@ -1,0 +1,32 @@
+{
+  "schema": "texthumanize.detector_weights.v1",
+  "fitted": false,
+  "note": "Bootstrap = current hand-tuned weights. The training pipeline (training/) refits these from a labelled corpus and opens a PR when it beats the benchmark. Values are the per-metric contribution to P(AI); non-negative, need not sum to 1 (normalized at use).",
+  "trained_at": null,
+  "corpus_size": null,
+  "metrics": {
+    "accuracy": null,
+    "auroc": null
+  },
+  "weights": {
+    "pattern": 0.18,
+    "burstiness": 0.13,
+    "voice": 0.1,
+    "stylometry": 0.1,
+    "entity": 0.08,
+    "structure": 0.08,
+    "discourse": 0.06,
+    "rhythm": 0.05,
+    "entropy": 0.04,
+    "opening": 0.03,
+    "grammar": 0.03,
+    "vocabulary": 0.02,
+    "perplexity": 0.02,
+    "semantic_rep": 0.02,
+    "topic_sentence": 0.02,
+    "coherence": 0.02,
+    "readability": 0.005,
+    "punctuation": 0.005,
+    "zipf": 0.01
+  }
+}

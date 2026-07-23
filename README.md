@@ -21,7 +21,7 @@ readability, and internal risk signals; it is not a bypass guarantee.
 [![Tests](https://img.shields.io/badge/tests-2269%20passed-2ea44f.svg?logo=pytest&logoColor=white)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
 &nbsp;&nbsp;
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)]()
-[![PyPI](https://img.shields.io/badge/pypi-v0.34.0-3775A9.svg?logo=pypi&logoColor=white)](https://pypi.org/project/texthumanize/)
+[![PyPI](https://img.shields.io/badge/pypi-v0.35.0-3775A9.svg?logo=pypi&logoColor=white)](https://pypi.org/project/texthumanize/)
 [![License](https://img.shields.io/badge/license-Dual%20(Free%20%2B%20Commercial)-blue.svg)](LICENSE)
 
 <br/>
@@ -195,7 +195,7 @@ git clone https://github.com/ksanyok/TextHumanize.git
 cd TextHumanize && pip install -e .
 ```
 
-> **Tip:** Pin your version for production: `pip install texthumanize==0.34.0`
+> **Tip:** Pin your version for production: `pip install texthumanize==0.35.0`
 
 <details>
 <summary><b>PHP / TypeScript</b></summary>
@@ -1475,7 +1475,7 @@ reporting rules, and detector limitations.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  TextHumanize v0.34.0 — AI Score Benchmark              │
+│  TextHumanize v0.35.0 — AI Score Benchmark              │
 ├──────────────────────────────────────────────────────────┤
 │  EN (web/50):    94% → 27%    (reduction: -67pp)        │
 │  EN (web/60):    94% → 23%    (reduction: -71pp)        │
@@ -1887,7 +1887,18 @@ Try the [Live Demo](https://texthumanize.link/). For local use, the REST API + S
 
 ---
 
-## 🆕 What's New in v0.34.0
+## 🆕 What's New in v0.35.0
+
+### Detection quality — evidence-driven overhaul (0.35.0)
+- **New `structure` metric** — scores the enumeration / list-intro / participial-tail / negative-parallelism *scaffolding* of instruction-tuned writing. This is the tell that survives paraphrasing and model-generation changes, and the one the old metric set missed entirely (chat "assistant register" text used to score ~40% human).
+- **Two inverted signals fixed.** `voice` no longer scores passive as AI (English GPT-4o uses agentless passive at ~half the human rate; in RU/UK/DE passive+nominal is ordinary bureaucratic register) — it now leans on nominalization, the robust ×1.5–2 tell. `punctuation` no longer treats semicolons / colons / em-dashes / « » as AI — those are marks of careful human editing, and the metric had been firing on well-edited prose.
+- **Anti-evasion normalization** — homoglyph and zero-width insertion (which collapse token-frequency detectors by 42–76 pp in the RAID benchmark) are stripped/folded before analysis; whole-word Cyrillic/Greek text is preserved.
+- **Weights rebalanced** against measured per-metric separation, and the AI-cliché dictionary gained the 2025–2026 assistant register — feeding both detection and humanization.
+- **Self-improving weights** — a new offline training pipeline (`training/`) fits the metric weights from a labelled corpus and is gated by a benchmark so a release never ships a regression. See [`training/README.md`](training/README.md).
+
+### Media provenance (0.35.0)
+- **Fixed a false-positive class** — a human photo carrying a `Description` / `Title` / `Comment` / `Software` metadata chunk was reported as AI. Generic keys now require an actual generation-parameter value; only tool-unique chunk keys (`parameters`, `workflow`, `sd-metadata`, `invokeai_metadata`, `sui_image_params`, `dream`) are conclusive on the key name alone.
+- **Wider coverage** — ComfyUI `class_type` / `sampler_name`, SwarmUI, and 2026 generator signatures (Recraft, Seedream/Seedance, Hunyuan, Reve, IPTC `trainedAlgorithmicMedia`).
 
 ### Security & REST API hardening (0.34.0)
 - **Fixed an unauthenticated reflected SSRF (CWE-918)** in the REST API. `POST /humanize` forwarded a client-supplied `oss_api_url` straight into an outbound request, so an anonymous caller could make the server fetch internal/loopback/cloud-metadata URLs and read the response. Reported responsibly by Natnael Wodsnoen.

@@ -69,6 +69,15 @@ _GENERATOR_SIGNATURES: dict[str, str] = {
     "elevenlabs": "ElevenLabs (audio)",
     "suno": "Suno (audio)",
     "udio": "Udio (audio)",
+    # 2026 additions — distinctive tokens only.
+    "recraft": "Recraft",
+    "seedream": "Seedream (ByteDance)",
+    "seedance": "Seedance (ByteDance)",
+    "hunyuanvideo": "Hunyuan (Tencent)",
+    "nano-banana": "Gemini Nano Banana (Google)",
+    "reve.art": "Reve",
+    "stable-signature": "Meta Stable Signature (declared)",
+    "trainedalgorithmic": "AI-generated (IPTC digitalSourceType)",
 }
 
 # C2PA / provenance standard markers (case-insensitive byte search).
@@ -197,10 +206,25 @@ def _iter_png_chunks(data: bytes):
 
 
 _PNG_TEXT_CHUNKS = {b"tEXt", b"zTXt", b"iTXt"}
-_PNG_AI_TEXT_KEYS = {
-    "parameters", "prompt", "workflow", "negative prompt", "comment",
-    "software", "sd-metadata", "dream", "title", "description",
+# Chunk keywords essentially unique to image-generation tooling — the key name
+# alone is conclusive. Maps key -> the tool it identifies.
+_PNG_STRONG_KEYS = {
+    "parameters": "AUTOMATIC1111 / Forge / Fooocus (Stable Diffusion)",
+    "workflow": "ComfyUI (Stable Diffusion)",
+    "sd-metadata": "InvokeAI (Stable Diffusion)",
+    "invokeai_metadata": "InvokeAI (Stable Diffusion)",
+    "sui_image_params": "SwarmUI (Stable Diffusion)",
+    "dream": "InvokeAI (Stable Diffusion)",
+    "negative prompt": "Stable Diffusion",
 }
+# Generic keywords (prompt/comment/software/title/description/author) are NOT
+# treated as AI on the key name alone — a camera caption in Description or a
+# Photoshop Comment used to be misread as AI. They count only when the VALUE
+# carries an actual generation-parameter hint below.
+_PNG_PARAM_HINTS = (
+    "steps:", "sampler", "cfg scale", "model hash", "denoising_strength",
+    "class_type", "sampler_name", '"scheduler"', "negative prompt:",
+)
 
 
 def _parse_png(data: bytes) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -211,12 +235,17 @@ def _parse_png(data: bytes) -> tuple[list[dict[str, Any]], dict[str, Any]]:
             text = payload.replace(b"\x00", b" ").decode("latin-1", "replace")
             key = text.split(" ", 1)[0].strip().lower()
             meta["text_chunks"].append(text[:200])
-            if key in _PNG_AI_TEXT_KEYS or any(k in text.lower() for k in ("steps:", "sampler", "cfg scale", "seed:", "model hash")):
+            strong = _PNG_STRONG_KEYS.get(key)
+            has_hint = any(k in text.lower() for k in _PNG_PARAM_HINTS)
+            if strong or has_hint:
                 findings.append({
                     "type": "embedded_generation_parameters",
                     "category": "generation_params",
                     "severity": "high",
-                    "detail": f"PNG {ctype.decode()} chunk with generation metadata ('{key}')",
+                    "detail": (f"PNG {ctype.decode()} '{key}' chunk — {strong}"
+                               if strong else
+                               f"PNG {ctype.decode()} chunk with Stable Diffusion generation parameters"),
+                    **({"generator": strong} if strong else {}),
                 })
             findings.extend(_scan_markers(payload))
         elif ctype in (b"eXIf", b"caBX", b"iDOT"):

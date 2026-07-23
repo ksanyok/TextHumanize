@@ -1,0 +1,72 @@
+name: Retrain detector weights
+
+# Refits the detector's metric weights from training/corpus.jsonl and opens a
+# pull request when the fit improves — the model never updates itself unattended.
+# See training/README.md.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main, master]
+    paths:
+      - 'training/corpus.jsonl'
+  schedule:
+    # Weekly, Monday 06:00 UTC — picks up any corpus growth merged during the week.
+    - cron: '0 6 * * 1'
+
+# The job needs to push a branch and open a PR.
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: retrain-weights
+  cancel-in-progress: true
+
+jobs:
+  retrain:
+    name: Fit + gate + propose
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Fit weights (writes only if the held-out gate passes)
+        id: fit
+        run: |
+          python training/train_weights.py --write | tee /tmp/train_report.txt
+          # Stamp the training date (Date is unavailable inside the trainer).
+          python - <<'PY'
+          import json, datetime, pathlib
+          p = pathlib.Path("texthumanize/detector_weights.json")
+          d = json.loads(p.read_text())
+          if d.get("fitted"):
+              d["trained_at"] = datetime.date.today().isoformat()
+              p.write_text(json.dumps(d, indent=2, ensure_ascii=False) + "\n")
+          PY
+
+      - name: Verify the fitted weights still pass the suite
+        run: |
+          pip install -e ".[dev]" || pip install pytest
+          pytest tests/ -k "detect or golden or snapshot" -q --timeout=120
+
+      - name: Open a pull request if the weights changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          add-paths: texthumanize/detector_weights.json
+          branch: auto/retrain-weights
+          delete-branch: true
+          commit-message: "chore(detector): refit weights from corpus"
+          title: "Retrain: updated detector weights"
+          body-path: /tmp/train_report.txt
+          labels: automated, detector

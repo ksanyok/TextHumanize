@@ -273,10 +273,17 @@ class Debureaucratizer:
             if self._changes_made >= self._max_changes:
                 break
 
-            if not coin_flip(prob, self.rng):
+            # Сначала ищем совпадение, только потом бросаем монетку: иначе
+            # каждая фраза словаря тратит случайное число независимо от того,
+            # есть ли она в тексте, и пополнение словарей сдвигает весь поток
+            # RNG — из-за чего менялись замены в местах, которых правка
+            # вообще не касалась.
+            matches = list(pattern.finditer(text))
+            if not matches:
                 continue
 
-            matches = list(pattern.finditer(text))
+            if not coin_flip(prob, self.rng):
+                continue
 
             for match in matches:
                 if has_placeholder(text[max(0, match.start()-5):match.end()+5]):
@@ -325,10 +332,13 @@ class Debureaucratizer:
             if self._changes_made >= self._max_changes:
                 break
 
-            if not coin_flip(prob, self.rng):
+            # Как и в _replace_phrases: сперва совпадение, потом монетка.
+            matches = list(pattern.finditer(text))
+            if not matches:
                 continue
 
-            matches = list(pattern.finditer(text))
+            if not coin_flip(prob, self.rng):
+                continue
 
             for match in reversed(matches):  # Обратный порядок, чтобы не сбить индексы
                 if self._changes_made >= self._max_changes:
