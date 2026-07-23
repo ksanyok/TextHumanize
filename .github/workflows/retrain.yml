@@ -118,6 +118,5 @@ jobs:
           else
             gh pr create --base "${GITHUB_REF_NAME}" --head "$branch" \
               --title "Retrain: updated detector weights" \
-              --body-file /tmp/train_report.txt \
-              --label automated --label detector
+              --body-file /tmp/train_report.txt
           fi
