@@ -60,13 +60,29 @@ jobs:
           pip install -e ".[dev]" || pip install pytest
           pytest tests/ -k "detect or golden or snapshot" -q --timeout=120
 
+      # Open a PR with the gh CLI (pre-installed on the runner) rather than a
+      # third-party action — nothing to pin, no supply-chain surface.
       - name: Open a pull request if the weights changed
-        uses: peter-evans/create-pull-request@v6
-        with:
-          add-paths: texthumanize/detector_weights.json
-          branch: auto/retrain-weights
-          delete-branch: true
-          commit-message: "chore(detector): refit weights from corpus"
-          title: "Retrain: updated detector weights"
-          body-path: /tmp/train_report.txt
-          labels: automated, detector
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- texthumanize/detector_weights.json; then
+            echo "weights unchanged — nothing to propose."
+            exit 0
+          fi
+          branch="auto/retrain-weights"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add texthumanize/detector_weights.json
+          git commit -m "chore(detector): refit weights from corpus"
+          git push --force-with-lease origin "$branch"
+          if gh pr view "$branch" --json state -q .state 2>/dev/null | grep -q OPEN; then
+            echo "PR already open; branch updated."
+          else
+            gh pr create --base "${GITHUB_REF_NAME}" --head "$branch" \
+              --title "Retrain: updated detector weights" \
+              --body-file /tmp/train_report.txt \
+              --label automated --label detector
+          fi

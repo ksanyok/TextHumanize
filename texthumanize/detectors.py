@@ -154,7 +154,7 @@ def _get_ai_words() -> dict[str, dict[str, set[str]]]:
 # (−42…−76 pp in the RAID benchmark), so normalize BEFORE any metric runs.
 
 _INVISIBLES_RE = re.compile(
-    "[­​-‏‪-‮⁠-⁤⁦-⁯﻿]")
+    "[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff]")
 
 # Confusable Cyrillic/Greek letters → Latin look-alike. Applied ONLY to a word
 # that is majority-Latin, so genuine Cyrillic/Greek words are left untouched.
