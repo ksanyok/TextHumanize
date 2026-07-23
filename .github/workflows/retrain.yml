@@ -112,7 +112,11 @@ jobs:
           git checkout -B "$branch"
           git add texthumanize/detector_weights.json
           git commit -m "chore(detector): refit weights from corpus"
-          git push --force-with-lease origin "$branch"
+          # Plain --force (not --force-with-lease): a fresh checkout has no
+          # remote-tracking ref for this workflow-owned branch, so a lease can't
+          # be verified and the push is rejected as "stale info". The branch is
+          # exclusively managed here, so force-overwriting it is safe.
+          git push --force origin "$branch"
           # Pushing the candidate branch is the durable part. Opening the PR is
           # best-effort: repos that don't grant Actions the "create pull requests"
           # permission (Settings → Actions → General → Workflow permissions) will
@@ -126,6 +130,6 @@ jobs:
                  --body-file /tmp/train_report.txt 2>/tmp/pr_err; then
             echo "::notice::Opened a retrain PR."
           else
-            echo "::warning::Could not auto-open a PR ($(cat /tmp/pr_err))."
+            echo "::warning::Could not auto-open a PR ($(cat /tmp/pr_err 2>/dev/null || true))."
             echo "::warning::Enable 'Allow GitHub Actions to create and approve pull requests' to automate it, or open it here: $compare"
           fi
