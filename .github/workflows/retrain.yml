@@ -113,10 +113,19 @@ jobs:
           git add texthumanize/detector_weights.json
           git commit -m "chore(detector): refit weights from corpus"
           git push --force-with-lease origin "$branch"
+          # Pushing the candidate branch is the durable part. Opening the PR is
+          # best-effort: repos that don't grant Actions the "create pull requests"
+          # permission (Settings → Actions → General → Workflow permissions) will
+          # reject gh pr create — in that case we print the one-click compare link
+          # and still succeed, so the run is green and the candidate isn't lost.
+          compare="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${GITHUB_REF_NAME}...${branch}?expand=1"
           if gh pr view "$branch" --json state -q .state 2>/dev/null | grep -q OPEN; then
-            echo "PR already open; branch updated."
+            echo "::notice::PR already open for $branch; branch updated. $compare"
+          elif gh pr create --base "${GITHUB_REF_NAME}" --head "$branch" \
+                 --title "Retrain: updated detector weights" \
+                 --body-file /tmp/train_report.txt 2>/tmp/pr_err; then
+            echo "::notice::Opened a retrain PR."
           else
-            gh pr create --base "${GITHUB_REF_NAME}" --head "$branch" \
-              --title "Retrain: updated detector weights" \
-              --body-file /tmp/train_report.txt
+            echo "::warning::Could not auto-open a PR ($(cat /tmp/pr_err))."
+            echo "::warning::Enable 'Allow GitHub Actions to create and approve pull requests' to automate it, or open it here: $compare"
           fi
