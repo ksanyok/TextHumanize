@@ -25,6 +25,7 @@ Honest limits — read before relying on this:
 
 from __future__ import annotations
 
+import re
 import struct
 from pathlib import Path
 from typing import Any
@@ -69,7 +70,65 @@ _GENERATOR_SIGNATURES: dict[str, str] = {
     "elevenlabs": "ElevenLabs (audio)",
     "suno": "Suno (audio)",
     "udio": "Udio (audio)",
+    # 2026 additions — distinctive tokens only.
+    "recraft": "Recraft",
+    "seedream": "Seedream (ByteDance)",
+    "seedance": "Seedance (ByteDance)",
+    "hunyuanvideo": "Hunyuan (Tencent)",
+    "nano-banana": "Gemini Nano Banana (Google)",
+    "reve.art": "Reve",
+    "stable-signature": "Meta Stable Signature (declared)",
+    "trainedalgorithmic": "AI-generated (IPTC digitalSourceType)",
 }
+
+# Signatures are matched as whole tokens: "udio" must not fire on "studio" or
+# "xmpDM:audioSampleRate", "flux" not on "influx", "sora" not on "sorayama".
+# Signatures that are also ordinary words or common names ("Studio One",
+# "Runway Lights", a track called "Firefly") additionally need generator
+# context: a domain, "made with <x>", "<x> ai", a version number, a vendor name.
+_CONTEXT_REQUIRED: dict[str, tuple[str, ...]] = {
+    # A metadata value that is exactly the name (e.g. RIFF ISFT "Suno") also counts.
+    "udio": (r"(?:^|[\x00\"'>])udio(?:[\x00\"'<]|$)",),
+    "suno": (r"(?:^|[\x00\"'>])suno(?:[\x00\"'<]|$)",),
+    "sora": (r"openai\s+sora",),
+    "pika": (r"pika\s*labs",),
+    "flux": (r"flux[.\-_ ]?(?:1|dev|pro|schnell|kontext)\b", r"black\s*forest\s*labs"),
+    "runway": (r"runway\s*ml", r"runway\s*gen[\s\-]?\d"),
+    "gemini": (r"google\s+gemini",),
+    "playground": (r"playground\s*v\d",),
+    "firefly": (r"adobe\s+firefly",),
+    "imagen": (r"google\s+imagen",),
+}
+
+_TOKEN_EDGE_L = rb"(?<![a-z0-9])"
+_TOKEN_EDGE_R = rb"(?![a-z0-9])"
+
+
+def _context_patterns(sig: str, extra: tuple[str, ...]) -> list[re.Pattern[bytes]]:
+    s = re.escape(sig)
+    generic = (
+        rf"{s}\.(?:com|ai|io|art|so)\b",
+        rf"(?:made|created|generated|produced|composed|rendered)\s+(?:with|by|using|in|on|via)\s+{s}\b",
+        rf"\b{s}[\s\-_]*(?:ai\b|v\d|\d)",
+    )
+    return [re.compile(p.encode("utf-8")) for p in (*generic, *extra)]
+
+
+_SIGNATURE_PATTERNS: list[tuple[str, re.Pattern[bytes], list[re.Pattern[bytes]]]] = [
+    (
+        label,
+        re.compile(_TOKEN_EDGE_L + re.escape(sig.encode("utf-8")) + _TOKEN_EDGE_R),
+        _context_patterns(sig, _CONTEXT_REQUIRED[sig]) if sig in _CONTEXT_REQUIRED else [],
+    )
+    for sig, label in _GENERATOR_SIGNATURES.items()
+]
+
+
+def _signature_hit(low: bytes, token: re.Pattern[bytes], context: list[re.Pattern[bytes]]) -> bool:
+    if not token.search(low):
+        return False
+    return not context or any(c.search(low) for c in context)
+
 
 # C2PA / provenance standard markers (case-insensitive byte search).
 _PROVENANCE_MARKERS: dict[bytes, str] = {
@@ -154,8 +213,8 @@ def _scan_markers(blob: bytes) -> list[dict[str, Any]]:
                 "severity": "high" if (b"c2pa" in marker or b"trained" in marker) else "medium",
                 "detail": label,
             })
-    for signature, label in _GENERATOR_SIGNATURES.items():
-        if signature.encode("utf-8") in low:
+    for label, token, context in _SIGNATURE_PATTERNS:
+        if _signature_hit(low, token, context):
             findings.append({
                 "type": "generator_signature",
                 "category": "generator",
@@ -197,10 +256,25 @@ def _iter_png_chunks(data: bytes):
 
 
 _PNG_TEXT_CHUNKS = {b"tEXt", b"zTXt", b"iTXt"}
-_PNG_AI_TEXT_KEYS = {
-    "parameters", "prompt", "workflow", "negative prompt", "comment",
-    "software", "sd-metadata", "dream", "title", "description",
+# Chunk keywords essentially unique to image-generation tooling — the key name
+# alone is conclusive. Maps key -> the tool it identifies.
+_PNG_STRONG_KEYS = {
+    "parameters": "AUTOMATIC1111 / Forge / Fooocus (Stable Diffusion)",
+    "workflow": "ComfyUI (Stable Diffusion)",
+    "sd-metadata": "InvokeAI (Stable Diffusion)",
+    "invokeai_metadata": "InvokeAI (Stable Diffusion)",
+    "sui_image_params": "SwarmUI (Stable Diffusion)",
+    "dream": "InvokeAI (Stable Diffusion)",
+    "negative prompt": "Stable Diffusion",
 }
+# Generic keywords (prompt/comment/software/title/description/author) are NOT
+# treated as AI on the key name alone — a camera caption in Description or a
+# Photoshop Comment used to be misread as AI. They count only when the VALUE
+# carries an actual generation-parameter hint below.
+_PNG_PARAM_HINTS = (
+    "steps:", "sampler", "cfg scale", "model hash", "denoising_strength",
+    "class_type", "sampler_name", '"scheduler"', "negative prompt:",
+)
 
 
 def _parse_png(data: bytes) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -211,12 +285,17 @@ def _parse_png(data: bytes) -> tuple[list[dict[str, Any]], dict[str, Any]]:
             text = payload.replace(b"\x00", b" ").decode("latin-1", "replace")
             key = text.split(" ", 1)[0].strip().lower()
             meta["text_chunks"].append(text[:200])
-            if key in _PNG_AI_TEXT_KEYS or any(k in text.lower() for k in ("steps:", "sampler", "cfg scale", "seed:", "model hash")):
+            strong = _PNG_STRONG_KEYS.get(key)
+            has_hint = any(k in text.lower() for k in _PNG_PARAM_HINTS)
+            if strong or has_hint:
                 findings.append({
                     "type": "embedded_generation_parameters",
                     "category": "generation_params",
                     "severity": "high",
-                    "detail": f"PNG {ctype.decode()} chunk with generation metadata ('{key}')",
+                    "detail": (f"PNG {ctype.decode()} '{key}' chunk — {strong}"
+                               if strong else
+                               f"PNG {ctype.decode()} chunk with Stable Diffusion generation parameters"),
+                    **({"generator": strong} if strong else {}),
                 })
             findings.extend(_scan_markers(payload))
         elif ctype in (b"eXIf", b"caBX", b"iDOT"):
