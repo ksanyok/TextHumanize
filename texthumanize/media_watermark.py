@@ -25,6 +25,7 @@ Honest limits — read before relying on this:
 
 from __future__ import annotations
 
+import re
 import struct
 from pathlib import Path
 from typing import Any
@@ -79,6 +80,55 @@ _GENERATOR_SIGNATURES: dict[str, str] = {
     "stable-signature": "Meta Stable Signature (declared)",
     "trainedalgorithmic": "AI-generated (IPTC digitalSourceType)",
 }
+
+# Signatures are matched as whole tokens: "udio" must not fire on "studio" or
+# "xmpDM:audioSampleRate", "flux" not on "influx", "sora" not on "sorayama".
+# Signatures that are also ordinary words or common names ("Studio One",
+# "Runway Lights", a track called "Firefly") additionally need generator
+# context: a domain, "made with <x>", "<x> ai", a version number, a vendor name.
+_CONTEXT_REQUIRED: dict[str, tuple[str, ...]] = {
+    # A metadata value that is exactly the name (e.g. RIFF ISFT "Suno") also counts.
+    "udio": (r"(?:^|[\x00\"'>])udio(?:[\x00\"'<]|$)",),
+    "suno": (r"(?:^|[\x00\"'>])suno(?:[\x00\"'<]|$)",),
+    "sora": (r"openai\s+sora",),
+    "pika": (r"pika\s*labs",),
+    "flux": (r"flux[.\-_ ]?(?:1|dev|pro|schnell|kontext)\b", r"black\s*forest\s*labs"),
+    "runway": (r"runway\s*ml", r"runway\s*gen[\s\-]?\d"),
+    "gemini": (r"google\s+gemini",),
+    "playground": (r"playground\s*v\d",),
+    "firefly": (r"adobe\s+firefly",),
+    "imagen": (r"google\s+imagen",),
+}
+
+_TOKEN_EDGE_L = rb"(?<![a-z0-9])"
+_TOKEN_EDGE_R = rb"(?![a-z0-9])"
+
+
+def _context_patterns(sig: str, extra: tuple[str, ...]) -> list[re.Pattern[bytes]]:
+    s = re.escape(sig)
+    generic = (
+        rf"{s}\.(?:com|ai|io|art|so)\b",
+        rf"(?:made|created|generated|produced|composed|rendered)\s+(?:with|by|using|in|on|via)\s+{s}\b",
+        rf"\b{s}[\s\-_]*(?:ai\b|v\d|\d)",
+    )
+    return [re.compile(p.encode("utf-8")) for p in (*generic, *extra)]
+
+
+_SIGNATURE_PATTERNS: list[tuple[str, re.Pattern[bytes], list[re.Pattern[bytes]]]] = [
+    (
+        label,
+        re.compile(_TOKEN_EDGE_L + re.escape(sig.encode("utf-8")) + _TOKEN_EDGE_R),
+        _context_patterns(sig, _CONTEXT_REQUIRED[sig]) if sig in _CONTEXT_REQUIRED else [],
+    )
+    for sig, label in _GENERATOR_SIGNATURES.items()
+]
+
+
+def _signature_hit(low: bytes, token: re.Pattern[bytes], context: list[re.Pattern[bytes]]) -> bool:
+    if not token.search(low):
+        return False
+    return not context or any(c.search(low) for c in context)
+
 
 # C2PA / provenance standard markers (case-insensitive byte search).
 _PROVENANCE_MARKERS: dict[bytes, str] = {
@@ -163,8 +213,8 @@ def _scan_markers(blob: bytes) -> list[dict[str, Any]]:
                 "severity": "high" if (b"c2pa" in marker or b"trained" in marker) else "medium",
                 "detail": label,
             })
-    for signature, label in _GENERATOR_SIGNATURES.items():
-        if signature.encode("utf-8") in low:
+    for label, token, context in _SIGNATURE_PATTERNS:
+        if _signature_hit(low, token, context):
             findings.append({
                 "type": "generator_signature",
                 "category": "generator",

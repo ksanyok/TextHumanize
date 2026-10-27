@@ -138,6 +138,34 @@ class TestWavForensics:
         assert result["changed"] is True
         assert detect_media_watermarks(result["bytes"])["has_watermarks"] is False
 
+    def test_studio_and_audio_words_are_not_udio(self) -> None:
+        # Human recordings: DAW names and XMP audio fields contain "udio" as a substring.
+        for software in ("FL Studio 21", "Studio One 6", "Sound Studio", "xmpDM:audioSampleRate"):
+            report = detect_media_watermarks(make_wav(software=software))
+            assert report["has_watermarks"] is False, software
+
+    def test_common_words_need_generator_context(self) -> None:
+        for software in ("Runway Lights (live)", "Firefly - demo take", "Influx mixdown",
+                         "Gemini Records", "Playground session", "Pikachu remix"):
+            report = detect_media_watermarks(make_wav(software=software))
+            assert report["has_watermarks"] is False, software
+
+    def test_generators_with_context_still_detected(self) -> None:
+        cases = {
+            "Made with Udio": "Udio (audio)",
+            "Udio": "Udio (audio)",
+            "https://suno.com/song/abc": "Suno (audio)",
+            "Suno AI v4.5": "Suno (audio)",
+            "FLUX.1-dev": "FLUX (Black Forest Labs)",
+            "OpenAI Sora": "OpenAI Sora",
+            "Runway Gen-4": "Runway",
+            "ElevenLabs": "ElevenLabs (audio)",
+        }
+        for software, label in cases.items():
+            report = detect_media_watermarks(make_wav(software=software))
+            gens = {f.get("generator") for f in report["findings"]}
+            assert label in gens, (software, gens)
+
 
 # ── Video (MP4) — detection + honest removal guidance ───────────────────────
 
