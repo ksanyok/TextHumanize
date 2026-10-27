@@ -5,6 +5,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **Media watermark: no more "Udio" on human recordings.** Generator signatures
+  were matched as raw substrings, so "Studio" (FL Studio, Studio One, Sound Studio)
+  and XMP fields like `xmpDM:audioSampleRate` produced "Generator signature: Udio,
+  high". Signatures now match whole tokens only, and names that are also ordinary
+  words (udio, suno, sora, pika, flux, runway, gemini, playground, firefly, imagen)
+  also need generator context: a domain (`suno.com`), "made with …", "… ai", a
+  version, a vendor name, or a metadata value that is exactly the name.
+
 ## [0.35.0] - 2026-07-21
 
 ### Detection quality (evidence-driven; see the extension's research/ catalogs)
