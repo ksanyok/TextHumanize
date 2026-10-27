@@ -87,9 +87,10 @@ _GENERATOR_SIGNATURES: dict[str, str] = {
 # "Runway Lights", a track called "Firefly") additionally need generator
 # context: a domain, "made with <x>", "<x> ai", a version number, a vendor name.
 _CONTEXT_REQUIRED: dict[str, tuple[str, ...]] = {
-    # A metadata value that is exactly the name (e.g. RIFF ISFT "Suno") also counts.
-    "udio": (r"(?:^|[\x00\"'>])udio(?:[\x00\"'<]|$)",),
-    "suno": (r"(?:^|[\x00\"'>])suno(?:[\x00\"'<]|$)",),
+    # A metadata value that is exactly the name also counts: RIFF ISFT "Suno\x00", XMP ">Suno<", and a
+    # Vorbis/FLAC comment "software=Udio" followed by the next field's binary length or the framing byte.
+    "udio": (r"(?:^|[\x00\"'>=])udio(?:[\x00-\x1f\"'<]|$)",),
+    "suno": (r"(?:^|[\x00\"'>=])suno(?:[\x00-\x1f\"'<]|$)",),
     "sora": (r"openai\s+sora",),
     "pika": (r"pika\s*labs",),
     "flux": (r"flux[.\-_ ]?(?:1|dev|pro|schnell|kontext)\b", r"black\s*forest\s*labs"),
@@ -420,16 +421,21 @@ def _iter_riff_chunks(data: bytes):
         pos = end + (size & 1)  # padding to even
 
 
+# Chunks that carry audio samples or image/video frames (WAV, WebP, AVI), never metadata.
+_RIFF_MEDIA_CHUNKS = frozenset({b"data", b"VP8 ", b"VP8L", b"ALPH", b"ANMF", b"idx1"})
+
+
 def _parse_riff(data: bytes, fmt: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     meta: dict[str, Any] = {"format": fmt, "chunks": []}
     for cid, payload, _s, _e in _iter_riff_chunks(data):
         cid_s = cid.decode("latin-1", "replace").strip()
         meta["chunks"].append(cid_s)
-        if cid in (b"EXIF", b"XMP ", b"XML ", b"LIST", b"INFO", b"C2PA", b"caBX", b"id3 ", b"ID3 "):
-            findings.extend(_scan_markers(payload))
-        else:
-            findings.extend(_scan_markers(payload))
+        # Sample/frame data is not metadata: scanning it costs ~0.7 s per MB of WAV (a 90 MB master took
+        # 69 s) and can only produce chance matches. Metadata lives in the other chunks.
+        if cid in _RIFF_MEDIA_CHUNKS or (cid == b"LIST" and payload[:4] == b"movi"):
+            continue
+        findings.extend(_scan_markers(payload))
         if cid in (b"C2PA", b"caBX"):
             findings.append({
                 "type": "provenance_metadata", "category": "c2pa",
