@@ -15,6 +15,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   "También X" instead of "Также, X").
 - **No colon openers** ("Заметим:", "Zauważmy:") when the dictionary entry has
   a regular alternative.
+- **`warnings` in `humanizeHtml()` results** — words mixing Cyrillic and Latin
+  letters ("манning") are reported (`{ type: 'mixed_script', token }`). They are
+  generator glitches or homoglyphs; the intended spelling is unknown, so they are
+  reported rather than fixed. Found in 3 of 40 live production articles.
 
 ## [0.36.0] - 2026-11-13
 

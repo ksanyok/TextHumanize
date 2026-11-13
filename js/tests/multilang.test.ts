@@ -187,3 +187,15 @@ describe('0.36.1: headings and connector punctuation', () => {
     }
   });
 });
+
+describe('0.36.1: mixed-script warnings', () => {
+  it('reports words mixing Cyrillic and Latin letters', () => {
+    const html = '<p>Платформа объединяет предложения судовладельцев, менеджеров и манning агентств по всему миру сегодня.</p>';
+    const r = humanizeHtml(html, { lang: 'ru' });
+    expect(r.warnings).toEqual([{ type: 'mixed_script', token: 'манning' }]);
+  });
+
+  it.each(LANGS)('has no warnings on clean fixtures (%s)', lang => {
+    expect(humanizeHtml(fixture(lang), { lang }).warnings).toEqual([]);
+  });
+});

@@ -217,7 +217,10 @@ export function humanizeHtml(html: string, options: HumanizeHtmlOptions = {}): H
 
   const result = out.join('');
   const aiScoreAfter = wantScore ? aiScore(afterVisible.join('\n'), lang) : -1;
-  return { html: result, lang, changes, stats, aiScoreBefore: wantScore ? aiScoreBefore : -1, aiScoreAfter };
+  return {
+    html: result, lang, changes, stats, aiScoreBefore: wantScore ? aiScoreBefore : -1, aiScoreAfter,
+    warnings: findMixedScript(afterVisible.join('\n')),
+  };
 }
 
 /**
@@ -254,6 +257,25 @@ function tokenize(html: string): Array<{ tag?: string; text?: string }> {
   }
   if (last < html.length) segments.push({ text: html.slice(last) });
   return segments;
+}
+
+/**
+ * Words that mix Cyrillic and Latin letters ("манning", "кoмпания" with a Latin
+ * "o"). Usually a generator glitch or a homoglyph; reported, never auto-fixed,
+ * because the intended spelling is unknown.
+ */
+export function findMixedScript(text: string): Array<{ type: 'mixed_script'; token: string }> {
+  const out: Array<{ type: 'mixed_script'; token: string }> = [];
+  const seen = new Set<string>();
+  for (const m of text.matchAll(/[\p{L}\p{M}]+/gu)) {
+    const w = m[0];
+    if (/\p{Script=Cyrillic}/u.test(w) && /\p{Script=Latin}/u.test(w) && !seen.has(w)) {
+      seen.add(w);
+      out.push({ type: 'mixed_script', token: w });
+      if (out.length >= 20) break;
+    }
+  }
+  return out;
 }
 
 function pushText(parts: Part[], text: string): void {
