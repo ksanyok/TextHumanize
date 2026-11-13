@@ -158,6 +158,11 @@ def export(lang: str) -> dict:
         # a pure dash / "это" replacement of a one-word key changes case government
         if " " not in k:
             c = [x for x in c if x and not x.startswith("—") and x not in ("это", "це", "— это")]
+        # "Zauważmy: X" / "Заметим: X" read as chatty; keep colon variants only
+        # when the entry has nothing else.
+        plain = [x for x in c if not x.endswith(":")]
+        if plain:
+            c = plain
         if c:
             phr[k] = c
     data["phrases"] = phr

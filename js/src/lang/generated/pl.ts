@@ -1332,11 +1332,9 @@ export const pl: LangData = {
    "warto powiedzieć"
   ],
   "należy podkreślić, że": [
-   "podkreślę:",
    ""
   ],
   "należy zauważyć, że": [
-   "zauważmy:",
    ""
   ],
   "nie da się pominąć": [
@@ -1550,12 +1548,9 @@ export const pl: LangData = {
    "w związku z tym"
   ],
   "warto podkreślić, że": [
-   "podkreślę:",
    ""
   ],
   "warto zauważyć, że": [
-   "zauważmy:",
-   "warto dodać:",
    ""
   ],
   "ważne jest, aby zrozumieć, że": [

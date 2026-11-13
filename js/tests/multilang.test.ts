@@ -161,3 +161,29 @@ describe('pathological input (ReDoS guard)', () => {
     });
   }
 });
+
+describe('0.36.1: headings and connector punctuation', () => {
+  const headings = (h: string) => [...h.matchAll(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/g)].map(m => m[0]);
+
+  it.each(LANGS)('leaves headings untouched by default (%s)', lang => {
+    const html = fixture(lang);
+    for (let seed = 1; seed <= 10; seed++) {
+      expect(headings(humanizeHtml(html, { lang, intensity: 100, seed }).html)).toEqual(headings(html));
+    }
+  });
+
+  it('still rewrites headings when headingFactor is set', () => {
+    const html = '<h2>Furthermore, it is important to note that SEO matters a lot today</h2>';
+    const outs = Array.from({ length: 10 }, (_, i) => humanizeHtml(html, { lang: 'en', intensity: 100, seed: i + 1, headingFactor: 1 }).html);
+    expect(outs.some(o => o !== html)).toBe(true);
+  });
+
+  it.each(LANGS)('no comma after bare adverbs and no colon openers (%s)', lang => {
+    const html = fixture(lang);
+    for (let seed = 1; seed <= 15; seed++) {
+      const text = visible(humanizeHtml(html, { lang, intensity: 100, seed }).html);
+      expect(text).not.toMatch(/(?:^|[.!?]\s+)(Также|Ещё|Плюс|Також|Ще|Także|Również|También|Também),/u);
+      expect(text).not.toMatch(/(?:^|[.!?]\s+)(Заметим|Отмечу|Zauważmy|Звернімо увагу|Warto dodać):/u);
+    }
+  });
+});

@@ -132,6 +132,9 @@ function isAllCaps(s: string): boolean {
 const BARE_CONJ = new Set([
   'and', 'but', 'yet', 'и', 'но', 'а', 'да', 'і', 'але', 'та', 'ale', 'i', 'a', 'y', 'pero',
   'e', 'mas', 'und', 'aber', 'et', 'mais', 'ma', 'і ще', 'и ещё', 'and also',
+  // adverbs that take no comma at sentence start ("Также X", not "Также, X")
+  'также', 'ещё', 'еще', 'плюс', 'тоже', 'також', 'ще', 'теж', 'także', 'również', 'też',
+  'también', 'também', 'auch', 'aussi', 'anche',
 ]);
 
 export interface EngineOptions {

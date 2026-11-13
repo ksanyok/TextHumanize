@@ -148,7 +148,7 @@ export function humanizeHtml(html: string, options: HumanizeHtmlOptions = {}): H
 
   const rng = new Rng(options.seed || hashSeed(html));
   const keepBase = [...(options.preserve?.brandTerms ?? []), ...(options.constraints?.keepKeywords ?? [])];
-  const headingFactor = options.headingFactor ?? 0.45;
+  const headingFactor = options.headingFactor ?? 0;
   const listFactor = options.listFactor ?? 0.75;
   const maxLinkShare = options.maxLinkShare ?? 0.6;
   const noSplitProfile = options.profile === 'formal' || options.profile === 'academic' || options.profile === 'docs';
@@ -167,7 +167,8 @@ export function humanizeHtml(html: string, options: HumanizeHtmlOptions = {}): H
     const linkChars = u.parts.filter(p => p.kind === 'atom' && /^<a\b/i.test(p.raw)).reduce((s, p) => s + p.visible.trim().length, 0);
     const visChars = visible.trim().length || 1;
     const atoms = u.parts.filter(p => p.kind === 'atom').length;
-    if (!pack || effective === 0 || words < 4 || linkChars / visChars > maxLinkShare || atoms > PH_MAX) {
+    const blockFactor = HEADINGS.has(u.tag) ? headingFactor : LISTISH.has(u.tag) ? listFactor : 1;
+    if (!pack || effective === 0 || blockFactor <= 0 || words < 4 || linkChars / visChars > maxLinkShare || atoms > PH_MAX) {
       stats.skipped++;
       out.push(original);
       afterVisible.push(visible);
@@ -182,7 +183,7 @@ export function humanizeHtml(html: string, options: HumanizeHtmlOptions = {}): H
       else { encoded += String.fromCharCode(PH_BASE + atomList.length); atomList.push(p); }
     }
 
-    const factor = HEADINGS.has(u.tag) ? headingFactor : LISTISH.has(u.tag) ? listFactor : 1;
+    const factor = blockFactor;
     const keep = [...keepBase];
     for (const m of encoded.matchAll(PROTECT_RE)) keep.push(m[0]);
 

@@ -73,7 +73,7 @@ export interface ChangeEntry {
 
 /** Options for HTML-aware humanization. */
 export interface HumanizeHtmlOptions extends HumanizeOptions {
-  /** Intensity multiplier for headings (h1–h6). Default 0.45. */
+  /** Intensity multiplier for headings (h1–h6). Default 0: headings carry SEO keywords and are left untouched. */
   headingFactor?: number;
   /** Intensity multiplier for list items / table cells. Default 0.75. */
   listFactor?: number;
