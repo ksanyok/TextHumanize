@@ -1547,7 +1547,6 @@ export const de: LangData = {
    "öffnet Türen"
   ],
   "es ist erwähnenswert, dass": [
-   "erwähnenswert:",
    ""
   ],
   "es ist festzustellen": [
@@ -1555,12 +1554,9 @@ export const de: LangData = {
    "klar ist"
   ],
   "es ist wichtig zu beachten, dass": [
-   "beachte:",
-   "wichtig:",
    ""
   ],
   "es ist wichtig zu betonen, dass": [
-   "betont sei:",
    ""
   ],
   "es lässt sich konstatieren": [
@@ -1568,7 +1564,6 @@ export const de: LangData = {
    "es zeigt sich"
   ],
   "es sei darauf hingewiesen, dass": [
-   "übrigens:",
    ""
   ],
   "hinsichtlich": [
@@ -1884,8 +1879,6 @@ export const de: LangData = {
    "unterm Strich"
   ],
   "zusammenfassend lässt sich sagen, dass": [
-   "kurz gesagt:",
-   "unterm Strich:",
    ""
   ],
   "zwecks": [

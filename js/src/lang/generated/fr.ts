@@ -1414,8 +1414,7 @@ export const fr: LangData = {
    "notons que"
   ],
   "il est à souligner": [
-   "soulignons",
-   "important:"
+   "soulignons"
   ],
   "il importe de": [
    "il faut",

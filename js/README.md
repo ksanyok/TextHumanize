@@ -56,9 +56,9 @@ What is never touched: `<a>…</a>` (anchor text included), `<code>`, `<pre>`,
 `<script>`, `<style>`, attributes, entities, and any element with
 `data-humanize="off"`, `translate="no"` or class `notranslate`. Inline tags
 (`<strong>`, `<em>`, `<br>` …) are kept in place; if a block's markup would not
-survive, the block is left as it was (`stats.reverted`). Headings get
-`headingFactor` (0.45) of the intensity and list items/table cells `listFactor`
-(0.75).
+survive, the block is left as it was (`stats.reverted`). Headings are not
+touched by default (`headingFactor: 0`, they carry SEO keywords; pass e.g. 0.45
+to opt in); list items/table cells get `listFactor` (0.75) of the intensity.
 
 ### What the engine does
 

@@ -73,7 +73,7 @@ export interface ChangeEntry {
 
 /** Options for HTML-aware humanization. */
 export interface HumanizeHtmlOptions extends HumanizeOptions {
-  /** Intensity multiplier for headings (h1–h6). Default 0.45. */
+  /** Intensity multiplier for headings (h1–h6). Default 0: headings carry SEO keywords and are left untouched. */
   headingFactor?: number;
   /** Intensity multiplier for list items / table cells. Default 0.75. */
   listFactor?: number;
@@ -92,6 +92,11 @@ export interface HumanizeHtmlResult {
   stats: { blocks: number; changed: number; reverted: number; skipped: number };
   aiScoreBefore: number;
   aiScoreAfter: number;
+  /**
+   * Problems found in the source that the engine does not fix by itself, e.g.
+   * words mixing Cyrillic and Latin letters ("манning") left by a generator.
+   */
+  warnings: Array<{ type: 'mixed_script'; token: string }>;
 }
 
 /** Publication-safe dictionaries exported from the Python packs. */

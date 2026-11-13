@@ -5,6 +5,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.36.1] - 2026-11-13
+
+### Changed (JS/TS port)
+- **Headings are left untouched by default** in `humanizeHtml()`: `headingFactor`
+  now defaults to `0` (was `0.45`) because h1–h6 carry SEO keywords. Pass a
+  positive `headingFactor` to opt back in.
+- **No comma after bare adverbs** opening a sentence ("Также X", "Także X",
+  "También X" instead of "Также, X").
+- **No colon openers** ("Заметим:", "Zauważmy:") when the dictionary entry has
+  a regular alternative.
+- **`warnings` in `humanizeHtml()` results** — words mixing Cyrillic and Latin
+  letters ("манning") are reported (`{ type: 'mixed_script', token }`). They are
+  generator glitches or homoglyphs; the intended spelling is unknown, so they are
+  reported rather than fixed. Found in 3 of 40 live production articles.
+
 ## [0.36.0] - 2026-11-13
 
 ### JS/TS port: new publication-safe engine (`js/`)

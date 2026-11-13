@@ -148,7 +148,7 @@ export function humanizeHtml(html: string, options: HumanizeHtmlOptions = {}): H
 
   const rng = new Rng(options.seed || hashSeed(html));
   const keepBase = [...(options.preserve?.brandTerms ?? []), ...(options.constraints?.keepKeywords ?? [])];
-  const headingFactor = options.headingFactor ?? 0.45;
+  const headingFactor = options.headingFactor ?? 0;
   const listFactor = options.listFactor ?? 0.75;
   const maxLinkShare = options.maxLinkShare ?? 0.6;
   const noSplitProfile = options.profile === 'formal' || options.profile === 'academic' || options.profile === 'docs';
@@ -167,7 +167,8 @@ export function humanizeHtml(html: string, options: HumanizeHtmlOptions = {}): H
     const linkChars = u.parts.filter(p => p.kind === 'atom' && /^<a\b/i.test(p.raw)).reduce((s, p) => s + p.visible.trim().length, 0);
     const visChars = visible.trim().length || 1;
     const atoms = u.parts.filter(p => p.kind === 'atom').length;
-    if (!pack || effective === 0 || words < 4 || linkChars / visChars > maxLinkShare || atoms > PH_MAX) {
+    const blockFactor = HEADINGS.has(u.tag) ? headingFactor : LISTISH.has(u.tag) ? listFactor : 1;
+    if (!pack || effective === 0 || blockFactor <= 0 || words < 4 || linkChars / visChars > maxLinkShare || atoms > PH_MAX) {
       stats.skipped++;
       out.push(original);
       afterVisible.push(visible);
@@ -182,7 +183,7 @@ export function humanizeHtml(html: string, options: HumanizeHtmlOptions = {}): H
       else { encoded += String.fromCharCode(PH_BASE + atomList.length); atomList.push(p); }
     }
 
-    const factor = HEADINGS.has(u.tag) ? headingFactor : LISTISH.has(u.tag) ? listFactor : 1;
+    const factor = blockFactor;
     const keep = [...keepBase];
     for (const m of encoded.matchAll(PROTECT_RE)) keep.push(m[0]);
 
@@ -216,7 +217,10 @@ export function humanizeHtml(html: string, options: HumanizeHtmlOptions = {}): H
 
   const result = out.join('');
   const aiScoreAfter = wantScore ? aiScore(afterVisible.join('\n'), lang) : -1;
-  return { html: result, lang, changes, stats, aiScoreBefore: wantScore ? aiScoreBefore : -1, aiScoreAfter };
+  return {
+    html: result, lang, changes, stats, aiScoreBefore: wantScore ? aiScoreBefore : -1, aiScoreAfter,
+    warnings: findMixedScript(afterVisible.join('\n')),
+  };
 }
 
 /**
@@ -253,6 +257,25 @@ function tokenize(html: string): Array<{ tag?: string; text?: string }> {
   }
   if (last < html.length) segments.push({ text: html.slice(last) });
   return segments;
+}
+
+/**
+ * Words that mix Cyrillic and Latin letters ("манning", "кoмпания" with a Latin
+ * "o"). Usually a generator glitch or a homoglyph; reported, never auto-fixed,
+ * because the intended spelling is unknown.
+ */
+export function findMixedScript(text: string): Array<{ type: 'mixed_script'; token: string }> {
+  const out: Array<{ type: 'mixed_script'; token: string }> = [];
+  const seen = new Set<string>();
+  for (const m of text.matchAll(/[\p{L}\p{M}]+/gu)) {
+    const w = m[0];
+    if (/\p{Script=Cyrillic}/u.test(w) && /\p{Script=Latin}/u.test(w) && !seen.has(w)) {
+      seen.add(w);
+      out.push({ type: 'mixed_script', token: w });
+      if (out.length >= 20) break;
+    }
+  }
+  return out;
 }
 
 function pushText(parts: Part[], text: string): void {
