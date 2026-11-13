@@ -12,7 +12,19 @@ const LANGS = ['ru', 'uk', 'en', 'pl', 'es', 'pt'] as const;
 const fixture = (l: string) => readFileSync(resolve(__dirname, `../../benchmarks/seo_html/${l}.html`), 'utf8');
 const links = (h: string) => [...h.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map(m => m[0]);
 const tags = (h: string) => [...h.matchAll(/<\/?[a-z0-9]+/gi)].map(m => m[0]).join(',');
-const visible = (h: string) => h.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+// Visible text without regex tag stripping (CodeQL: incomplete multi-character
+// sanitization): a single pass that drops everything between '<' and '>'.
+const textOf = (h: string, gap = '') => {
+  let out = '';
+  let inTag = false;
+  for (const ch of h) {
+    if (ch === '<') { inTag = true; out += gap; continue; }
+    if (ch === '>' && inTag) { inTag = false; continue; }
+    if (!inTag) out += ch;
+  }
+  return out;
+};
+const visible = (h: string) => textOf(h, ' ').replace(/\s+/g, ' ');
 const ARTIFACTS = /,\s*[,.;:]|\s[,.;:](?!\d)|\.\.(?!\.)|[.!?]\s+,|\p{L}\s{2,}\p{L}/u;
 
 describe.each(LANGS)('humanizeHtml on %s SEO article', lang => {
@@ -197,5 +209,18 @@ describe('0.36.1: mixed-script warnings', () => {
 
   it.each(LANGS)('has no warnings on clean fixtures (%s)', lang => {
     expect(humanizeHtml(fixture(lang), { lang }).warnings).toEqual([]);
+  });
+});
+
+describe('0.37: contrast connectors are never dropped', () => {
+  const cases: Array<[string, string, RegExp]> = [
+    ['en', '<p>The tool is fast and cheap for small teams. However, it lacks reporting features for large agencies today.</p>', /\. (However|But|Still|Yet|Even so|That said|Though|Nevertheless|Nonetheless|On the other hand)\b/],
+    ['ru', '<p>Инструмент быстрый и недорогой для небольших команд. Однако ему не хватает отчётов для крупных агентств сегодня.</p>', /\. (Однако|Но|Впрочем|При этом|Правда|Тем не менее|Всё же|Зато|Хотя)(?=[\s,])/u],
+    ['pt', '<p>A ferramenta é rápida e barata para equipes pequenas. No entanto, faltam relatórios para grandes agências hoje em dia.</p>', /\. (No entanto|Mas|Contudo|Porém|Todavia|Ainda assim|Entretanto|Mesmo assim)(?=[\s,])/u],
+  ];
+  it.each(cases)('%s', (lang, html, re) => {
+    for (let seed = 1; seed <= 25; seed++) {
+      expect(textOf(humanizeHtml(html, { lang, intensity: 100, seed }).html)).toMatch(re);
+    }
   });
 });

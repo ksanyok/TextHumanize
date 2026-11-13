@@ -5,6 +5,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-11-13
+
+### Portuguese and Spanish
+- **New Portuguese AI-cliche list** (openers, hedges, stock phrases; keys keep
+  their preposition so government is preserved) and **extended Spanish list**.
+  Benchmark edits per article: pt 6 → 17, es 14 → 18.
+
+### All languages
+- **Contrastive connectors are never dropped** ("However", "Однако",
+  "No entanto") — only replaced by another contrastive connector; dropping them
+  lost meaning. Additive/concluding connectors may still be dropped.
+- Spanish colloquial "Total," removed from replacements.
+
 ## [0.36.1] - 2026-11-13
 
 ### Changed (JS/TS port)

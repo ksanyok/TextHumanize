@@ -3919,6 +3919,12 @@ export const en: LangData = {
    "For sure"
   ]
  },
+ "contrast": [
+  "However",
+  "Nevertheless",
+  "Nonetheless",
+  "On the other hand"
+ ],
  "name": "English",
  "phrases": {
   "a considerable amount of": [

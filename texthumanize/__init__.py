@@ -40,7 +40,7 @@ import sys as _sys
 import types as _types
 from typing import Any
 
-__version__ = "0.36.1"
+__version__ = "0.37.0"
 __author__ = "TextHumanize Contributors"
 __license__ = "Personal Use Only"
 

@@ -1253,6 +1253,7 @@ export const fr: LangData = {
    "Là-dessus"
   ]
  },
+ "contrast": [],
  "name": "Français",
  "phrases": {
   "aller dans le sens de": [

@@ -280,6 +280,67 @@ AI_CLICHES_ES: dict[str, list[str]] = {
     "en resumen,": ["resumiendo,", ""],
     "en última instancia,": ["al final,", ""],
     "finalmente,": ["por último,", ""],
+    # 0.37: frequent openers / hedges in generated SEO copy
+    "en el panorama digital actual, en constante evolución,": ["hoy,", ""],
+    "en el panorama digital actual,": ["hoy,", ""],
+    "en el panorama actual,": ["hoy,", ""],
+    "en constante evolución": ["que cambia rápido", "en pleno cambio"],
+    "es importante resaltar que": ["conviene decir que", ""],
+    "vale la pena mencionar que": ["conviene decir que", ""],
+    "vale la pena destacar que": ["conviene decir que", ""],
+    "sin lugar a dudas,": ["sin duda,", ""],
+    "en este sentido,": ["así,", ""],
+    "a la hora de": ["al"],
+    "constituye una parte esencial del": ["forma parte del"],
+    "constituye una parte esencial de la": ["forma parte de la"],
+    "ofrece una visión exhaustiva de": ["repasa a fondo"],
+    "ofrece una visión general de": ["resume"],
+    "de manera eficaz": ["con eficacia", "bien"],
+    "llevar a cabo": ["hacer", "realizar"],
+    "lleva a cabo": ["hace", "realiza"],
+    "llevan a cabo": ["hacen", "realizan"],
+}
+
+# ── Португальский ───────────────────────────────────────────
+# Keys keep their preposition (no/na/do/da/em) so the replacement governs the
+# following noun exactly like the original.
+AI_CLICHES_PT: dict[str, list[str]] = {
+    "no cenário digital atual, em constante evolução,": ["hoje,", ""],
+    "no cenário digital atual,": ["hoje,", ""],
+    "no cenário atual,": ["hoje,", ""],
+    "no mundo atual,": ["hoje,", ""],
+    "no mundo digital de hoje,": ["hoje,", ""],
+    "nos dias de hoje,": ["hoje,", ""],
+    "na era digital,": ["hoje,", ""],
+    "em constante evolução": ["que muda rápido", "em plena mudança"],
+    # Hedges
+    "vale ressaltar que": ["vale dizer que", ""],
+    "cabe ressaltar que": ["vale dizer que", ""],
+    "é importante ressaltar que": ["vale dizer que", ""],
+    "é importante destacar que": ["vale dizer que", ""],
+    "é importante notar que": ["note que", ""],
+    "é importante lembrar que": ["lembre que", ""],
+    "convém destacar que": ["vale dizer que", ""],
+    "sem dúvida,": ["claro,", ""],
+    # Stock phrases
+    "desempenha um papel fundamental no": ["pesa muito no", "é decisivo no"],
+    "desempenha um papel fundamental na": ["pesa muito na", "é decisivo na"],
+    "desempenha um papel fundamental em": ["pesa muito em", "é decisivo em"],
+    "desempenha um papel crucial no": ["pesa muito no", "é decisivo no"],
+    "desempenha um papel crucial na": ["pesa muito na", "é decisivo na"],
+    "desempenha um papel importante no": ["conta muito no"],
+    "desempenha um papel importante na": ["conta muito na"],
+    "constitui uma parte essencial do": ["faz parte do"],
+    "constitui uma parte essencial da": ["faz parte da"],
+    "é parte integrante do": ["faz parte do"],
+    "é parte integrante da": ["faz parte da"],
+    "uma ampla gama de": ["todo tipo de", "diversos tipos de"],
+    "uma grande variedade de": ["todo tipo de", "diversos tipos de"],
+    "abre novas oportunidades": ["abre portas", "cria novas opções"],
+    "oferece uma visão abrangente": ["dá um panorama completo"],
+    "de maneira eficiente": ["com eficiência"],
+    "em conclusão,": ["em resumo,", "resumindo,", ""],
+    "em última análise,": ["no fim das contas,", ""],
 }
 
 # ── Польский ────────────────────────────────────────────────
@@ -318,6 +379,7 @@ AI_CLICHES: dict[str, dict[str, list[str]]] = {
     "de": AI_CLICHES_DE,
     "es": AI_CLICHES_ES,
     "pl": AI_CLICHES_PL,
+    "pt": AI_CLICHES_PT,
 }
 
 
