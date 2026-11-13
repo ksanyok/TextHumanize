@@ -297,3 +297,20 @@ Commercial use prohibited without separate agreement.
 ## See Also
 
 - [TextHumanize Python](https://github.com/ksanyok/TextHumanize) — Original Python library with CLI
+
+## Publication-safe engine and HTML mode (0.37+)
+
+`TextHumanize::humanize()` uses the same dictionary engine as the JS port
+(AI cliches, officialese, stock connectors; grammar-guarded; 9 languages).
+The previous multi-stage pipeline is available with
+`constraints: ['engine' => 'legacy']`.
+
+```php
+$r = TextHumanize::humanizeHtml($articleHtml, [
+    'lang' => 'pt', 'profile' => 'seo', 'intensity' => 55,
+    'keep_keywords' => ['seguro viagem'],
+]);
+$r['html'];      // same tags, links and anchors; headings untouched by default
+$r['changes'];   // [['type' => 'phrase', 'original' => ..., 'replacement' => ...], ...]
+$r['warnings'];  // [['type' => 'mixed_script', 'token' => 'манning']]
+```

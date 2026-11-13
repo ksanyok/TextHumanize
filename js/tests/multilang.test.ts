@@ -199,3 +199,16 @@ describe('0.36.1: mixed-script warnings', () => {
     expect(humanizeHtml(fixture(lang), { lang }).warnings).toEqual([]);
   });
 });
+
+describe('0.37: contrast connectors are never dropped', () => {
+  const cases: Array<[string, string, RegExp]> = [
+    ['en', '<p>The tool is fast and cheap for small teams. However, it lacks reporting features for large agencies today.</p>', /\. (However|But|Still|Yet|Even so|That said|Though|Nevertheless|Nonetheless|On the other hand)\b/],
+    ['ru', '<p>Инструмент быстрый и недорогой для небольших команд. Однако ему не хватает отчётов для крупных агентств сегодня.</p>', /\. (Однако|Но|Впрочем|При этом|Правда|Тем не менее|Всё же|Зато|Хотя)(?=[\s,])/u],
+    ['pt', '<p>A ferramenta é rápida e barata para equipes pequenas. No entanto, faltam relatórios para grandes agências hoje em dia.</p>', /\. (No entanto|Mas|Contudo|Porém|Todavia|Ainda assim|Entretanto|Mesmo assim)(?=[\s,])/u],
+  ];
+  it.each(cases)('%s', (lang, html, re) => {
+    for (let seed = 1; seed <= 25; seed++) {
+      expect(humanizeHtml(html, { lang, intensity: 100, seed }).html.replace(/<[^>]+>/g, '')).toMatch(re);
+    }
+  });
+});

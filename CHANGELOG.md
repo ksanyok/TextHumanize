@@ -5,6 +5,33 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-11-13
+
+### PHP port: the publication-safe engine (`php/src/Safe/`)
+- **`TextHumanize::humanize()` now uses the same engine as the JS port** —
+  dictionary edits only (AI cliches, officialese, stock connectors) with the
+  grammar guards, for en/ru/uk/de/fr/es/pl/pt/it. The older multi-stage path
+  (paraphrasing, liveliness, structure rewrites) produced broken grammar on
+  short texts ("Also, notably that high-quality backlinks…") and is kept
+  behind `constraints: ['engine' => 'legacy']`.
+- **`TextHumanize::humanizeHtml($html, $options)`** — HTML-aware mode: links,
+  anchors, attributes, code and inline tags byte-identical, headings untouched
+  by default, `warnings` for mixed Cyrillic/Latin words.
+- Dictionaries are exported by `scripts/export_js_langs.py` to
+  `php/src/Safe/data/*.json` alongside the JS packs; `Safe\Detector` is the
+  PHP port of the JS AI-style score.
+
+### Portuguese and Spanish
+- **New Portuguese AI-cliche list** (openers, hedges, stock phrases; keys keep
+  their preposition so government is preserved) and **extended Spanish list**.
+  Benchmark edits per article: pt 6 → 17, es 14 → 18.
+
+### All ports
+- **Contrastive connectors are never dropped** ("However", "Однако",
+  "No entanto") — only replaced by another contrastive connector; dropping them
+  lost meaning. Additive/concluding connectors may still be dropped.
+- Spanish colloquial "Total," removed from replacements.
+
 ## [0.36.1] - 2026-11-13
 
 ### Changed (JS/TS port)

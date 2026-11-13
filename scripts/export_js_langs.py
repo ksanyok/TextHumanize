@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export the Python language packs into the TypeScript port.
+"""Export the Python language packs into the TypeScript and PHP ports.
 
 The JS/TS port (``js/``) is what runs inside Node pipelines, so it must not
 drift from the curated Python dictionaries. This script copies the
@@ -34,6 +34,7 @@ INFLECTED = {"ru", "uk", "pl", "de"}
 # Romance adjectives agree in gender/number: keep the final letter.
 ROMANCE = {"es", "pt", "it", "fr"}
 OUT = ROOT / "js" / "src" / "lang" / "generated"
+PHP_OUT = ROOT / "php" / "src" / "Safe" / "data"
 
 # Bare copulas: replacing them with a dash or "это" breaks case government
 # ("является ключевым фактором" -> "— ключевым фактором").
@@ -47,7 +48,7 @@ GOVERNING_NOUNS = {
     "kontrolę", "wpływ", "control", "controle", "contrôle", "controllo",
 }
 # Replacements that are too colloquial / opinionated for published SEO copy.
-BANNED_REPLACEMENTS = {"ojo:", "подчеркну:", "destaco que", "zaznaczmy"}
+BANNED_REPLACEMENTS = {"ojo:", "подчеркну:", "destaco que", "zaznaczmy", "total,"}
 
 
 # Discourse classes of connectors. An alternative is kept only if it has the
@@ -176,6 +177,8 @@ def export(lang: str) -> dict:
         if c:
             con[k] = list(dict.fromkeys(c))
     data["connectors"] = con
+    # Contrastive connectors carry meaning ("However, X"): never dropped.
+    data["contrast"] = sorted(k for k in con if _conn_class(k) == "contrast")
     return data
 
 
@@ -189,6 +192,11 @@ def main() -> None:
             "import type { LangData } from '../../types';\n\n"
             f"export const {lang}: LangData = {body};\n",
             encoding="utf-8",
+        )
+        # Same data for the PHP port (php/src/Safe), loaded with json_decode.
+        PHP_OUT.mkdir(parents=True, exist_ok=True)
+        (PHP_OUT / f"{lang}.json").write_text(
+            json.dumps(data, ensure_ascii=False, sort_keys=True), encoding="utf-8"
         )
         print(f"{lang}: {len(data['bureaucratic'])} words, {len(data['phrases'])} phrases, "
               f"{len(data['connectors'])} connectors")

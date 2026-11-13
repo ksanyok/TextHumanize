@@ -1259,11 +1259,18 @@ export const es: LangData = {
    "Aun así"
   ]
  },
+ "contrast": [
+  "No obstante",
+  "Sin embargo"
+ ],
  "name": "Español",
  "phrases": {
   "a instancias de": [
    "a petición de",
    "por pedido de"
+  ],
+  "a la hora de": [
+   "al"
   ],
   "a la luz de": [
    "según",
@@ -1352,6 +1359,12 @@ export const es: LangData = {
    "después de",
    "tras"
   ],
+  "constituye una parte esencial de la": [
+   "forma parte de la"
+  ],
+  "constituye una parte esencial del": [
+   "forma parte del"
+  ],
   "dar cuenta de": [
    "informar de",
    "explicar",
@@ -1371,6 +1384,10 @@ export const es: LangData = {
    "según",
    "acorde a",
    "conforme a"
+  ],
+  "de manera eficaz": [
+   "con eficacia",
+   "bien"
   ],
   "de manera significativa": [
    "mucho",
@@ -1396,8 +1413,11 @@ export const es: LangData = {
   ],
   "en conclusión,": [
    "en resumen,",
-   "total,",
    ""
+  ],
+  "en constante evolución": [
+   "que cambia rápido",
+   "en pleno cambio"
   ],
   "en el ejercicio de": [
    "al usar",
@@ -1428,6 +1448,18 @@ export const es: LangData = {
    "ahora",
    ""
   ],
+  "en el panorama actual,": [
+   "hoy,",
+   ""
+  ],
+  "en el panorama digital actual,": [
+   "hoy,",
+   ""
+  ],
+  "en el panorama digital actual, en constante evolución,": [
+   "hoy,",
+   ""
+  ],
   "en el seno de": [
    "dentro de",
    "en",
@@ -1445,6 +1477,10 @@ export const es: LangData = {
    "en",
    "dentro de",
    "en el campo de"
+  ],
+  "en este sentido,": [
+   "así,",
+   ""
   ],
   "en la era digital": [
    "hoy",
@@ -1532,6 +1568,10 @@ export const es: LangData = {
    "conviene destacar que",
    ""
   ],
+  "es importante resaltar que": [
+   "conviene decir que",
+   ""
+  ],
   "es importante señalar que": [
    "conviene señalar que",
    ""
@@ -1573,6 +1613,18 @@ export const es: LangData = {
    "es importante en",
    "cuenta en"
   ],
+  "lleva a cabo": [
+   "hace",
+   "realiza"
+  ],
+  "llevan a cabo": [
+   "hacen",
+   "realizan"
+  ],
+  "llevar a cabo": [
+   "hacer",
+   "realizar"
+  ],
   "llevar a efecto": [
    "realizar",
    "ejecutar",
@@ -1585,6 +1637,12 @@ export const es: LangData = {
   "no es menos cierto que": [
    "también es verdad que",
    "igualmente"
+  ],
+  "ofrece una visión exhaustiva de": [
+   "repasa a fondo"
+  ],
+  "ofrece una visión general de": [
+   "resume"
   ],
   "ostentar la facultad de": [
    "poder",
@@ -1635,6 +1693,10 @@ export const es: LangData = {
    "claramente",
    "evidentemente"
   ],
+  "sin lugar a dudas,": [
+   "sin duda,",
+   ""
+  ],
   "sin menoscabo de": [
    "sin afectar a",
    "sin perjudicar"
@@ -1664,6 +1726,14 @@ export const es: LangData = {
   "una amplia variedad de": [
    "muchos",
    "todo tipo de"
+  ],
+  "vale la pena destacar que": [
+   "conviene decir que",
+   ""
+  ],
+  "vale la pena mencionar que": [
+   "conviene decir que",
+   ""
   ]
  }
 };

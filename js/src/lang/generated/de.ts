@@ -1463,6 +1463,7 @@ export const de: LangData = {
    "Dazu"
   ]
  },
+ "contrast": [],
  "name": "Deutsch",
  "phrases": {
   "abschließend": [

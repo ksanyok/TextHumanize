@@ -1238,6 +1238,10 @@ export const pl: LangData = {
    "Prawda"
   ]
  },
+ "contrast": [
+  "Niemniej jednak",
+  "Z drugiej strony"
+ ],
  "name": "Polski",
  "phrases": {
   "bez uszczerbku dla": [

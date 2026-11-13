@@ -1313,6 +1313,10 @@ export const it: LangData = {
    "Bisogna dire"
   ]
  },
+ "contrast": [
+  "Però",
+  "Tuttavia"
+ ],
  "name": "Italiano",
  "phrases": {
   "a fronte di": [

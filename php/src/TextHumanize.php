@@ -21,7 +21,7 @@ use TextHumanize\Pipeline\Pipeline;
  */
 class TextHumanize
 {
-    public const VERSION = '0.36.1';
+    public const VERSION = '0.37.0';
 
     /**
      * Humanize text — the primary API method.
@@ -53,6 +53,22 @@ class TextHumanize
         );
 
         return Pipeline::run($text, $options);
+    }
+
+    /**
+     * Humanize an HTML fragment or document while keeping markup intact:
+     * links, anchor text, attributes, code and inline tags stay byte-identical.
+     *
+     * Options: lang, profile, intensity, seed, keep_keywords, brand_terms,
+     * heading_factor (default 0 — headings untouched), list_factor (0.75),
+     * max_link_share (0.6), score (true).
+     *
+     * @return array{html:string, lang:string, changes:array, stats:array,
+     *               ai_score_before:int, ai_score_after:int, warnings:array}
+     */
+    public static function humanizeHtml(string $html, array $options = []): array
+    {
+        return \TextHumanize\Safe\HtmlHumanizer::humanize($html, $options);
     }
 
     /**

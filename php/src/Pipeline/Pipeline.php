@@ -12,6 +12,9 @@ use TextHumanize\LangDetector;
 use TextHumanize\Profiles;
 use TextHumanize\RandomHelper;
 use TextHumanize\TextAnalyzer;
+use TextHumanize\Safe\Detector as SafeDetector;
+use TextHumanize\Safe\Engine as SafeEngine;
+use TextHumanize\Safe\LangData as SafeLangData;
 
 /**
  * Pipeline — the 11-stage text humanization pipeline.
@@ -143,6 +146,38 @@ class Pipeline
             $changes[] = ['stage' => 'typography', 'changes' => $typoChanges];
         }
         $processed = self::runPlugins('typography', $processed, $lang, $options->profile, $options->intensity, false);
+
+        // --- Publication-safe engine (default since 0.37.0) ---
+        // Dictionary edits only (AI cliches, officialese, stock connectors) with
+        // grammar guards — the same engine and data as the JS port. The older
+        // multi-stage path (paraphrasing, liveliness, structure rewrites) is kept
+        // behind constraints['engine' => 'legacy'].
+        $safePack = SafeLangData::get($lang);
+        if ($safePack !== null && ($options->constraints['engine'] ?? 'safe') !== 'legacy') {
+            $score = SafeDetector::score($segmented->restore($processed), $lang);
+            $effective = $options->profile === 'chat' ? $options->intensity : SafeDetector::adapt($options->intensity, $score);
+            $r = SafeEngine::rewrite($processed, $safePack, [
+                'intensity' => $effective,
+                'seed' => $options->seed ?? crc32($text),
+                'keep' => array_merge($keepKeywords, $brandTerms),
+                'lang' => $lang,
+                'split' => !in_array($options->profile, ['formal', 'academic', 'docs'], true),
+            ]);
+            if ($r['changes']) {
+                $changes[] = ['stage' => 'safe_engine', 'ai_score' => $score, 'intensity' => $effective, 'changes' => $r['changes']];
+            }
+            $processed = self::runPlugins('restore', $r['text'], $lang, $options->profile, $options->intensity, true);
+            $processed = $segmented->restore($processed);
+            $processed = self::runPlugins('restore', $processed, $lang, $options->profile, $options->intensity, false);
+
+            return new HumanizeResult(
+                original: $text,
+                processed: self::applyConstraints($processed, $options),
+                lang: $lang,
+                profile: $options->profile,
+                changes: $changes,
+            );
+        }
 
         // --- Stages 3-6: Deep language processing ---
         if ($hasDeep) {

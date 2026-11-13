@@ -46,6 +46,7 @@ function build(data: LangData, legacy?: { synonyms: Record<string, string[]>; fi
     connectors: Object.keys(data.connectors),
     synonyms: legacy?.synonyms ?? {},
     fillers: legacy?.fillers ?? [],
+    contrast: new Set((data.contrast ?? []).map(k => k.toLowerCase())),
     splitJoints: SPLIT_JOINTS[data.code] ?? ['; '],
   };
 }
