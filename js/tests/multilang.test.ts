@@ -12,7 +12,19 @@ const LANGS = ['ru', 'uk', 'en', 'pl', 'es', 'pt'] as const;
 const fixture = (l: string) => readFileSync(resolve(__dirname, `../../benchmarks/seo_html/${l}.html`), 'utf8');
 const links = (h: string) => [...h.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map(m => m[0]);
 const tags = (h: string) => [...h.matchAll(/<\/?[a-z0-9]+/gi)].map(m => m[0]).join(',');
-const visible = (h: string) => h.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+// Visible text without regex tag stripping (CodeQL: incomplete multi-character
+// sanitization): a single pass that drops everything between '<' and '>'.
+const textOf = (h: string, gap = '') => {
+  let out = '';
+  let inTag = false;
+  for (const ch of h) {
+    if (ch === '<') { inTag = true; out += gap; continue; }
+    if (ch === '>' && inTag) { inTag = false; continue; }
+    if (!inTag) out += ch;
+  }
+  return out;
+};
+const visible = (h: string) => textOf(h, ' ').replace(/\s+/g, ' ');
 const ARTIFACTS = /,\s*[,.;:]|\s[,.;:](?!\d)|\.\.(?!\.)|[.!?]\s+,|\p{L}\s{2,}\p{L}/u;
 
 describe.each(LANGS)('humanizeHtml on %s SEO article', lang => {
@@ -208,7 +220,7 @@ describe('0.37: contrast connectors are never dropped', () => {
   ];
   it.each(cases)('%s', (lang, html, re) => {
     for (let seed = 1; seed <= 25; seed++) {
-      expect(humanizeHtml(html, { lang, intensity: 100, seed }).html.replace(/<[^>]+>/g, '')).toMatch(re);
+      expect(textOf(humanizeHtml(html, { lang, intensity: 100, seed }).html)).toMatch(re);
     }
   });
 });
