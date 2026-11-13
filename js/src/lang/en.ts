@@ -2,9 +2,9 @@
  * English language pack.
  */
 
-import type { LangPack } from '../types';
+// Legacy hand-written pack: only synonyms/fillers are still used (see ./index.ts).
 
-export const en: LangPack = {
+export const en = {
   code: 'en',
   name: 'English',
   bureaucratic: {

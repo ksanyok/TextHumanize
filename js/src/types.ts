@@ -62,8 +62,45 @@ export interface HumanizeResult {
 
 export interface ChangeEntry {
   type: string;
+  /** Human-readable summary; word/phrase edits use the "original → replacement" form. */
   description: string;
+  /** Exact source fragment (word/phrase/connector edits). */
+  original?: string;
+  /** Replacement text ('' when the fragment was dropped). */
+  replacement?: string;
   [key: string]: unknown;
+}
+
+/** Options for HTML-aware humanization. */
+export interface HumanizeHtmlOptions extends HumanizeOptions {
+  /** Intensity multiplier for headings (h1–h6). Default 0.45. */
+  headingFactor?: number;
+  /** Intensity multiplier for list items / table cells. Default 0.75. */
+  listFactor?: number;
+  /** Skip blocks whose link text exceeds this share of visible text. Default 0.6. */
+  maxLinkShare?: number;
+  /** Also compute AI score before/after (costs one detector pass each). Default true. */
+  score?: boolean;
+}
+
+/** Result of HTML-aware humanization. */
+export interface HumanizeHtmlResult {
+  html: string;
+  lang: string;
+  changes: ChangeEntry[];
+  /** Blocks seen / changed / reverted by the structure guard. */
+  stats: { blocks: number; changed: number; reverted: number; skipped: number };
+  aiScoreBefore: number;
+  aiScoreAfter: number;
+}
+
+/** Publication-safe dictionaries exported from the Python packs. */
+export interface LangData {
+  code: string;
+  name: string;
+  bureaucratic: Record<string, string[]>;
+  phrases: Record<string, string[]>;
+  connectors: Record<string, string[]>;
 }
 
 /** Text analysis report. */
@@ -97,4 +134,10 @@ export interface LangPack {
   synonyms: Record<string, string[]>;
   connectors: string[];
   fillers: string[];
+  /** Multi-word officialese and AI cliches → replacements ('' = drop). */
+  phrases: Record<string, string[]>;
+  /** Sentence-initial AI connectors → alternatives. */
+  connectorMap: Record<string, string[]>;
+  /** Comma/semicolon joints where a long sentence may be split in two. */
+  splitJoints: string[];
 }

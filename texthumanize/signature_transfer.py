@@ -641,7 +641,9 @@ class SignatureTransfer:
                     "Як не дивно,", "Наразі", "По суті,", "Насамперед,"],
         }
 
-        pool = diversifiers.get(self.lang, diversifiers["en"])
+        pool = diversifiers.get(self.lang)
+        if not pool:  # never fall back to English prefixes
+            return text, changes
         seen_fix = set()
         for i, sent in enumerate(sentences):
             first = sent.strip().split()[0].lower() if sent.strip() else ""
@@ -697,7 +699,9 @@ class SignatureTransfer:
                         "ru": "Разве не так, что ",
                         "uk": "Хіба не так, що ",
                     }
-                    starter = q_starters.get(self.lang, q_starters["en"])
+                    starter = q_starters.get(self.lang)
+                    if not starter:
+                        break
                     new_sents[i] = starter + sent[0].lower() + sent[1:-1] + "?"
                     changes.append({
                         "type": "sst_punct_question",
@@ -774,7 +778,9 @@ class SignatureTransfer:
                    "(плюс-мінус)", "(у певному сенсі)", "(до певної міри)"],
         }
 
-        pool = parentheticals.get(self.lang, parentheticals["en"])
+        pool = parentheticals.get(self.lang)
+        if not pool:  # never fall back to English asides
+            return text, changes
         sentences = split_sentences(text, self.lang)
         if len(sentences) < 2:
             return text, changes

@@ -309,7 +309,9 @@ class EntropyInjector:
             return [", i ", ", ale ", " — ", ", gdyż "]
         if self._lang == "pt":
             return [", e ", ", mas ", " — ", ", pois "]
-        # English default
+        # English default — never leak English into other languages
+        if self._lang != "en":
+            return []
         return [", and ", ", but ", " — ", ", since "]
 
     # ── Cadence variation ─────────────────────────────────────
@@ -419,7 +421,9 @@ class EntropyInjector:
                 "Isso é importante.", "Um fato.", "Esse é o ponto.",
                 "Faz sentido.", "Não é tão simples.",
             ]
-        # English default
+        # English default — never leak English into other languages
+        if self._lang != "en":
+            return []
         if self._profile in ("chat", "web"):
             return [
                 "That matters.", "Here's the thing.", "Worth noting.",
@@ -565,7 +569,9 @@ class EntropyInjector:
                 "— dato importante —", "— curiosamente —",
                 "— en esencia —", "— cabe señalar —",
             ]
-        # English default
+        # English default — never leak English into other languages
+        if self._lang != "en":
+            return []
         if self._profile in ("chat", "web"):
             return [
                 "(interestingly)", "(and this is key)",
@@ -648,7 +654,9 @@ class EntropyInjector:
                 "Probablemente,", "Tal vez,", "Al parecer,",
                 "En cierto modo,", "Parece que",
             ]
-        # English default
+        # English default — never leak English into other languages
+        if self._lang != "en":
+            return []
         if self._profile in ("chat", "web"):
             return [
                 "Honestly,", "Arguably,", "In a way,",
@@ -725,7 +733,9 @@ class EntropyInjector:
                 "Por cierto,", "En general,", "Al respecto,",
                 "De hecho,", "En resumen,",
             ]
-        # English default
+        # English default — never leak English into other languages
+        if self._lang != "en":
+            return []
         if self._profile in ("chat", "web"):
             return [
                 "Actually,", "In fact,", "On that note,",
