@@ -20,14 +20,21 @@ export class TypographyNormalizer {
     // Multiple spaces → single
     result = this.applyRule(result, / {2,}/g, ' ', 'double_spaces');
 
-    // Space before punctuation
-    result = this.applyRule(result, / ([.,;:!?])/g, '$1', 'space_before_punct');
-
-    // Missing space after punctuation (avoid URLs and numbers like 3.14)
+    // Space before punctuation (French keeps a space before ; : ! ?)
     result = this.applyRule(
       result,
-      /([.!?])([A-ZА-ЯЁЇІЄҐÄÖÜß])/g,
-      '$1 $2',
+      this.lang === 'fr' ? /(?<! ) +(?=[.,])/g : /(?<! ) +(?=[.,;:!?])/g,
+      '',
+      'space_before_punct',
+    );
+
+    // Missing space after a sentence end: "word.Next" → "word. Next".
+    // Requires two lowercase letters before and a capitalised word after,
+    // so abbreviations (U.S.A.), domains and decimals are left alone.
+    result = this.applyRule(
+      result,
+      /(\p{Ll}{2})([.!?])(\p{Lu}\p{Ll})/gu,
+      '$1$2 $3',
       'missing_space_after_punct',
     );
 
@@ -36,15 +43,20 @@ export class TypographyNormalizer {
       result = this.normalizeRuQuotes(result);
     }
 
-    // Normalize dashes
+    // Normalize dashes: "--" everywhere; a spaced hyphen only where the
+    // language convention is unambiguous (ru/uk em dash, pl en dash).
     result = this.applyRule(result, / -- /g, ' — ', 'dashes');
-    result = this.applyRule(result, / - /g, ' — ', 'dashes');
+    if (this.lang === 'ru' || this.lang === 'uk') {
+      result = this.applyRule(result, / - /g, ' — ', 'dashes');
+    } else if (this.lang === 'pl') {
+      result = this.applyRule(result, / - /g, ' – ', 'dashes');
+    }
 
     // Ellipsis normalization
     result = this.applyRule(result, /\.{3,}/g, '…', 'ellipsis');
 
     // Trim trailing spaces per line
-    result = result.replace(/ +\n/g, '\n');
+    result = result.replace(/(?<! ) +\n/g, '\n');
 
     return result;
   }
@@ -73,6 +85,9 @@ export class TypographyNormalizer {
     let result = text;
     let inQuote = false;
     const chars: string[] = [];
+
+    // Only touch balanced straight quotes, otherwise leave the text as is.
+    if (((result.match(/"/g) || []).length) % 2 !== 0) return text;
 
     for (let i = 0; i < result.length; i++) {
       if (result[i] === '"') {

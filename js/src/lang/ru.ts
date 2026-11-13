@@ -2,9 +2,9 @@
  * Russian language pack.
  */
 
-import type { LangPack } from '../types';
+// Legacy hand-written pack: only synonyms/fillers are still used (see ./index.ts).
 
-export const ru: LangPack = {
+export const ru = {
   code: 'ru',
   name: 'Русский',
   bureaucratic: {

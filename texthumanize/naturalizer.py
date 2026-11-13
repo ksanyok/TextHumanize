@@ -1883,11 +1883,14 @@ class TextNaturalizer:
                 "— як не дивно —", "— треба сказати —",
                 "— і це ключове —", "— по суті —",
             ]
-        else:
+        elif self.lang == "en":
             asides = [
                 "— surprisingly —", "— to be fair —", "— interestingly —",
                 "— and this matters —",
             ]
+        else:
+            # No asides for other languages rather than English ones.
+            return None
 
         aside = self.rng.choice(asides)
         # Find a safe insertion position (not splitting compound terms)
@@ -2138,7 +2141,8 @@ class TextNaturalizer:
                    "Зокрема,", "У багатьох випадках", "Більш того,",
                    "Водночас", "Насправді", "По суті,"],
         }
-        intros = introductory.get(self.lang, introductory.get("en", []))
+        # No English fallback: foreign intros must never leak into pl/es/pt.
+        intros = introductory.get(self.lang, [])
 
         # 1. Исправляем повторяющиеся начала
         if repeated_starts:

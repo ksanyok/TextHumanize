@@ -5,52 +5,27 @@
 import type { AnalysisReport, HumanizeOptions, HumanizeResult } from './types';
 import { Pipeline } from './pipeline';
 import { TextAnalyzer } from './analyzer';
+import { humanizeHtml } from './html';
+import { detectLanguage } from './langdetect';
+import { normalizeLang } from './lang';
 
-/**
- * Detect language from text (simplified heuristic).
- */
-function detectLanguage(text: string): string {
-  const sample = text.slice(0, 500).toLowerCase();
+export { detectLanguage };
 
-  // Cyrillic check
-  const cyrillic = (sample.match(/[а-яёіїєґ]/g) || []).length;
-  const latin = (sample.match(/[a-z]/g) || []).length;
-
-  if (cyrillic > latin) {
-    // Distinguish RU/UK
-    const ukChars = (sample.match(/[іїєґ]/g) || []).length;
-    return ukChars > 2 ? 'uk' : 'ru';
-  }
-
-  // German: ö, ü, ä, ß
-  const deChars = (sample.match(/[öüäß]/g) || []).length;
-  if (deChars > 2) return 'de';
-
-  // French: é, è, ê, ç, à
-  const frChars = (sample.match(/[éèêçàù]/g) || []).length;
-  if (frChars > 2) return 'fr';
-
-  // Spanish: ñ, ¿, ¡
-  const esChars = (sample.match(/[ñ¿¡]/g) || []).length;
-  if (esChars > 0) return 'es';
-
-  return 'en';
-}
+const HTML_RE = /<(?:[a-zA-Z][a-zA-Z0-9-]*)(?:\s[^<>]*)?>|<\/[a-zA-Z][a-zA-Z0-9-]*>/;
 
 /**
  * Humanize text — make it more natural-sounding.
+ *
+ * Input containing HTML tags is processed with `humanizeHtml()` so markup,
+ * links and anchors are preserved (disable with `preserve.html = false`).
  */
-export function humanize(
-  text: string,
-  options?: HumanizeOptions,
-): HumanizeResult {
+export function humanize(text: string, options?: HumanizeOptions): HumanizeResult {
   const opts = { ...options };
-
   if (!text || !text.trim()) {
     return {
       original: text || '',
       text: text || '',
-      lang: opts.lang === 'auto' || !opts.lang ? 'en' : opts.lang,
+      lang: opts.lang === 'auto' || !opts.lang ? 'en' : normalizeLang(opts.lang),
       profile: opts.profile || 'web',
       intensity: opts.intensity ?? 60,
       changes: [],
@@ -59,41 +34,43 @@ export function humanize(
     };
   }
 
-  const lang = opts.lang === 'auto' || !opts.lang
-    ? detectLanguage(text)
-    : opts.lang;
+  const lang = opts.lang === 'auto' || !opts.lang ? detectLanguage(text.replace(/<[^<>]*>/g, ' ')) : normalizeLang(opts.lang);
+
+  if (opts.preserve?.html !== false && HTML_RE.test(text)) {
+    const r = humanizeHtml(text, { ...opts, lang });
+    const analyzer = new TextAnalyzer(lang);
+    const plain = (s: string) => s.replace(/<[^<>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return {
+      original: text,
+      text: r.html,
+      lang,
+      profile: opts.profile || 'web',
+      intensity: opts.intensity ?? 60,
+      changes: r.changes,
+      metricsBefore: analyzer.analyze(plain(text)) as unknown as Record<string, number>,
+      metricsAfter: analyzer.analyze(plain(r.html)) as unknown as Record<string, number>,
+    };
+  }
 
   const pipeline = new Pipeline({ ...opts, lang });
   return pipeline.run(text, lang);
 }
 
-/**
- * Analyze text — get artificiality metrics.
- */
-export function analyze(
-  text: string,
-  lang: string = 'auto',
-): AnalysisReport {
-  const effectiveLang = lang === 'auto' ? detectLanguage(text) : lang;
+/** Analyze text — get artificiality metrics. */
+export function analyze(text: string, lang: string = 'auto'): AnalysisReport {
+  const effectiveLang = lang === 'auto' ? detectLanguage(text) : normalizeLang(lang);
   const analyzer = new TextAnalyzer(effectiveLang);
   return analyzer.analyze(text);
 }
 
-/**
- * Detect AI-generated text probability.
- */
+/** Detect AI-generated text probability (0–100 score + verdict). */
 export function detectAi(
   text: string,
   lang: string = 'auto',
 ): { verdict: string; score: number; details: Record<string, number> } {
   const report = analyze(text, lang);
   const score = report.artificialityScore;
-
-  let verdict: string;
-  if (score >= 70) verdict = 'ai_generated';
-  else if (score >= 40) verdict = 'mixed';
-  else verdict = 'human_written';
-
+  const verdict = score >= 60 ? 'ai_generated' : score >= 35 ? 'mixed' : 'human_written';
   return {
     verdict,
     score,
@@ -101,6 +78,9 @@ export function detectAi(
       artificialityScore: report.artificialityScore,
       avgSentenceLength: report.avgSentenceLength,
       sentenceLengthVariance: report.sentenceLengthVariance,
+      burstiness: report.burstinessScore,
+      connectorRatio: report.connectorRatio,
+      bureaucraticRatio: report.bureaucraticRatio,
       typographyScore: report.typographyScore,
     },
   };

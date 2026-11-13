@@ -5,6 +5,52 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-11-13
+
+### JS/TS port: new publication-safe engine (`js/`)
+The Node port runs inside content pipelines (e.g. it post-processes every
+generated article before publishing), but until now it only had tiny ru/en
+word lists: on uk/pl/es/pt articles it made **zero** edits, on ru it made
+none either (the AI score never rose above 40, so the "already natural" gate
+skipped every text), and `\b` regexes never matched Cyrillic at all.
+
+- **9 languages with real dictionaries** — en, ru, uk, de, fr, es, pl, pt, it.
+  `scripts/export_js_langs.py` exports the curated Python packs (officialese,
+  AI cliches, sentence-initial connectors) into `js/src/lang/generated/`, with
+  grammar guards: bare copulas ("является" → "—") are dropped, single-word
+  replacements must keep the inflection ending (ru/uk/pl/de) or gender letter
+  (es/pt/it/fr), light verbs keep their collocations ("осуществлять контроль"
+  never becomes "делать контроль"), and connectors keep their discourse class
+  ("Além disso" never becomes "Por outro lado").
+- **`humanizeHtml(html, options)`** — HTML-aware mode. Inline tags, entities
+  and protected elements (`<a>`, `<code>`, `<pre>`, `<script>`, `data-humanize="off"`,
+  `translate="no"`) become opaque placeholders, so links, anchors and attributes
+  stay byte-identical; a block is reverted if its markup does not come back
+  intact. Headings and list items get lighter intensity. `humanize()` routes
+  HTML input here automatically.
+- **Edit engine** — candidates are collected on the original text, de-overlapped,
+  ranked (cliches > connectors > officialese) and budgeted, then applied in one
+  pass; drops recapitalise the sentence, never empty an inline element, and
+  every change carries exact `original` / `replacement` fields.
+- **Real detector** — `detectAi()` now scores cliche/officialese density, stock
+  connector openings, sentence-length burstiness and average length per
+  language (0–100). It used to return 0–40 regardless of input.
+- **Language detection** for all 9 languages (stop words + diacritics).
+- Default seed is derived from the input, so equal inputs give equal output
+  while different articles get different choices.
+- Fixed: sentence splitting produced `word,. Next`; connector removal left
+  orphan commas; typography turned `U.S.A` into `U. S. A`.
+- Benchmarks: `benchmarks/seo_html/` (6 SEO articles, ru/uk/en/pl/es/pt) and
+  `js/tests/multilang.test.ts` (links/tags preserved, no artefacts, score drops,
+  grammar guards).
+
+### Python: no more English asides in other languages
+Several stages fell back to English word lists when a language had no list of
+its own, so Polish/Spanish/Portuguese output got "— to be fair —",
+"Interestingly," or "(roughly speaking)" inserted (21 of 24 test runs leaked).
+These stages now skip languages without their own list
+(`tests/test_no_english_leak.py`).
+
 ### Fixed
 - **Media watermark: no more "Udio" on human recordings.** Generator signatures
   were matched as raw substrings, so "Studio" (FL Studio, Studio One, Sound Studio)

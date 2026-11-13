@@ -4,7 +4,7 @@ Zero-dependency TypeScript port of TextHumanize.
 
 ## Status
 
-**Production-ready** — core API, analyzer, pipeline, and key processing stages are fully ported and covered by 28+ tests.
+**Production-ready** — publication-safe engine for 9 languages (en, ru, uk, de, fr, es, pl, pt, it), HTML-aware mode, detector; 90+ tests including six-language SEO fixtures.
 
 ## Installation
 
@@ -34,6 +34,43 @@ const ai = detectAi('AI-generated text here.', 'en');
 console.log(ai.verdict, ai.score);
 ```
 
+### HTML articles
+
+```typescript
+import { humanizeHtml } from 'texthumanize';
+
+const r = humanizeHtml(articleHtml, {
+  lang: 'uk',          // or 'auto'
+  profile: 'seo',
+  intensity: 55,
+  constraints: { keepKeywords: ['купити ноутбук'] },
+});
+r.html;            // same tags, links and anchors — only visible prose rewritten
+r.changes;         // [{ type, description, original, replacement, block }]
+r.stats;           // { blocks, changed, reverted, skipped }
+r.aiScoreBefore;   // 0–100
+r.aiScoreAfter;
+```
+
+What is never touched: `<a>…</a>` (anchor text included), `<code>`, `<pre>`,
+`<script>`, `<style>`, attributes, entities, and any element with
+`data-humanize="off"`, `translate="no"` or class `notranslate`. Inline tags
+(`<strong>`, `<em>`, `<br>` …) are kept in place; if a block's markup would not
+survive, the block is left as it was (`stats.reverted`). Headings get
+`headingFactor` (0.45) of the intensity and list items/table cells `listFactor`
+(0.75).
+
+### What the engine does
+
+Edits are publication-safe by design — no slang, no filler, no foreign asides:
+
+1. **AI cliches** — "In today's rapidly evolving digital landscape", "Следует отметить, что", "Cabe destacar que" … replaced or dropped.
+2. **Stock connectors** at sentence start — "Moreover,", "Кроме того,", "Ponadto" … varied (same meaning class) or dropped.
+3. **Officialese** — "utilize", "осуществлять", "здійснювати" … replaced only where inflection/gender agreement and collocations survive.
+4. **One over-long sentence** per paragraph may be split at a clause joint (", but", ", а", ";").
+
+Dictionaries are generated from the Python packs: `python3 scripts/export_js_langs.py`.
+
 ## Ported Modules
 
 - [x] Core API (`humanize`, `analyze`, `detectAi`)
@@ -42,14 +79,14 @@ console.log(ai.verdict, ai.score);
 - [x] Typography Normalizer
 - [x] Debureaucratizer
 - [x] Text Naturalizer
-- [x] Language packs: EN, RU
+- [x] Language packs: EN, RU, UK, DE, FR, ES, PL, PT, IT (generated)
+- [x] HTML-aware mode (`humanizeHtml`)
 - [x] Type definitions
 - [ ] Structure diversifier
 - [ ] Repetition reducer
 - [ ] Liveliness injector
 - [ ] Semantic paraphraser
 - [ ] Sentence splitter
-- [ ] Full language packs (UK, DE, FR, ES, PL, PT, IT)
 
 ## Development
 

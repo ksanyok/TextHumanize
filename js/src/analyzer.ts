@@ -3,6 +3,7 @@
  */
 
 import type { AnalysisReport } from './types';
+import { aiScore, features, splitSentences } from './detector';
 
 export class TextAnalyzer {
   private lang: string;
@@ -68,20 +69,17 @@ export class TextAnalyzer {
     const hasTypos = /[.][A-ZА-Я]/.test(text); // missing space after period
     report.typographyScore = hasDoubleSpaces || hasTypos ? 0.3 : 0.8;
 
-    // Artificiality score (simplified)
-    let score = 0;
-    if (variance < 10) score += 20; // Low variance = AI
-    if (report.typographyScore > 0.7) score += 10; // Perfect typography
-    if (avg > 20) score += 10; // Long sentences
-    report.artificialityScore = Math.min(score, 100);
+    // Artificiality score — dictionary + rhythm based (see ./detector.ts)
+    const f = features(text, this.lang);
+    report.burstinessScore = f.sentenceLengthCV;
+    report.connectorRatio = f.connectorStartShare;
+    report.bureaucraticRatio = f.officialesePer100 / 100;
+    report.artificialityScore = aiScore(text, this.lang);
 
     return report;
   }
 
   private splitSentences(text: string): string[] {
-    return text
-      .split(/(?<=[.!?…])\s+/)
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && s.split(/\s+/).length > 1);
+    return splitSentences(text);
   }
 }

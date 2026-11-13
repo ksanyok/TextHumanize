@@ -21,7 +21,7 @@ readability, and internal risk signals; it is not a bypass guarantee.
 [![Tests](https://img.shields.io/badge/tests-2269%20passed-2ea44f.svg?logo=pytest&logoColor=white)](https://github.com/ksanyok/TextHumanize/actions/workflows/ci.yml)
 &nbsp;&nbsp;
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)]()
-[![PyPI](https://img.shields.io/badge/pypi-v0.35.0-3775A9.svg?logo=pypi&logoColor=white)](https://pypi.org/project/texthumanize/)
+[![PyPI](https://img.shields.io/badge/pypi-v0.36.0-3775A9.svg?logo=pypi&logoColor=white)](https://pypi.org/project/texthumanize/)
 [![License](https://img.shields.io/badge/license-Dual%20(Free%20%2B%20Commercial)-blue.svg)](LICENSE)
 
 <br/>
@@ -195,7 +195,7 @@ git clone https://github.com/ksanyok/TextHumanize.git
 cd TextHumanize && pip install -e .
 ```
 
-> **Tip:** Pin your version for production: `pip install texthumanize==0.35.0`
+> **Tip:** Pin your version for production: `pip install texthumanize==0.36.0`
 
 <details>
 <summary><b>PHP / TypeScript</b></summary>
@@ -1475,7 +1475,7 @@ reporting rules, and detector limitations.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  TextHumanize v0.35.0 — AI Score Benchmark              │
+│  TextHumanize v0.36.0 — AI Score Benchmark              │
 ├──────────────────────────────────────────────────────────┤
 │  EN (web/50):    94% → 27%    (reduction: -67pp)        │
 │  EN (web/60):    94% → 23%    (reduction: -71pp)        │
@@ -1887,7 +1887,16 @@ Try the [Live Demo](https://texthumanize.link/). For local use, the REST API + S
 
 ---
 
-## 🆕 What's New in v0.35.0
+## 🆕 What's New in v0.36.0
+
+### JS/TS port — publication-safe engine for 9 languages (0.36.0)
+- **`humanizeHtml(html, options)`** — rewrites article HTML while keeping links, anchors, attributes, `<code>`/`<pre>` and inline formatting byte-identical (`data-humanize="off"` opts a block out). `humanize()` routes HTML input there automatically.
+- **Real dictionaries in Node** for en, ru, uk, de, fr, es, pl, pt, it — exported from the Python packs by `scripts/export_js_langs.py` with grammar guards (case government, inflection endings, gender agreement, connector meaning).
+- **Working detector** — `detectAi()` in JS now scores cliche density, stock connector openings and rhythm per language (it used to return 0–40 for any input).
+- **SEO benchmark** (`benchmarks/seo_html/`, 6 languages): edits now land in every language (were zero on ru/uk/pl/es/pt), links and markup preserved 100%, ~3–6 ms per article.
+
+### Python — no English asides in other languages (0.36.0)
+- Stages that fell back to English lists ("— to be fair —", "Interestingly,") for languages without their own list now skip them; Polish/Spanish/Portuguese output is English-free.
 
 ### Detection quality — evidence-driven overhaul (0.35.0)
 - **New `structure` metric** — scores the enumeration / list-intro / participial-tail / negative-parallelism *scaffolding* of instruction-tuned writing. This is the tell that survives paraphrasing and model-generation changes, and the one the old metric set missed entirely (chat "assistant register" text used to score ~40% human).

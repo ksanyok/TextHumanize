@@ -62,7 +62,8 @@ _DEFAULT_EXCLUDE_GLOBS: tuple[str, ...] = tuple(
 # gate is meant to police (published prose). Skipping these directories by
 # default keeps the gate meaningful and CI reliable; a `content/` area or
 # explicitly-passed files are still checked. Override with --no-default-excludes.
-_DEFAULT_EXCLUDE_DIRS: tuple[str, ...] = ("docs", "docs-src", "site", ".github")
+# "benchmarks" holds deliberately machine-written input fixtures.
+_DEFAULT_EXCLUDE_DIRS: tuple[str, ...] = ("docs", "docs-src", "site", ".github", "benchmarks")
 
 
 def _is_excluded(path: str, patterns: Sequence[str]) -> bool:

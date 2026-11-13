@@ -558,7 +558,8 @@ class PerplexitySculptor:
             ],
         }
 
-        lang_markers = markers.get(self.lang, markers["en"])
+        # No fallback to English: a foreign marker in pl/es/pt text is a bug.
+        lang_markers = markers.get(self.lang)
         if not lang_markers or intensity < 0.4:
             return sentence, []
 
