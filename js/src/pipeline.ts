@@ -41,7 +41,7 @@ const DEFAULT_OPTIONS: Required<HumanizeOptions> = {
 const NO_SPLIT = new Set(['formal', 'academic', 'docs']);
 
 /** URLs, e-mails, @mentions and #hashtags survive verbatim. */
-const PROTECT_RE = /\b(?:https?:\/\/|www\.)[^\s<>"']+|[\w.+-]+@[\w-]+\.[\w.-]+|(?<![\p{L}\p{N}])[@#][\p{L}\p{N}_]+/gu;
+const PROTECT_RE = /\b(?:https?:\/\/|www\.)[^\s<>"']+|(?<![\w.+-])[\w.+-]+@[\w-]+\.[\w.-]+|(?<![\p{L}\p{N}])[@#][\p{L}\p{N}_]+/gu;
 
 export class Pipeline {
   private options: Required<HumanizeOptions>;

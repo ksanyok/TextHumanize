@@ -143,3 +143,21 @@ describe('detector', () => {
     }
   });
 });
+
+describe('pathological input (ReDoS guard)', () => {
+  const cases: Record<string, string> = {
+    spaces: ' '.repeat(50000) + 'x',
+    unclosedTags: '<a'.repeat(30000),
+    unclosedComments: '<!--'.repeat(20000),
+    noTerminators: 'word '.repeat(40000),
+    longToken: 'a'.repeat(50000),
+  };
+  for (const [name, input] of Object.entries(cases)) {
+    it(`stays fast on ${name}`, () => {
+      const t0 = Date.now();
+      humanize(input, { lang: 'en' });
+      humanizeHtml(input, { lang: 'en' });
+      expect(Date.now() - t0).toBeLessThan(2000);
+    });
+  }
+});

@@ -11,7 +11,7 @@ import { normalizeLang } from './lang';
 
 export { detectLanguage };
 
-const HTML_RE = /<(?:[a-zA-Z][a-zA-Z0-9-]*)(?:\s[^>]*)?>|<\/[a-zA-Z][a-zA-Z0-9-]*>/;
+const HTML_RE = /<(?:[a-zA-Z][a-zA-Z0-9-]*)(?:\s[^<>]*)?>|<\/[a-zA-Z][a-zA-Z0-9-]*>/;
 
 /**
  * Humanize text — make it more natural-sounding.
@@ -34,12 +34,12 @@ export function humanize(text: string, options?: HumanizeOptions): HumanizeResul
     };
   }
 
-  const lang = opts.lang === 'auto' || !opts.lang ? detectLanguage(text.replace(/<[^>]*>/g, ' ')) : normalizeLang(opts.lang);
+  const lang = opts.lang === 'auto' || !opts.lang ? detectLanguage(text.replace(/<[^<>]*>/g, ' ')) : normalizeLang(opts.lang);
 
   if (opts.preserve?.html !== false && HTML_RE.test(text)) {
     const r = humanizeHtml(text, { ...opts, lang });
     const analyzer = new TextAnalyzer(lang);
-    const plain = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const plain = (s: string) => s.replace(/<[^<>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     return {
       original: text,
       text: r.html,

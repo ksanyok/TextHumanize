@@ -23,8 +23,8 @@ export class TypographyNormalizer {
     // Space before punctuation (French keeps a space before ; : ! ?)
     result = this.applyRule(
       result,
-      this.lang === 'fr' ? / +([.,])/g : / +([.,;:!?])/g,
-      '$1',
+      this.lang === 'fr' ? /(?<! ) +(?=[.,])/g : /(?<! ) +(?=[.,;:!?])/g,
+      '',
       'space_before_punct',
     );
 
@@ -56,7 +56,7 @@ export class TypographyNormalizer {
     result = this.applyRule(result, /\.{3,}/g, '…', 'ellipsis');
 
     // Trim trailing spaces per line
-    result = result.replace(/ +\n/g, '\n');
+    result = result.replace(/(?<! ) +\n/g, '\n');
 
     return result;
   }

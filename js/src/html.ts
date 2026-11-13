@@ -34,12 +34,13 @@ const HEADINGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
 const LISTISH = new Set(['li', 'td', 'th', 'dt', 'dd', 'caption', 'figcaption', 'summary']);
 const SPLITTABLE = new Set(['p', 'div', 'blockquote', 'section', 'article', 'main', 'body', '']);
 
-const TOKEN_RE = /<!--[\s\S]*?-->|<![^>]*>|<\/?[a-zA-Z][^>]*>/g;
+// Tags only (comments are handled by tokenize()); [^<>] keeps it linear on '<<<<…'.
+const TAG_RE = /^(?:<![^<>]*>|<\/?[a-zA-Z][^<>]*>)/;
 const ENTITY_RE = /&(?:[a-zA-Z][a-zA-Z0-9]{1,31}|#\d{1,7}|#[xX][0-9a-fA-F]{1,6});/g;
 const PH_BASE = 0xE000;
 const PH_MAX = 0xF8FF - PH_BASE;
 const PH_RE = /[-]/gu;
-const PROTECT_RE = /\b(?:https?:\/\/|www\.)[^\s<>"']+|[\w.+-]+@[\w-]+\.[\w.-]+|(?<![\p{L}\p{N}])[@#][\p{L}\p{N}_]+/gu;
+const PROTECT_RE = /\b(?:https?:\/\/|www\.)[^\s<>"']+|(?<![\w.+-])[\w.+-]+@[\w-]+\.[\w.-]+|(?<![\p{L}\p{N}])[@#][\p{L}\p{N}_]+/gu;
 
 interface Part { kind: 'text' | 'atom'; raw: string; visible: string }
 
@@ -55,7 +56,7 @@ function optedOut(tag: string): boolean {
     || /\sclass\s*=\s*["'][^"']*\bnotranslate\b/i.test(tag);
 }
 function stripTags(s: string): string {
-  return s.replace(/<[^>]*>/g, ' ').replace(ENTITY_RE, ' ');
+  return s.replace(/<[^<>]*>/g, ' ').replace(ENTITY_RE, ' ');
 }
 
 /** Humanize an HTML fragment or document while keeping markup intact. */
@@ -67,14 +68,7 @@ export function humanizeHtml(html: string, options: HumanizeHtmlOptions = {}): H
   const wantScore = options.score !== false;
 
   // ---- tokenise into a flat list of segments -------------------------------
-  const segments: Array<{ tag?: string; text?: string }> = [];
-  let last = 0;
-  for (const m of html.matchAll(TOKEN_RE)) {
-    if (m.index! > last) segments.push({ text: html.slice(last, m.index!) });
-    segments.push({ tag: m[0] });
-    last = m.index! + m[0].length;
-  }
-  if (last < html.length) segments.push({ text: html.slice(last) });
+  const segments = tokenize(html);
 
   // ---- group into blocks ----------------------------------------------------
   type Block = { tag: string; parts: Part[] };
@@ -223,6 +217,42 @@ export function humanizeHtml(html: string, options: HumanizeHtmlOptions = {}): H
   const result = out.join('');
   const aiScoreAfter = wantScore ? aiScore(afterVisible.join('\n'), lang) : -1;
   return { html: result, lang, changes, stats, aiScoreBefore: wantScore ? aiScoreBefore : -1, aiScoreAfter };
+}
+
+/**
+ * Split HTML into tag and text segments in a single linear pass (no
+ * backtracking regex over the whole input — see CodeQL js/polynomial-redos).
+ */
+function tokenize(html: string): Array<{ tag?: string; text?: string }> {
+  const segments: Array<{ tag?: string; text?: string }> = [];
+  let last = 0;
+  let i = html.indexOf('<');
+  let commentsClosed = true;
+  while (i >= 0 && i < html.length) {
+    let end = -1;
+    if (html.startsWith('<!--', i)) {
+      const close = commentsClosed ? html.indexOf('-->', i + 4) : -1;
+      if (close >= 0) end = close + 3;
+      else commentsClosed = false; // no '-->' later: every later '<!--' is plain text
+    } else {
+      const gt = html.indexOf('>', i + 1);
+      const lt = html.indexOf('<', i + 1);
+      if (gt >= 0 && (lt < 0 || gt < lt)) {
+        const m = TAG_RE.exec(html.slice(i, gt + 1));
+        if (m) end = gt + 1;
+      }
+    }
+    if (end > 0) {
+      if (i > last) segments.push({ text: html.slice(last, i) });
+      segments.push({ tag: html.slice(i, end) });
+      last = end;
+      i = html.indexOf('<', end);
+    } else {
+      i = html.indexOf('<', i + 1);
+    }
+  }
+  if (last < html.length) segments.push({ text: html.slice(last) });
+  return segments;
 }
 
 function pushText(parts: Part[], text: string): void {

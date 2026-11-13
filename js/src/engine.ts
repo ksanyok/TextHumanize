@@ -332,7 +332,8 @@ function pickReplacement(c: Candidate, atStart: boolean, used: Map<string, numbe
  * middle: "X, and Y" → "X. And Y". Both halves must keep ≥ 8 words.
  */
 function splitLongSentence(text: string, pack: LangPack): { text: string; description: string } | null {
-  const sentRe = /[^.!?…]+[.!?…]+/gu;
+  // Anchored to sentence starts so a long text without terminators stays linear.
+  const sentRe = /(?:^|(?<=[.!?…]))[^.!?…]+[.!?…]+/gu;
   let best: { start: number; end: number; words: number } | null = null;
   for (const m of text.matchAll(sentRe)) {
     const words = (m[0].match(/[\p{L}\p{N}]+/gu) || []).length;
@@ -369,8 +370,8 @@ function splitLongSentence(text: string, pack: LangPack): { text: string; descri
 export function tidy(text: string, lang: string): string {
   let t = text;
   t = t.replace(/[ \t]{2,}/g, ' ');
-  if (lang !== 'fr') t = t.replace(/ +([,.;:!?…])/g, '$1');
-  else t = t.replace(/ +([,.…])/g, '$1');
+  if (lang !== 'fr') t = t.replace(/(?<! ) +(?=[,.;:!?…])/g, '');
+  else t = t.replace(/(?<! ) +(?=[,.…])/g, '');
   t = t.replace(/,\s*([,.;:!?])/g, '$1');
   t = t.replace(/([.!?])\s+,/g, '$1');
   return t;
