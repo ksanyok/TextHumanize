@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import io
 import struct
+import time
 import wave
 import zlib
 
 import texthumanize as th
 from texthumanize.media_watermark import (
+    _scan_markers,
     clean_media_watermarks,
     detect_media_watermarks,
     media_format,
@@ -149,6 +151,28 @@ class TestWavForensics:
                          "Gemini Records", "Playground session", "Pikachu remix"):
             report = detect_media_watermarks(make_wav(software=software))
             assert report["has_watermarks"] is False, software
+
+    def test_sample_data_is_not_scanned(self) -> None:
+        # The PCM "data" chunk is audio, not metadata: a chance byte run there must not count,
+        # and a large file must not spend seconds in regex over samples.
+        wav = make_wav()
+        body = b"\x00suno\x00" + bytes(4 * 1024 * 1024)
+        head = wav[:wav.index(b"data")]
+        big = head + b"data" + struct.pack("<I", len(body)) + body
+        big = b"RIFF" + struct.pack("<I", len(big) - 8) + big[8:]
+        start = time.perf_counter()
+        report = detect_media_watermarks(big)
+        assert report["has_watermarks"] is False
+        assert time.perf_counter() - start < 2.0
+
+    def test_vorbis_comment_value_is_a_signature(self) -> None:
+        # OGG/FLAC: "software=Udio" ends at a length-prefixed boundary (next field length or framing byte \x01).
+        hits = {f.get("generator") for f in _scan_markers(b"\x0d\x00\x00\x00TIST=Meydan\r\x00\x00\x00software=Udio\x01\x05vorbis")}
+        assert "Udio (audio)" in hits
+        hits = {f.get("generator") for f in _scan_markers(b"\x0e\x00\x00\x00encoder=Suno\x0b\x00\x00\x00")}
+        assert "Suno (audio)" in hits
+        for blob in (b"title=Udio Studio take\x01", b"comment=FL Studio\x01", b"album=Sunology\x01"):
+            assert not _scan_markers(blob), blob
 
     def test_generators_with_context_still_detected(self) -> None:
         cases = {
