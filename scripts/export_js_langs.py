@@ -47,7 +47,7 @@ GOVERNING_NOUNS = {
     "kontrolę", "wpływ", "control", "controle", "contrôle", "controllo",
 }
 # Replacements that are too colloquial / opinionated for published SEO copy.
-BANNED_REPLACEMENTS = {"ojo:", "подчеркну:", "destaco que", "zaznaczmy"}
+BANNED_REPLACEMENTS = {"ojo:", "подчеркну:", "destaco que", "zaznaczmy", "total,"}
 
 
 # Discourse classes of connectors. An alternative is kept only if it has the
@@ -176,6 +176,8 @@ def export(lang: str) -> dict:
         if c:
             con[k] = list(dict.fromkeys(c))
     data["connectors"] = con
+    # Contrastive connectors carry meaning ("However, X"): never dropped.
+    data["contrast"] = sorted(k for k in con if _conn_class(k) == "contrast")
     return data
 
 

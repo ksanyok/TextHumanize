@@ -106,6 +106,8 @@ export interface LangData {
   bureaucratic: Record<string, string[]>;
   phrases: Record<string, string[]>;
   connectors: Record<string, string[]>;
+  /** Connectors that express contrast; they may be replaced but never dropped. */
+  contrast?: string[];
 }
 
 /** Text analysis report. */
@@ -143,6 +145,8 @@ export interface LangPack {
   phrases: Record<string, string[]>;
   /** Sentence-initial AI connectors → alternatives. */
   connectorMap: Record<string, string[]>;
+  /** Lower-cased contrastive connectors (never dropped). */
+  contrast: Set<string>;
   /** Comma/semicolon joints where a long sentence may be split in two. */
   splitJoints: string[];
 }

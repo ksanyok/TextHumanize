@@ -226,7 +226,10 @@ export function rewrite(text: string, pack: LangPack, opts: EngineOptions): { te
     const atStart = isSentenceStart(out, c.start);
     // Never empty an inline element: no drops right next to a placeholder.
     const nextToTag = PLACEHOLDER.test(out[c.start - 1] ?? '') || PLACEHOLDER.test(out.slice(c.end).replace(/^[\s,:]*/u, '')[0] ?? '');
-    let repl = forceDrop.has(c) && !nextToTag ? '' : pickReplacement(c, atStart, used, rng, nextToTag);
+    // Contrast ("However", "Однако", "No entanto") carries meaning: replace, never drop.
+    const keepMeaning = pack.contrast.has(normKey(c.original));
+    const noDrop = nextToTag || keepMeaning;
+    let repl = forceDrop.has(c) && !noDrop ? '' : pickReplacement(c, atStart, used, rng, noDrop);
     if (repl === null) continue;
     let start = c.start;
     let end = c.end;

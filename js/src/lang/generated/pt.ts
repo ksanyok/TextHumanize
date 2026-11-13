@@ -1160,6 +1160,10 @@ export const pt: LangData = {
    "Repare-se que"
   ]
  },
+ "contrast": [
+  "No entanto",
+  "Todavia"
+ ],
  "name": "Português",
  "phrases": {
   "a bem da verdade": [
@@ -1181,6 +1185,10 @@ export const pt: LangData = {
   "a título exemplificativo": [
    "por exemplo",
    "a título de exemplo"
+  ],
+  "abre novas oportunidades": [
+   "abre portas",
+   "cria novas opções"
   ],
   "afigura-se necessário": [
    "é preciso",
@@ -1204,6 +1212,10 @@ export const pt: LangData = {
    "no plano de",
    "relativamente a"
   ],
+  "cabe ressaltar que": [
+   "vale dizer que",
+   ""
+  ],
   "com efeito": [
    "de facto",
    "efetivamente",
@@ -1221,6 +1233,16 @@ export const pt: LangData = {
   "consoante o estipulado": [
    "conforme definido",
    "como estabelecido"
+  ],
+  "constitui uma parte essencial da": [
+   "faz parte da"
+  ],
+  "constitui uma parte essencial do": [
+   "faz parte do"
+  ],
+  "convém destacar que": [
+   "vale dizer que",
+   ""
   ],
   "dado o acima referido": [
    "dado o exposto",
@@ -1245,6 +1267,9 @@ export const pt: LangData = {
    "bastante",
    "claramente"
   ],
+  "de maneira eficiente": [
+   "com eficiência"
+  ],
   "de molde a": [
    "de modo a",
    "para",
@@ -1254,14 +1279,49 @@ export const pt: LangData = {
    "é muito importante",
    "é central"
   ],
+  "desempenha um papel crucial na": [
+   "pesa muito na",
+   "é decisivo na"
+  ],
+  "desempenha um papel crucial no": [
+   "pesa muito no",
+   "é decisivo no"
+  ],
+  "desempenha um papel fundamental em": [
+   "pesa muito em",
+   "é decisivo em"
+  ],
+  "desempenha um papel fundamental na": [
+   "pesa muito na",
+   "é decisivo na"
+  ],
+  "desempenha um papel fundamental no": [
+   "pesa muito no",
+   "é decisivo no"
+  ],
+  "desempenha um papel importante na": [
+   "conta muito na"
+  ],
+  "desempenha um papel importante no": [
+   "conta muito no"
+  ],
   "do ponto de vista de": [
    "na ótica de",
    "segundo",
    "para"
   ],
+  "em conclusão,": [
+   "em resumo,",
+   "resumindo,",
+   ""
+  ],
   "em conformidade com": [
    "segundo",
    "de acordo com"
+  ],
+  "em constante evolução": [
+   "que muda rápido",
+   "em plena mudança"
   ],
   "em face do exposto": [
    "perante isto",
@@ -1289,6 +1349,10 @@ export const pt: LangData = {
    "devido a",
    "graças a"
   ],
+  "em última análise,": [
+   "no fim das contas,",
+   ""
+  ],
   "fazer jus a": [
    "merecer",
    "ser digno de"
@@ -1311,6 +1375,10 @@ export const pt: LangData = {
    "devido a",
    "por causa de"
   ],
+  "na era digital,": [
+   "hoje,",
+   ""
+  ],
   "na medida em que": [
    "uma vez que",
    "porque",
@@ -1320,6 +1388,26 @@ export const pt: LangData = {
    "nesse sentido",
    "assim",
    "nessa linha"
+  ],
+  "no cenário atual,": [
+   "hoje,",
+   ""
+  ],
+  "no cenário digital atual,": [
+   "hoje,",
+   ""
+  ],
+  "no cenário digital atual, em constante evolução,": [
+   "hoje,",
+   ""
+  ],
+  "no mundo atual,": [
+   "hoje,",
+   ""
+  ],
+  "no mundo digital de hoje,": [
+   "hoje,",
+   ""
   ],
   "no que concerne a": [
    "sobre",
@@ -1345,6 +1433,10 @@ export const pt: LangData = {
    "dentro de",
    "durante"
   ],
+  "nos dias de hoje,": [
+   "hoje,",
+   ""
+  ],
   "nos termos do disposto": [
    "segundo a lei",
    "conforme previsto"
@@ -1360,6 +1452,9 @@ export const pt: LangData = {
   "não é despiciendo": [
    "não é de desprezar",
    "importa lembrar"
+  ],
+  "oferece uma visão abrangente": [
+   "dá um panorama completo"
   ],
   "para os devidos efeitos": [
    "para que conste",
@@ -1412,6 +1507,10 @@ export const pt: LangData = {
    "a menos que diga outra coisa",
    "exceto se"
   ],
+  "sem dúvida,": [
+   "claro,",
+   ""
+  ],
   "sem embargo de": [
    "apesar de",
    "não obstante"
@@ -1444,9 +1543,21 @@ export const pt: LangData = {
    "é preciso",
    "é necessário"
   ],
+  "uma ampla gama de": [
+   "todo tipo de",
+   "diversos tipos de"
+  ],
+  "uma grande variedade de": [
+   "todo tipo de",
+   "diversos tipos de"
+  ],
   "urge salientar": [
    "é urgente notar",
    "importa destacar"
+  ],
+  "vale ressaltar que": [
+   "vale dizer que",
+   ""
   ],
   "valer a pena referir": [
    "convém mencionar",
@@ -1456,6 +1567,28 @@ export const pt: LangData = {
    "dado",
    "considerando",
    "perante"
+  ],
+  "é importante destacar que": [
+   "vale dizer que",
+   ""
+  ],
+  "é importante lembrar que": [
+   "lembre que",
+   ""
+  ],
+  "é importante notar que": [
+   "note que",
+   ""
+  ],
+  "é importante ressaltar que": [
+   "vale dizer que",
+   ""
+  ],
+  "é parte integrante da": [
+   "faz parte da"
+  ],
+  "é parte integrante do": [
+   "faz parte do"
   ]
  }
 };
